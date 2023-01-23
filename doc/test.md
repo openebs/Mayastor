@@ -29,8 +29,12 @@ Mayastor's unit tests, integration tests, and documentation tests via the conven
 Mayastor uses [spdk][spdk] which is quite senistive to threading. This means tests need to run one at a time:
 
 ```bash
-cargo test -- --test-threads 1
+cd io-engine
+RUST_LOG=TRACE cargo test -- --test-threads 1 --nocapture
 ```
+
+## Testing your own SPDK version
+To test your custom SPDK version please refere to the [spdk-rs documentation](https://github.com/openebs/spdk-rs/blob/develop/README.md#custom-spdk)
 
 ## Running the end-to-end test suite
 
@@ -54,6 +58,29 @@ Then, to run the tests:
 ```bash
 ./node_modules/mocha/bin/mocha test_csi.js
 ```
+
+## Using PCIe NVMe devices in cargo tests while developing
+
+When developing new features, testing those with real PCIe devices in the process might come in handy.
+In order to do so, the PCIe device first needs to be bound to the vfio driver:
+
+```bash
+sudo PCI_ALLOWED="<PCI-ADDRESS>" ./spdk-rs/spdk/scripts/setup.sh
+```
+
+The bdev name in the cargo test case can then follow the PCIe URI pattern:
+
+```rust
+static BDEVNAME1: &str = "pcie:///<PCI-ADDRESS>";
+```
+
+After testing the device may be rebound to the NVMe driver:
+
+```bash
+sudo PCI_ALLOWED="<PCI-ADDRESS>" ./spdk-rs/spdk/scripts/setup.sh reset
+```
+
+Please do not submit pull requests with active cargo test cases that require PCIe devices to be present.
 
 [spdk]: https://spdk.io/
 [doc-run]: ./run.md
