@@ -39,6 +39,7 @@ pub(crate) mod uri {
     use crate::{
         bdev::{
             aio,
+            ftl,
             loopback,
             lvs,
             malloc,
@@ -64,6 +65,7 @@ pub(crate) mod uri {
             "bdev" | "loopback" => {
                 Ok(Box::new(loopback::Loopback::try_from(&url)?))
             }
+            "ftl" => Ok(Box::new(ftl::Ftl::try_from(&url)?)),
             "malloc" => Ok(Box::new(malloc::Malloc::try_from(&url)?)),
             "null" => Ok(Box::new(null_bdev::Null::try_from(&url)?)),
             // keeping nvmf scheme so existing tests(if any, setting this

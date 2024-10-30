@@ -16,6 +16,7 @@ use crate::core::{MayastorEnvironment, PtplProps};
 pub(crate) use dev::uri;
 
 pub(crate) mod device;
+mod ftl;
 mod loopback;
 mod lvs;
 mod malloc;
