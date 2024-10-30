@@ -1,9 +1,12 @@
 # Mayastor
 
+[![FOSSA Status](https://app.fossa.com/api/projects/custom%2B162%2Fgithub.com%2Fopenebs%2Fmayastor.svg?type=shield&issueType=license)](https://app.fossa.com/projects/custom%2B162%2Fgithub.com%2Fopenebs%2Fmayastor?ref=badge_shield&issueType=license)
 [![Releases](https://img.shields.io/github/release/openebs/Mayastor/all.svg?style=flat-square)](https://github.com/openebs/Mayastor/releases)
-[![CI-basic](https://mayastor-ci.mayadata.io/buildStatus/icon?job=Mayastor%2Fdevelop)](https://mayastor-ci.mayadata.io/blue/organizations/jenkins/Mayastor/activity/)
-[![Slack](https://img.shields.io/badge/JOIN-SLACK-blue)](https://kubernetes.slack.com/messages/openebs)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/9640/badge)](https://www.bestpractices.dev/projects/9640)
+[![Slack](https://img.shields.io/badge/chat-slack-ff1493.svg?style=flat-square)](https://kubernetes.slack.com/messages/openebs/)
+[![Community Meetings](https://img.shields.io/badge/Community-Meetings-blue)](https://us05web.zoom.us/j/87535654586?pwd=CigbXigJPn38USc6Vuzt7qSVFoO79X.1)
 [![built with nix](https://builtwithnix.org/badge.svg)](https://builtwithnix.org)
+
 
 ## Table of contents
 
@@ -228,3 +231,6 @@ other open source projects and are distributed under their respective licenses.
 Unless you explicitly state otherwise, any contribution intentionally submitted for
 inclusion in Mayastor by you, as defined in the Apache-2.0 license, licensed as above,
 without any additional terms or conditions.
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/custom%2B162%2Fgithub.com%2Fopenebs%2Fmayastor.svg?type=large&issueType=license)](https://app.fossa.com/projects/custom%2B162%2Fgithub.com%2Fopenebs%2Fmayastor?ref=badge_large&issueType=license)
