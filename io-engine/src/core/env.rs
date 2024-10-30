@@ -141,10 +141,10 @@ pub struct MayastorCliArgs {
     #[deprecated = "Use grpc_ip and grpc_port instead"]
     /// IP address and port (optional) for the gRPC server to listen on.
     pub deprecated_grpc_endpoint: Option<String>,
-    #[clap(default_value_t = std::net::IpAddr::V6(std::net::Ipv6Addr::UNSPECIFIED))]
+    #[clap(long, default_value_t = std::net::IpAddr::V6(std::net::Ipv6Addr::UNSPECIFIED))]
     /// IP address for the gRPC server to listen on.
     pub grpc_ip: std::net::IpAddr,
-    #[clap(default_value_t = 10124)]
+    #[clap(long, default_value_t = 10124)]
     /// Port for the gRPC server to listen on.
     pub grpc_port: u16,
     #[clap(short = 'R')]
