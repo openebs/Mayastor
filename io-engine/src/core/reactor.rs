@@ -240,7 +240,7 @@ impl Reactors {
             } else {
                 error!("Failed to launch core #{}", core);
                 Err(CoreError::ReactorConfigureFailed {
-                    source: Errno::from_i32(rc),
+                    source: Errno::from_raw(rc),
                 })
             };
         } else {
@@ -647,9 +647,9 @@ impl Reactor {
 /// master core is polled by the Future abstraction. There are two reasons for
 /// this
 ///
-///  1. The master core is the management core, it is the only core that handles
-/// gRPC calls  2. The master core handles the setup and tear down of the slave
-/// cores
+/// 1. The master core is the management core, it is the only core that handles
+///    gRPC calls
+/// 2. The master core handles the setup and tear down of the slave cores
 impl Future for &'static Reactor {
     type Output = Result<(), ()>;
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {

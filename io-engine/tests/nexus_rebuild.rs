@@ -58,7 +58,7 @@ fn test_fini() {
         common::delete_file(&[get_disk(i)]);
     }
 }
-
+#[allow(static_mut_refs)]
 fn get_err_bdev() -> &'static mut Vec<u64> {
     unsafe {
         static mut ERROR_DEVICE_INDEXES: Vec<u64> = Vec::<u64>::new();

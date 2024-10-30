@@ -45,7 +45,7 @@ impl EventMetaGen for NexusRebuildJob {
     }
 }
 
-impl<'n> EventMetaGen for NexusChild<'n> {
+impl EventMetaGen for NexusChild<'_> {
     fn meta(&self) -> EventMeta {
         let event_source = EventSource::new(
             MayastorEnvironment::global_or_default().node_name,
@@ -89,7 +89,7 @@ pub(crate) fn subsystem_pause_event_meta(
     EventMeta::from_source(event_source)
 }
 
-impl<'n> Event for nexus::Nexus<'n> {
+impl Event for nexus::Nexus<'_> {
     fn event(&self, event_action: EventAction) -> EventMessage {
         let event_source = EventSource::new(
             MayastorEnvironment::global_or_default().node_name,
@@ -103,7 +103,7 @@ impl<'n> Event for nexus::Nexus<'n> {
     }
 }
 
-impl<'n> EventWithMeta for nexus::Nexus<'n> {
+impl EventWithMeta for nexus::Nexus<'_> {
     fn event(
         &self,
         event_action: EventAction,

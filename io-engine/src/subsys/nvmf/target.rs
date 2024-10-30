@@ -386,7 +386,7 @@ impl Target {
             spdk_nvmf_subsystem_set_mn(discovery.0.as_ptr(), mn.as_ptr())
         }
         .to_result(|e| Error::Subsystem {
-            source: Errno::from_i32(e),
+            source: Errno::from_raw(e),
             nqn: "discovery".into(),
             msg: "failed to set serial".into(),
         })

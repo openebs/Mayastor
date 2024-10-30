@@ -112,9 +112,8 @@ async fn list(mut ctx: Context, _args: &ArgMatches) -> crate::Result<()> {
             let table = bdevs
                 .iter()
                 .map(|bdev| {
-                    let cap = Byte::from_bytes(
-                        (bdev.num_blocks * bdev.blk_size as u64).into(),
-                    );
+                    let cap =
+                        Byte::from_u64(bdev.num_blocks * bdev.blk_size as u64);
                     vec![
                         bdev.uuid.to_string(),
                         bdev.num_blocks.to_string(),

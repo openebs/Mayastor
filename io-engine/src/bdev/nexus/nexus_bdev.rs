@@ -288,7 +288,7 @@ pub struct Nexus<'n> {
     _pin: PhantomPinned,
 }
 
-impl<'n> Debug for Nexus<'n> {
+impl Debug for Nexus<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let s = self.state.lock();
         write!(f, "Nexus '{}' [{}]", self.name, s)
@@ -797,7 +797,7 @@ impl<'n> Nexus<'n> {
                         "{self:?}: failed to notify block cnt change on nexus"
                     );
                     return Err(Error::NexusResize {
-                        source: Errno::from_i32(rc),
+                        source: Errno::from_raw(rc),
                         name,
                     });
                 }
@@ -998,9 +998,8 @@ impl<'n> Nexus<'n> {
             _ => false,
         };
         let evt = Event::event(self.deref(), EventAction::SubsystemResume);
-        self.io_subsystem_mut().resume(freeze).await.map(|value| {
+        self.io_subsystem_mut().resume(freeze).await.inspect(|_| {
             evt.generate();
-            value
         })
     }
 
@@ -1360,7 +1359,7 @@ impl<'n> IoDevice for Nexus<'n> {
 impl IoDeviceChannelTraverse for Nexus<'_> {}
 
 unsafe fn unsafe_static_ptr(nexus: &Nexus) -> *mut Nexus<'static> {
-    let r = ::std::mem::transmute::<_, &'static Nexus>(nexus);
+    let r = ::std::mem::transmute::<&Nexus, &'static Nexus>(nexus);
     r as *const Nexus as *mut Nexus
 }
 

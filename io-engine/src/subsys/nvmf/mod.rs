@@ -87,7 +87,7 @@ pub enum Error {
 }
 
 thread_local! {
-    pub (crate) static NVMF_PGS: RefCell<Vec<PollGroup>> = RefCell::new(Vec::new());
+    pub (crate) static NVMF_PGS: RefCell<Vec<PollGroup>> = const { RefCell::new(Vec::new()) };
 }
 
 impl Nvmf {

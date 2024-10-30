@@ -55,7 +55,7 @@ pub(super) struct NexusIoSubsystem<'n> {
     pause_cnt: AtomicU32,
 }
 
-impl<'n> Debug for NexusIoSubsystem<'n> {
+impl Debug for NexusIoSubsystem<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,

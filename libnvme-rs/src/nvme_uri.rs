@@ -2,7 +2,7 @@ use std::{convert::TryFrom, io, time::Duration};
 
 use url::{ParseError, Url};
 
-use mio08::{Events, Interest, Poll, Token};
+use mio::{Events, Interest, Poll, Token};
 
 use crate::{
     error::NvmeError,

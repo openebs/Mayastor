@@ -67,7 +67,7 @@ impl MayastorGrpcServer {
         rpc_addr: String,
         api_versions: Vec<ApiVersion>,
     ) -> Result<(), ()> {
-        let mut rcv_chan = Self::get_or_init().rcv_chan.clone();
+        let mut rcv_chan = Box::pin(Self::get_or_init().rcv_chan.clone());
 
         let address = Cow::from(rpc_addr);
 

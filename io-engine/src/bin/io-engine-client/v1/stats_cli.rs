@@ -318,9 +318,9 @@ async fn reset(mut ctx: Context) -> crate::Result<()> {
 }
 
 fn adjust_bytes(bytes: u64) -> String {
-    let byte = Byte::from_bytes(bytes as u128);
-    let adjusted_byte = byte.get_appropriate_unit(true);
-    adjusted_byte.to_string()
+    let byte = Byte::from_u64(bytes);
+    let adjusted_byte = byte.get_appropriate_unit(byte_unit::UnitType::Binary);
+    format!("{adjusted_byte:.2}")
 }
 
 fn ticks_to_time(tick: u64, tick_rate: u64) -> u64 {

@@ -323,7 +323,7 @@ async fn test_replica_handle_snapshot() {
     check_replica_snapshot(
         &snapshot_params_clone,
         snapshots
-            .get(0)
+            .first()
             .expect("Snapshot is not created on remote replica"),
     );
 }
@@ -490,7 +490,7 @@ async fn test_nexus_snapshot() {
     check_replica_snapshot(
         &snapshot_params,
         snapshots
-            .get(0)
+            .first()
             .expect("Snapshot is not created on remote replica"),
     );
 }
@@ -579,7 +579,7 @@ async fn test_duplicated_snapshot_uuid_name() {
     check_replica_snapshot(
         &snapshot_params_clone,
         snapshots
-            .get(0)
+            .first()
             .expect("Snapshot is not created on remote replica"),
     );
 }
@@ -820,7 +820,7 @@ async fn test_snapshot_ancestor_usage() {
         2,
         "Invalid number of snapshots reported for test volume"
     );
-    let snap1 = snapshots.get(0).expect("Can't get the first sbapshot");
+    let snap1 = snapshots.first().expect("Can't get the first sbapshot");
     let snap2 = snapshots.get(1).expect("Can't get the second snaoshot");
 
     let (oldest, newest) = if snap1.snapshot_name.eq(SNAP1_NAME) {

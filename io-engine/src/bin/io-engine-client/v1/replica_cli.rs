@@ -214,7 +214,7 @@ async fn replica_create(
         pooluuid,
         thin,
         share,
-        size: size.get_bytes() as u64,
+        size: size.as_u64(),
         allowed_hosts,
     };
 
@@ -338,11 +338,11 @@ async fn replica_list(
                 .map(|r| {
                     let usage = r.usage.as_ref().unwrap();
                     let proto = replica_protocol_to_str(r.share);
-                    let size = ctx.units(Byte::from_bytes(r.size.into()));
-                    let capacity = ctx
-                        .units(Byte::from_bytes(usage.capacity_bytes.into()));
-                    let allocated = ctx
-                        .units(Byte::from_bytes(usage.allocated_bytes.into()));
+                    let size = ctx.units(Byte::from_u64(r.size));
+                    let capacity =
+                        ctx.units(Byte::from_u64(usage.capacity_bytes));
+                    let allocated =
+                        ctx.units(Byte::from_u64(usage.allocated_bytes));
                     vec![
                         r.poolname.clone(),
                         r.name.clone(),
@@ -485,7 +485,7 @@ async fn replica_resize(
         .replica
         .resize_replica(v1_rpc::replica::ResizeReplicaRequest {
             uuid: uuid.clone(),
-            requested_size: requested_size.get_bytes() as u64,
+            requested_size: requested_size.as_u64(),
         })
         .await
         .context(GrpcStatus)?;
@@ -534,10 +534,9 @@ async fn replica_stat(
                 .iter()
                 .map(|replica| {
                     let stats = replica.stats.as_ref().unwrap();
-                    let read =
-                        ctx.units(Byte::from_bytes(stats.bytes_read.into()));
+                    let read = ctx.units(Byte::from_u64(stats.bytes_read));
                     let written =
-                        ctx.units(Byte::from_bytes(stats.bytes_written.into()));
+                        ctx.units(Byte::from_u64(stats.bytes_written));
                     vec![
                         replica.pool.clone(),
                         replica.uuid.clone(),

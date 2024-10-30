@@ -243,14 +243,10 @@ impl RebuildDescriptor {
 
             // Read from an unallocated block occured, no need to copy it.
             Err(CoreError::ReadFailed {
-                status, ..
-            }) if matches!(
-                status,
-                IoCompletionStatus::NvmeError(NvmeStatus::UNWRITTEN_BLOCK)
-            ) =>
-            {
-                Ok(false)
-            }
+                status:
+                    IoCompletionStatus::NvmeError(NvmeStatus::UNWRITTEN_BLOCK),
+                ..
+            }) => Ok(false),
 
             // Read error.
             Err(err) => Err(RebuildError::ReadIoFailed {

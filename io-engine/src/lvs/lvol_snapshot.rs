@@ -106,6 +106,8 @@ pub trait LvolSnapshotOps {
 
     /// create replica snapshot inner function to call spdk snapshot create
     /// function.
+    /// # Safety
+    /// TODO
     unsafe fn create_snapshot_inner(
         &self,
         snap_param: &SnapshotParams,
@@ -131,6 +133,8 @@ pub trait LvolSnapshotOps {
     ) -> Result<(), Self::Error>;
 
     /// Create clone inner function to call spdk clone function.
+    /// # Safety
+    /// TODO
     unsafe fn create_clone_inner(
         &self,
         clone_param: &CloneParams,
@@ -634,7 +638,7 @@ impl LvolSnapshotOps for Lvol {
                 Ok(lvol_ptr)
             } else {
                 assert!(errno < 0);
-                let e = Errno::from_i32(-errno);
+                let e = Errno::from_raw(-errno);
                 error!("Create snapshot failed with errno {errno}: {e}");
                 Err(e)
             };
@@ -766,7 +770,7 @@ impl LvolSnapshotOps for Lvol {
                 Ok(lvol_ptr)
             } else {
                 assert!(errno < 0);
-                let e = Errno::from_i32(-errno);
+                let e = Errno::from_raw(-errno);
                 error!("Snapshot Clone failed with errno {errno}: {e}");
                 Err(e)
             };

@@ -28,7 +28,7 @@ pub struct NexusChannel<'n> {
     is_io_chan: bool,
 }
 
-impl<'n> Debug for NexusChannel<'n> {
+impl Debug for NexusChannel<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -374,12 +374,9 @@ impl<'n> NexusChannel<'n> {
         child_device: &str,
         reason: FaultReason,
     ) -> Option<IOLogChannel> {
-        let Some(io_log) =
+        let io_log =
             self.nexus_mut()
-                .retire_child_device(child_device, reason, true)
-        else {
-            return None;
-        };
+                .retire_child_device(child_device, reason, true)?;
         self.reconnect_io_logs();
         Some(io_log)
     }

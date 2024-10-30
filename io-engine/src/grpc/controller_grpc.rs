@@ -13,7 +13,7 @@ pub struct NvmeControllerInfo {
     pub blk_size: u32,
 }
 
-impl<'a> NvmeController<'a> {
+impl NvmeController<'_> {
     fn to_info(&self) -> NvmeControllerInfo {
         let (size, blk_size) = self
             .namespace()

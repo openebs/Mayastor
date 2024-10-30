@@ -3,7 +3,7 @@ use std::{collections::HashMap, fmt::Display, sync::Arc};
 use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-pub use channel::{NvmeControllerIoChannel, NvmeIoChannel, NvmeIoChannelInner};
+pub use channel::{NvmeIoChannel, NvmeIoChannelInner};
 pub use controller::NvmeController;
 use controller_inner::SpdkNvmeController;
 pub use controller_state::NvmeControllerState;
@@ -11,7 +11,7 @@ pub use device::{lookup_by_name, open_by_name, NvmeBlockDevice};
 pub use handle::{nvme_io_ctx_pool_init, NvmeDeviceHandle};
 pub use namespace::NvmeNamespace;
 use poll_group::PollGroup;
-pub use qpair::{QPair, QPairState};
+pub use qpair::QPair;
 pub use snapshot::{NvmeSnapshotMessage, NvmeSnapshotMessageV1};
 pub(crate) use uri::NvmfDeviceTemplate;
 
@@ -109,7 +109,7 @@ impl<'a> NVMeCtlrList<'a> {
     }
 }
 
-impl<'a> Default for NVMeCtlrList<'a> {
+impl Default for NVMeCtlrList<'_> {
     fn default() -> Self {
         Self {
             entries: RwLock::new(

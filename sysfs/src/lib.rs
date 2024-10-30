@@ -1,10 +1,10 @@
-///! Utility functions for reading and modifying the state of sysfs
-/// objects.
-use std::path::Path;
+//! Utility functions for reading and modifying the state of sysfs
+//! objects.
 use std::{
     collections::HashMap,
     fs,
     io::{BufRead, BufReader, Error, ErrorKind, Result},
+    path::Path,
     str::FromStr,
     string,
 };

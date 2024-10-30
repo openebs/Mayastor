@@ -29,9 +29,6 @@ use tonic::{Request, Response, Status};
 
 use io_engine_api::v1::nexus::*;
 
-#[derive(Debug)]
-struct UnixStream(tokio::net::UnixStream);
-
 use crate::bdev::{dev::device_name, nexus::NexusPtpl, PtplFileOps};
 use ::function_name::named;
 use events_api::event::EventAction;
@@ -301,11 +298,10 @@ pub fn nexus_lookup<'n>(
 
 /// Destruction of the nexus. Returns NotFound error for invalid uuid.
 pub async fn nexus_destroy(uuid: &str) -> Result<(), nexus::Error> {
-    let n = nexus_lookup(uuid).map_err(|error| {
+    let n = nexus_lookup(uuid).inspect_err(|_| {
         if let Ok(uuid) = uuid::Uuid::parse_str(uuid) {
             NexusPtpl::new(uuid).destroy().ok();
         }
-        error
     })?;
     n.destroy().await
 }
@@ -330,7 +326,6 @@ impl<'n> nexus::Nexus<'n> {
     ///
     /// We cannot use From trait because it is not value to value conversion.
     /// All we have is a reference to nexus.
-
     pub async fn into_grpc(&self) -> Nexus {
         let mut ana_state = NvmeAnaState::NvmeAnaInvalidState;
 

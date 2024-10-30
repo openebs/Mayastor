@@ -37,9 +37,6 @@ use io_engine_api::v1::{
 use std::{convert::TryFrom, fmt::Debug, ops::Deref, panic::AssertUnwindSafe};
 use tonic::{Request, Status};
 
-#[derive(Debug)]
-struct UnixStream(tokio::net::UnixStream);
-
 impl From<DestroyPoolRequest> for FindPoolArgs {
     fn from(value: DestroyPoolRequest) -> Self {
         Self::name_uuid(value.name, &value.uuid)

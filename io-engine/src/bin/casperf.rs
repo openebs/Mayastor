@@ -87,8 +87,8 @@ unsafe impl Send for Job {}
 
 thread_local! {
     #[allow(clippy::vec_box)]
-    static JOBLIST: RefCell<Vec<Box<Job>>> = RefCell::new(Vec::new());
-    static PERF_TICK: RefCell<Option<NonNull<spdk_poller>>> = RefCell::new(None);
+    static JOBLIST: RefCell<Vec<Box<Job>>> = const { RefCell::new(Vec::new()) };
+    static PERF_TICK: RefCell<Option<NonNull<spdk_poller>>> = const { RefCell::new(None) };
 }
 
 impl Job {
@@ -380,7 +380,7 @@ fn main() {
 
     let io_size = match matches.get_one::<String>("io-size") {
         Some(io_size) => {
-            byte_unit::Byte::from_str(io_size).unwrap().get_bytes() as u64
+            byte_unit::Byte::parse_str(io_size, true).unwrap().as_u64()
         }
         None => IO_SIZE,
     };

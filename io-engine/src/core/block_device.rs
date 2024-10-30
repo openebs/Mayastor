@@ -518,7 +518,7 @@ fn block_device_io_completion(
 /// TODO
 pub trait LbaRangeController {}
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone, strum_macros::Display)]
 pub enum DeviceTimeoutAction {
     /// Abort I/O operation that times out.
     Abort,
@@ -528,18 +528,6 @@ pub enum DeviceTimeoutAction {
     Ignore,
     /// Remove the device from the configuration
     HotRemove,
-}
-
-impl ToString for DeviceTimeoutAction {
-    fn to_string(&self) -> String {
-        match *self {
-            Self::Abort => "Abort",
-            Self::Reset => "Reset",
-            Self::Ignore => "Ignore",
-            Self::HotRemove => "HotRemove",
-        }
-        .to_string()
-    }
 }
 
 /// TODO

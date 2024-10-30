@@ -46,7 +46,9 @@ use crate::core::CoreError;
 use super::{nvme_bdev_running_config, SpdkNvmeController};
 
 /// I/O QPair state.
-#[derive(Debug, Serialize, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(
+    Debug, Serialize, Clone, Copy, PartialEq, PartialOrd, strum_macros::Display,
+)]
 pub enum QPairState {
     /// QPair is not connected.
     Disconnected,
@@ -57,19 +59,6 @@ pub enum QPairState {
     Connected,
     /// QPair is dropped.
     Dropped,
-}
-
-impl ToString for QPairState {
-    fn to_string(&self) -> String {
-        match self {
-            QPairState::Disconnected => "Disconnected",
-            #[cfg(feature = "spdk-async-qpair-connect")]
-            QPairState::Connecting => "Connecting",
-            QPairState::Connected => "Connected",
-            QPairState::Dropped => "Dropped",
-        }
-        .to_string()
-    }
 }
 
 /// I/O QPair.
@@ -376,7 +365,7 @@ impl Drop for Connection<'_> {
 }
 
 #[cfg(feature = "spdk-async-qpair-connect")]
-impl<'a> Connection<'a> {
+impl Connection<'_> {
     /// Creats a new async qpair connection, and returns a receiver to await the
     /// completion.
     fn create(inner: Rc<RefCell<Inner>>) -> Result<ResultReceiver, CoreError> {
@@ -470,7 +459,7 @@ impl<'a> Connection<'a> {
             1 => Ok(true),
             // Error occurred during polling.
             e => {
-                let e = Errno::from_i32(e.abs());
+                let e = Errno::from_raw(e.abs());
                 error!(?self, "I/O qpair async connection polling error: {e}");
                 Err(e)
             }

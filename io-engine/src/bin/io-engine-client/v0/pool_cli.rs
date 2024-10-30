@@ -159,8 +159,8 @@ async fn list(mut ctx: Context, _matches: &ArgMatches) -> crate::Result<()> {
             let table = pools
                 .iter()
                 .map(|p| {
-                    let cap = Byte::from_bytes(p.capacity.into());
-                    let used = Byte::from_bytes(p.used.into());
+                    let cap = Byte::from_u64(p.capacity);
+                    let used = Byte::from_u64(p.used);
                     let state = pool_state_to_str(p.state);
                     vec![
                         p.name.clone(),

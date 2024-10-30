@@ -132,7 +132,7 @@ impl CreateDestroy for Aio {
 
         if errno != 0 {
             let err = BdevError::CreateBdevFailed {
-                source: Errno::from_i32(errno.abs()),
+                source: Errno::from_raw(errno.abs()),
                 name: self.get_name(),
             };
 
@@ -206,7 +206,7 @@ impl Aio {
 
         if errno != 0 {
             let err = BdevError::ResizeBdevFailed {
-                source: Errno::from_i32(errno.abs()),
+                source: Errno::from_raw(errno.abs()),
                 name: self.name.clone(),
             };
 

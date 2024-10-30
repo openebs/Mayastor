@@ -322,7 +322,7 @@ impl BlockDeviceHandle for SpdkBlockDeviceHandle {
 
         if rc < 0 {
             Err(CoreError::ReadDispatch {
-                source: Errno::from_i32(-rc),
+                source: Errno::from_raw(-rc),
                 offset: offset_blocks,
                 len: num_blocks,
             })
@@ -378,7 +378,7 @@ impl BlockDeviceHandle for SpdkBlockDeviceHandle {
 
         if rc < 0 {
             Err(CoreError::WriteDispatch {
-                source: Errno::from_i32(-rc),
+                source: Errno::from_raw(-rc),
                 offset: offset_blocks,
                 len: num_blocks,
             })
@@ -424,7 +424,7 @@ impl BlockDeviceHandle for SpdkBlockDeviceHandle {
 
         if rc < 0 {
             Err(CoreError::CompareDispatch {
-                source: Errno::from_i32(-rc),
+                source: Errno::from_raw(-rc),
                 offset: offset_blocks,
                 len: num_blocks,
             })

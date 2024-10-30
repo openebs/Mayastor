@@ -26,7 +26,7 @@ struct NullIoPollerData<'a> {
 
 // Required because `NullIoPollerData.iovs` contains `BdevIo`, which
 // contains NonNull, which is not Send.
-unsafe impl<'a> Send for NullIoPollerData<'a> {}
+unsafe impl Send for NullIoPollerData<'_> {}
 
 /// Per-core channel data.
 struct NullIoChannelData<'a> {
@@ -121,7 +121,7 @@ impl<'a> BdevOps for NullIoDevice<'a> {
 }
 
 /// TODO
-impl<'a> NullIoDevice<'a> {
+impl NullIoDevice<'_> {
     /// TODO
     #[allow(dead_code)]
     fn create(name: &str) {

@@ -22,37 +22,46 @@ pub enum ClientError {
     #[snafu(display("gRPC status: {}", source))]
     GrpcStatus {
         source: tonic::Status,
-        backtrace: Backtrace,
+        backtrace: Option<Backtrace>,
     },
     #[snafu(display("gRPC status: {}", source))]
     GrpcParseStatus {
         source: ParseError,
-        backtrace: Backtrace,
+        backtrace: Option<Backtrace>,
     },
     #[snafu(display("Context building error: {}", source))]
     ContextCreate {
         source: context::Error,
-        backtrace: Backtrace,
+        backtrace: Option<Backtrace>,
     },
     #[snafu(display("Missing value for {}", field))]
     MissingValue { field: String },
 }
 
-type Result<T, E = ClientError> = std::result::Result<T, E>;
-
 pub(crate) fn parse_size(src: &str) -> Result<Byte, String> {
-    Byte::from_str(src).map_err(|_| src.to_string())
+    Byte::parse_str(src, true).map_err(|_| src.to_string())
 }
 
+type Result<T, E = ClientError> = std::result::Result<T, E>;
+
 #[tokio::main(worker_threads = 2)]
-async fn main() -> crate::Result<()> {
+async fn main() {
     env_logger::init();
-    match std::env::var("API_VERSION").unwrap_or_default().as_str() {
+    let result = match std::env::var("API_VERSION").unwrap_or_default().as_str()
+    {
         "v0" => v0::main_().await,
         "v1" => v1::main_().await,
         "" => v1::main_().await,
         version => {
             panic!("Invalid Api version set: {}", version)
         }
+    };
+    if let Err(error) = result {
+        eprintln!("{}", error);
+        use snafu::ErrorCompat;
+        if let Some(bt) = ErrorCompat::backtrace(&error) {
+            eprintln!("{:#?}", bt);
+        }
+        std::process::exit(1);
     }
 }

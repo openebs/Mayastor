@@ -1,4 +1,4 @@
-///! Helpers related to nexus grpc methods.
+//! Helpers related to nexus grpc methods.
 use io_engine_api::v0 as rpc;
 use rpc::{ChildState, ChildStateReason};
 use std::{convert::From, pin::Pin};

@@ -116,7 +116,7 @@ where
                     32601 => RpcCode::MethodNotFound,
                     32602 => RpcCode::InvalidParams,
                     32603 => RpcCode::InternalError,
-                    value => match Errno::from_i32(value) {
+                    value => match Errno::from_raw(value) {
                         Errno::ENOENT => RpcCode::NotFound,
                         Errno::EEXIST => RpcCode::AlreadyExists,
                         _ => {

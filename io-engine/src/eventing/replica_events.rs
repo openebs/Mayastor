@@ -49,7 +49,7 @@ pub(crate) fn state_change_event_meta(
 }
 
 /// Replica state change event.
-impl<'n> EventWithMeta for NexusChild<'n> {
+impl EventWithMeta for NexusChild<'_> {
     fn event(
         &self,
         event_action: EventAction,

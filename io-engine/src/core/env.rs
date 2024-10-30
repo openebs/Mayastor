@@ -13,7 +13,7 @@ use std::{
     time::Duration,
 };
 
-use byte_unit::{Byte, ByteUnit};
+use byte_unit::{Byte, Unit};
 use clap::Parser;
 use events_api::event::EventAction;
 use futures::{channel::oneshot, future};
@@ -87,11 +87,11 @@ fn parse_mb(src: &str) -> Result<i32, String> {
 
     let has_unit = src.trim_end().chars().any(|c| c.is_alphabetic());
 
-    if let Ok(val) = Byte::from_str(src) {
+    if let Ok(val) = Byte::parse_str(src, true) {
         let value = if has_unit {
-            val.get_adjusted_unit(ByteUnit::MiB).get_value() as i32
+            val.get_adjusted_unit(Unit::MiB).get_value() as i32
         } else {
-            val.get_bytes() as i32
+            val.as_u64() as i32
         };
         Ok(value)
     } else {
@@ -288,7 +288,7 @@ fn delay_compat(s: &str) -> Result<bool, String> {
     match s {
         "1" | "true" => Ok(true),
         "" | "0" | "false" => Ok(false),
-        _else => Err(format!("Must be one of: 1,true,0,false")),
+        _else => Err("Must be one of: 1,true,0,false".to_string()),
     }
 }
 
@@ -852,7 +852,7 @@ impl MayastorEnvironment {
                     None => Self::detect_pod_ip(),
                 }
             })
-            .map(|s| s.clone())
+            .cloned()
     }
 
     /// Check if RDMA needs to be enabled for Mayastor nvmf target.

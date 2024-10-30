@@ -153,7 +153,7 @@ impl<T: BdevOps> BdevHandle<T> {
 
         if errno != 0 {
             return Err(CoreError::WriteDispatch {
-                source: Errno::from_i32(errno.abs()),
+                source: Errno::from_raw(errno.abs()),
                 offset,
                 len: buffer.len(),
             });
@@ -190,7 +190,7 @@ impl<T: BdevOps> BdevHandle<T> {
 
         if errno != 0 {
             return Err(CoreError::ReadDispatch {
-                source: Errno::from_i32(errno.abs()),
+                source: Errno::from_raw(errno.abs()),
                 offset,
                 len: buffer.len(),
             });
@@ -225,7 +225,7 @@ impl<T: BdevOps> BdevHandle<T> {
 
         if errno != 0 {
             return Err(CoreError::ResetDispatch {
-                source: Errno::from_i32(errno.abs()),
+                source: Errno::from_raw(errno.abs()),
             });
         }
 
@@ -255,7 +255,7 @@ impl<T: BdevOps> BdevHandle<T> {
 
         if errno != 0 {
             return Err(CoreError::WriteZeroesDispatch {
-                source: Errno::from_i32(errno.abs()),
+                source: Errno::from_raw(errno.abs()),
                 offset,
                 len,
             });
@@ -338,7 +338,7 @@ impl<T: BdevOps> BdevHandle<T> {
 
         if errno != 0 {
             return Err(CoreError::NvmeAdminDispatch {
-                source: Errno::from_i32(errno.abs()),
+                source: Errno::from_raw(errno.abs()),
                 opcode: (*nvme_cmd).opc(),
             });
         }
