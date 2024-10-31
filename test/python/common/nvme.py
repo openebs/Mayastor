@@ -68,6 +68,7 @@ def nvme_connect(uri, delay=10, tmo=600):
     command = (
         f"nix-sudo nvme connect -t tcp -s {port} -a {host} -n {nqn} -c {delay} -l {tmo}"
     )
+    print(command)
     subprocess.run(command, check=True, shell=True, capture_output=False)
     time.sleep(1)
     command = "nix-sudo nvme list -v -o json"
@@ -95,6 +96,43 @@ def nvme_id_ctrl(device):
     )
 
     return id_ctrl
+
+
+def match_host_port(addr, host, port):
+    traddr = f"traddr={host}"
+    trsvcid = f"trsvcid={port}"
+
+    return traddr in addr and trsvcid in addr
+
+
+def nvme_find_ctrl(uri):
+    """Find controller from the device uri."""
+    u = urlparse(uri)
+    port = u.port
+    host = u.hostname
+    nqn = u.path[1:]
+
+    command = "nix-sudo nvme list -v -o json"
+    discover = json.loads(
+        subprocess.run(
+            command, shell=True, check=True, text=True, capture_output=True
+        ).stdout
+    )
+
+    # Finds correct Device
+    devs = list(filter(lambda d: nqn in d.get("SubsystemNQN"), discover.get("Devices")))
+    assert len(devs) is 1, "Multiple devices with the same subnqn"
+
+    # Find correct Controller
+    ctrls = list(
+        filter(
+            lambda d: match_host_port(d.get("Address"), host, port),
+            devs[0].get("Controllers"),
+        )
+    )
+    assert len(ctrls) is 1, "Multiple controllers with the same address"
+
+    return ctrls[0].get("Controller")
 
 
 def nvme_resv_report(device):
@@ -129,18 +167,21 @@ def nvme_disconnect(uri):
     nqn = u.path[1:]
 
     command = "nix-sudo nvme disconnect -n {0}".format(nqn)
+    print(command)
     subprocess.run(command, check=True, shell=True, capture_output=True)
 
 
 def nvme_disconnect_controller(name):
     """Disconnect the given NVMe controller on this host."""
     command = "nix-sudo nvme disconnect -d {0}".format(name)
+    print(command)
     subprocess.run(command, check=True, shell=True, capture_output=True)
 
 
 def nvme_disconnect_all():
     """Disconnect from all connected nvme subsystems"""
     command = "nix-sudo nvme disconnect-all"
+    print(command)
     subprocess.run(command, check=True, shell=True, capture_output=True)
 
 
