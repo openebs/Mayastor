@@ -46,7 +46,7 @@ def _(connect_nexus_1):
     """a filesystem is placed on top of the connected device."""
     device = connect_nexus_1
     print(device)
-    run_cmd(f"sudo mkfs.xfs -f {device}")
+    run_cmd(f"nix-sudo mkfs.xfs -i nrext64=0 -f {device}")
 
 
 @given(
