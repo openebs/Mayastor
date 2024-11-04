@@ -344,9 +344,7 @@ impl IReplicaFactory for ReplLvsFactory {
         &self,
         bdev: crate::core::UntypedBdev,
     ) -> Option<Box<dyn ReplicaOps>> {
-        let Some(lvol) = Lvol::ok_from(bdev) else {
-            return None;
-        };
+        let lvol = Lvol::ok_from(bdev)?;
         if lvol.is_snapshot() {
             return None;
         }

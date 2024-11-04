@@ -195,7 +195,7 @@ pub fn find_all_nics() -> Vec<Interface> {
             .or_insert_with_key(|k| Interface::new(k));
         if let Some(sock) = addr.address {
             if let Some(sock) = sock.as_sockaddr_in() {
-                nic.inet.addr = Some(sock.ip().into());
+                nic.inet.addr = Some(sock.ip());
             }
             if let Some(sock) = sock.as_sockaddr_in6() {
                 nic.inet6.addr = Some(sock.ip());
@@ -207,7 +207,7 @@ pub fn find_all_nics() -> Vec<Interface> {
 
         if let Some(sock) = addr.netmask {
             if let Some(sock) = sock.as_sockaddr_in() {
-                nic.inet.netmask = Some(sock.ip().into());
+                nic.inet.netmask = Some(sock.ip());
             }
             if let Some(sock) = sock.as_sockaddr_in6() {
                 nic.inet6.netmask = Some(sock.ip());

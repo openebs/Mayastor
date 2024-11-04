@@ -199,9 +199,15 @@ impl Context {
 
     pub(crate) fn units(&self, n: Byte) -> String {
         match self.units {
-            'i' => n.get_appropriate_unit(true).to_string(),
-            'd' => n.get_appropriate_unit(false).to_string(),
-            _ => n.get_bytes().to_string(),
+            'i' | 'd' => format!(
+                "{:.2}",
+                n.get_appropriate_unit(if self.units == 'i' {
+                    byte_unit::UnitType::Binary
+                } else {
+                    byte_unit::UnitType::Decimal
+                })
+            ),
+            _ => n.as_u64().to_string(),
         }
     }
 

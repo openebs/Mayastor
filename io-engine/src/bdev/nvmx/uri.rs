@@ -209,7 +209,7 @@ pub(crate) struct NvmeControllerContext<'probe> {
     attached: bool,
 }
 
-impl<'probe> NvmeControllerContext<'probe> {
+impl NvmeControllerContext<'_> {
     pub fn new(template: &NvmfDeviceTemplate) -> NvmeControllerContext {
         let trid = controller::transport::Builder::new()
             .with_subnqn(&template.subnqn)

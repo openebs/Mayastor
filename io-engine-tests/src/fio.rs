@@ -333,7 +333,7 @@ impl Fio {
                     if err == 0 {
                         j.result = FioJobResult::Ok;
                     } else {
-                        j.result = FioJobResult::Error(Errno::from_i32(err));
+                        j.result = FioJobResult::Error(Errno::from_raw(err));
                     }
                 }
             });

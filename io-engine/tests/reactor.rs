@@ -44,10 +44,14 @@ fn reactor_start_stop() {
                 assert_eq!(core, unsafe { libc::sched_getcpu() as u32 });
 
                 // global mutable state is unsafe
-                unsafe { WAIT_FOR.fetch_sub(1, Ordering::SeqCst) };
+                #[allow(static_mut_refs)]
+                unsafe {
+                    WAIT_FOR.fetch_sub(1, Ordering::SeqCst)
+                };
             });
         });
 
+        #[allow(static_mut_refs)]
         while unsafe { WAIT_FOR.load(Ordering::SeqCst) } != 0 {
             Reactors::master().poll_once();
         }

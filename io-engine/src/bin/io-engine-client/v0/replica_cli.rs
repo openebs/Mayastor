@@ -198,7 +198,7 @@ async fn replica_create(
         pool,
         thin,
         share,
-        size: size.get_bytes() as u64,
+        size: size.as_u64(),
         allowed_hosts,
     };
     let response = ctx.client.create_replica(rq).await.context(GrpcStatus)?;
@@ -266,7 +266,7 @@ async fn replica_create_v2(
         pool,
         thin,
         share,
-        size: size.get_bytes() as u64,
+        size: size.as_u64(),
         allowed_hosts,
     };
     let response =
@@ -358,7 +358,7 @@ async fn replica_list(
                 .iter()
                 .map(|r| {
                     let proto = replica_protocol_to_str(r.share);
-                    let size = ctx.units(Byte::from_bytes(r.size.into()));
+                    let size = ctx.units(Byte::from_u64(r.size));
                     vec![
                         r.pool.clone(),
                         r.uuid.clone(),
@@ -410,7 +410,7 @@ async fn replica_list2(
                 .iter()
                 .map(|r| {
                     let proto = replica_protocol_to_str(r.share);
-                    let size = ctx.units(Byte::from_bytes(r.size.into()));
+                    let size = ctx.units(Byte::from_u64(r.size));
                     vec![
                         r.pool.clone(),
                         r.name.clone(),
@@ -506,10 +506,9 @@ async fn replica_stat(
                 .iter()
                 .map(|replica| {
                     let stats = replica.stats.as_ref().unwrap();
-                    let read =
-                        ctx.units(Byte::from_bytes(stats.bytes_read.into()));
+                    let read = ctx.units(Byte::from_u64(stats.bytes_read));
                     let written =
-                        ctx.units(Byte::from_bytes(stats.bytes_written.into()));
+                        ctx.units(Byte::from_u64(stats.bytes_written));
                     vec![
                         replica.pool.clone(),
                         replica.uuid.clone(),

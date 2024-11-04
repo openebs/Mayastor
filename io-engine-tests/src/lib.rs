@@ -228,8 +228,8 @@ pub fn fscheck(device: &str) {
 
 pub fn mkfs(path: &str, fstype: &str) -> bool {
     let (fs, args) = match fstype {
-        "xfs" => ("mkfs.xfs", ["-f", path]),
-        "ext4" => ("mkfs.ext4", ["-F", path]),
+        "xfs" => ("mkfs.xfs", vec!["-i", "nrext64=0", "-f", path]),
+        "ext4" => ("mkfs.ext4", vec!["-F", path]),
         _ => {
             panic!("unsupported fstype");
         }

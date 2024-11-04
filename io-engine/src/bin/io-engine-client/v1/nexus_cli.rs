@@ -272,7 +272,7 @@ fn nexus_create_parse(
         })?
         .cloned()
         .collect::<Vec<String>>();
-    let size = size.get_bytes() as u64;
+    let size = size.as_u64();
     Ok((uuid, size, children))
 }
 
@@ -464,7 +464,7 @@ async fn nexus_list(
             let table = nexus
                 .iter()
                 .map(|n| {
-                    let size = ctx.units(Byte::from_bytes(n.size.into()));
+                    let size = ctx.units(Byte::from_u64(n.size));
                     let state = nexus_state_to_str(n.state);
                     let mut row = vec![
                         n.name.clone(),
@@ -601,7 +601,7 @@ async fn nexus_resize(
         .nexus
         .resize_nexus(v1::nexus::ResizeNexusRequest {
             uuid: uuid.clone(),
-            requested_size: requested_size.get_bytes() as u64,
+            requested_size: requested_size.as_u64(),
         })
         .await
         .context(GrpcStatus)?;

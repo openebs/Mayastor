@@ -98,15 +98,15 @@ struct LockStats {
 
 /// Lock manager which is used for protecting access to sensitive resources.
 /// The following hierarchical levels of resource protection are supported:
-/// 1) Global - lock manager exposes one single lock which can be used as
-/// the global lock to control access at the topmost level.
+/// 1) Global - lock manager exposes one single lock which can be used as the
+///    global lock to control access at the topmost level.
 /// 2) Subsystem - Subsystems group resources of the same type (examples are:
-/// "nexus", "pool", etc). Every subsystem exposes the global, per-subsystem
-/// lock to control resource access at the subsystem level.
-/// Example: create/delete nexus operations must be globally serialized,
-/// which can be achieved by locking the "nexus" subsystem.
-/// 3) Resource - control access at per-object level.
-/// Example: control access to a nexus instance whilst modifying nexus state.
+///    "nexus", "pool", etc). Every subsystem exposes the global, per-subsystem
+///    lock to control resource access at the subsystem level. Example:
+///    create/delete nexus operations must be globally serialized, which can be
+///    achieved by locking the "nexus" subsystem.
+/// 3) Resource - control access at per-object level. Example: control access to
+///    a nexus instance whilst modifying nexus state.
 pub struct ResourceLockManager {
     /// All known resource subsystems with locks.
     subsystems: Vec<ResourceSubsystem>,

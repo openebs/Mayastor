@@ -79,7 +79,7 @@ pub(super) struct NioCtx<'n> {
     serial: u64,
 }
 
-impl<'n> Debug for NioCtx<'n> {
+impl Debug for NioCtx<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         #[cfg(feature = "nexus-io-tracing")]
         let serial = format!("#{s} {self:p} ", s = self.serial);
@@ -112,7 +112,7 @@ impl<'n> Debug for NioCtx<'n> {
 #[derive(Clone)]
 pub(super) struct NexusBio<'n>(BdevIo<Nexus<'n>>);
 
-impl<'n> Debug for NexusBio<'n> {
+impl Debug for NexusBio<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,

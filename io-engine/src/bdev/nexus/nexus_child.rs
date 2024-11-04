@@ -814,14 +814,13 @@ impl<'c> NexusChild<'c> {
         let preempt_key = params.preempt_key.map(|k| k.get());
         self.resv_acquire(&*hdl, resv_key, preempt_key, params.resv_type)
             .await
-            .map_err(|error| {
+            .inspect_err(|error| {
                 warn!(
                     "{:?}: failed to acquire reservation ({:?}): {}",
                     self,
                     params.resv_type,
                     error.verbose()
                 );
-                error
             })
     }
 

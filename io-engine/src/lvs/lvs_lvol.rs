@@ -158,12 +158,13 @@ impl Debug for Lvol {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Lvol '{}/{}/{}' [{}{}]",
+            "Lvol '{}/{}/{}' [{}{:.2}]",
             self.pool_name(),
             self.pool_uuid(),
             self.name(),
             if self.is_thin() { "thin " } else { "" },
-            Byte::from(self.size()).get_appropriate_unit(true)
+            Byte::from(self.size())
+                .get_appropriate_unit(byte_unit::UnitType::Binary)
         )
     }
 }
@@ -615,6 +616,8 @@ pub trait LvsLvol: LogicalVolume + Share {
     ) -> Option<*mut spdk_blob>;
 
     /// Get the next spdk_blob from the parent blob.
+    /// # Safety
+    /// TODO
     unsafe fn bs_iter_parent(
         &self,
         curr_blob: *mut spdk_blob,
@@ -855,9 +858,7 @@ impl LvsLvol for Lvol {
             }
             PropName::AllowedHosts => {
                 match unsafe { CStr::from_ptr(value).to_str() } {
-                    Ok(list) if list.is_empty() => {
-                        Ok(PropValue::AllowedHosts(vec![]))
-                    }
+                    Ok("") => Ok(PropValue::AllowedHosts(vec![])),
                     Ok(list) => Ok(PropValue::AllowedHosts(
                         list.split(',')
                             .map(|s| s.to_string())
@@ -1057,6 +1058,8 @@ impl LvsLvol for Lvol {
     }
 
     /// Get the parent spdk_blob from the current blob.
+    /// # Safety
+    /// TODO
     unsafe fn bs_iter_parent(
         &self,
         curr_blob: *mut spdk_blob,

@@ -458,7 +458,7 @@ fn io_type_to_err(
     num_blocks: u64,
 ) -> CoreError {
     assert!(errno > 0, "Errno code must be provided");
-    let source = Errno::from_i32(errno);
+    let source = Errno::from_raw(errno);
 
     match op {
         IoType::Read => CoreError::ReadDispatch {
@@ -623,7 +623,7 @@ impl BlockDeviceHandle for NvmeDeviceHandle {
         if rc != 0 && rc != -libc::ENOMEM {
             error!("{} read failed: rc = {}", self.name, rc);
             return Err(CoreError::ReadDispatch {
-                source: Errno::from_i32(-rc),
+                source: Errno::from_raw(-rc),
                 offset,
                 len: buffer.len(),
             });
@@ -705,7 +705,7 @@ impl BlockDeviceHandle for NvmeDeviceHandle {
         if rc != 0 && rc != -libc::ENOMEM {
             error!("{} write failed: rc = {}", self.name, rc);
             return Err(CoreError::WriteDispatch {
-                source: Errno::from_i32(-rc),
+                source: Errno::from_raw(-rc),
                 offset,
                 len: buffer.len(),
             });
@@ -812,7 +812,7 @@ impl BlockDeviceHandle for NvmeDeviceHandle {
 
         if rc < 0 {
             Err(CoreError::ReadDispatch {
-                source: Errno::from_i32(-rc),
+                source: Errno::from_raw(-rc),
                 offset: offset_blocks,
                 len: num_blocks,
             })
@@ -898,7 +898,7 @@ impl BlockDeviceHandle for NvmeDeviceHandle {
 
         if rc < 0 {
             Err(CoreError::WriteDispatch {
-                source: Errno::from_i32(-rc),
+                source: Errno::from_raw(-rc),
                 offset: offset_blocks,
                 len: num_blocks,
             })
@@ -979,7 +979,7 @@ impl BlockDeviceHandle for NvmeDeviceHandle {
 
         if rc < 0 {
             Err(CoreError::CompareDispatch {
-                source: Errno::from_i32(-rc),
+                source: Errno::from_raw(-rc),
                 offset: offset_blocks,
                 len: num_blocks,
             })
@@ -1058,7 +1058,7 @@ impl BlockDeviceHandle for NvmeDeviceHandle {
 
         if rc < 0 {
             Err(CoreError::FlushDispatch {
-                source: Errno::from_i32(-rc),
+                source: Errno::from_raw(-rc),
             })
         } else {
             Ok(())
@@ -1073,8 +1073,7 @@ impl BlockDeviceHandle for NvmeDeviceHandle {
         cb_arg: IoCompletionCallbackArg,
     ) -> Result<(), CoreError> {
         let num_ranges =
-            (num_blocks + SPDK_NVME_DATASET_MANAGEMENT_RANGE_MAX_BLOCKS - 1)
-                / SPDK_NVME_DATASET_MANAGEMENT_RANGE_MAX_BLOCKS;
+            num_blocks.div_ceil(SPDK_NVME_DATASET_MANAGEMENT_RANGE_MAX_BLOCKS);
 
         if num_ranges > SPDK_NVME_DATASET_MANAGEMENT_MAX_RANGES {
             return Err(CoreError::UnmapDispatch {
@@ -1161,7 +1160,7 @@ impl BlockDeviceHandle for NvmeDeviceHandle {
 
         if rc < 0 {
             Err(CoreError::UnmapDispatch {
-                source: Errno::from_i32(-rc),
+                source: Errno::from_raw(-rc),
                 offset: offset_blocks,
                 len: num_blocks,
             })
@@ -1222,7 +1221,7 @@ impl BlockDeviceHandle for NvmeDeviceHandle {
 
         if rc < 0 {
             Err(CoreError::WriteZeroesDispatch {
-                source: Errno::from_i32(-rc),
+                source: Errno::from_raw(-rc),
                 offset: offset_blocks,
                 len: num_blocks,
             })
@@ -1300,7 +1299,7 @@ impl BlockDeviceHandle for NvmeDeviceHandle {
             )
         }
         .to_result(|e| CoreError::NvmeAdminDispatch {
-            source: Errno::from_i32(e),
+            source: Errno::from_raw(e),
             opcode: cmd.opc(),
         })?;
 
@@ -1317,7 +1316,7 @@ impl BlockDeviceHandle for NvmeDeviceHandle {
                 error!("nvme_admin() failed, errno={status}");
                 Err(CoreError::NvmeAdminFailed {
                     opcode: (*cmd).opc(),
-                    source: Errno::from_i32(status as i32),
+                    source: Errno::from_raw(status as i32),
                 })
             }
         }
@@ -1490,7 +1489,7 @@ impl BlockDeviceHandle for NvmeDeviceHandle {
             )
         }
         .to_result(|e| CoreError::NvmeIoPassthruDispatch {
-            source: Errno::from_i32(e),
+            source: Errno::from_raw(e),
             opcode: nvme_cmd.opc(),
         })?;
 

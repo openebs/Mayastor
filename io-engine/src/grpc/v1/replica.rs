@@ -462,7 +462,7 @@ impl ReplicaRpc for ReplicaService {
                     .iter()
                     .map(PoolBackend::try_from)
                     .collect::<Result<Vec<_>, _>>()?;
-                let query = args.query.clone();
+                let query = args.query;
                 let fargs = ListReplicaArgs::from(args);
 
                 for factory in

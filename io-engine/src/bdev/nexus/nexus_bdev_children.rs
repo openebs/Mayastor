@@ -766,7 +766,7 @@ impl<'n> Nexus<'n> {
     }
 }
 
-impl<'n> DeviceEventListener for Nexus<'n> {
+impl DeviceEventListener for Nexus<'_> {
     fn handle_device_event(&self, evt: DeviceEventType, dev_name: &str) {
         match evt {
             DeviceEventType::DeviceRemoved

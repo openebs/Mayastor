@@ -212,6 +212,7 @@ impl Registration {
             "Registering '{:?}' with grpc server {} ...",
             self.config.node, self.config.grpc_endpoint
         );
+        let mut rcv_chan = Box::pin(self.rcv_chan.clone());
         loop {
             match self.register().await {
                 Ok(_) => {
@@ -232,7 +233,7 @@ impl Registration {
             };
             select! {
                 _ = tokio::time::sleep(self.config.hb_interval_sec).fuse() => continue,
-                msg = self.rcv_chan.next().fuse() => {
+                msg = rcv_chan.next().fuse() => {
                     match msg {
                         Some(_) => info!("Messages have not been implemented yet"),
                         _ => {

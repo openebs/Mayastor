@@ -35,7 +35,7 @@ impl<'a> NvmeHostIterator<'a> {
     }
 }
 
-impl<'a> Iterator for NvmeHostIterator<'a> {
+impl Iterator for NvmeHostIterator<'_> {
     type Item = *mut crate::bindings::nvme_host;
 
     fn next(&mut self) -> Option<Self::Item> {

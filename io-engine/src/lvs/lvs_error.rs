@@ -81,7 +81,7 @@ impl BsError {
 
     /// Creates a `BsError` from a raw i32 errno value.
     pub fn from_i32(value: i32) -> Self {
-        let r = Errno::from_i32(value.abs());
+        let r = Errno::from_raw(value.abs());
 
         if value < 0 {
             warn!("Blob store: negative errno passed: {r}");

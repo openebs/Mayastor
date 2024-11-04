@@ -111,7 +111,7 @@ async fn replica_stop_cont() {
     Command::new("../target/debug/initiator")
         .args([&nxuri, "read", "/tmp/tmpread"])
         .stdout(Stdio::piped())
-        .spawn()
+        .status()
         .expect("should send read from initiator");
 
     println!("IO submitted unfreezing container...");

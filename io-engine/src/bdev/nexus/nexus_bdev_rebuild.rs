@@ -41,7 +41,7 @@ pub(crate) struct RebuildPauseGuard<'a> {
     _a: PhantomData<&'a ()>,
 }
 
-impl<'a> Drop for RebuildPauseGuard<'a> {
+impl Drop for RebuildPauseGuard<'_> {
     fn drop(&mut self) {
         assert!(self.restarted);
     }

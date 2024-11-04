@@ -1,11 +1,6 @@
 use bit_vec::{BitBlock, BitVec};
 use std::fmt::{Debug, Formatter};
 
-// Returns ceil of an integer division.
-fn div_ceil(a: u64, b: u64) -> u64 {
-    (a + b - 1) / b
-}
-
 /// Map of rebuild segments of a block device.
 /// It marks every segment as a clean (no need to rebuild, or already
 /// transferred), or dirty (need to transfer from a healthy device).
@@ -40,7 +35,7 @@ impl<B: BitBlock> Debug for SegmentMap<B> {
 impl<B: BitBlock> SegmentMap<B> {
     /// Creates a new segment map with the given parameters.
     pub fn new(num_blocks: u64, block_len: u64, segment_size: u64) -> Self {
-        let num_segments = div_ceil(num_blocks * block_len, segment_size);
+        let num_segments = (num_blocks * block_len).div_ceil(segment_size);
         let mut segments = BitVec::<B>::default();
         segments.grow(num_segments as usize, false);
         Self {

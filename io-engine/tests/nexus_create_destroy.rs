@@ -67,7 +67,7 @@ async fn nexus_create_multiple_then_destroy() {
     let mut hdl = grpc.grpc_handle("ms1").await.unwrap();
 
     let nexuses = create_nexuses(&mut hdl, NEXUS_COUNT).await;
-    for (_, nexus) in nexuses.iter().enumerate() {
+    for nexus in nexuses.iter() {
         hdl.mayastor
             .destroy_nexus(DestroyNexusRequest {
                 uuid: nexus.uuid.clone(),

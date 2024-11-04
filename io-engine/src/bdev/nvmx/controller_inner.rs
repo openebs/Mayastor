@@ -180,7 +180,6 @@ impl TimeoutConfig {
     /// qpair is disconnected or if the controller is failed. Therefore, we
     /// must fail the controller as soon as possible to avoid the need to
     /// reset after the hot removal.
-
     pub(crate) fn hot_remove(&mut self) {
         // cb invoked when the whole process is done.
         fn hot_remove_cb(success: bool, ctx: *mut c_void) {
@@ -335,7 +334,7 @@ impl From<*mut spdk_nvme_ctrlr> for SpdkNvmeController {
 }
 
 // I/O device controller API.
-impl<'a> DeviceIoController for NvmeController<'a> {
+impl DeviceIoController for NvmeController<'_> {
     /// Get current I/O timeout action.
     fn get_timeout_action(&self) -> Result<DeviceTimeoutAction, CoreError> {
         Ok(unsafe { self.timeout_config.as_ref().get_timeout_action() })
@@ -355,7 +354,7 @@ impl<'a> DeviceIoController for NvmeController<'a> {
 }
 
 // I/O timeout handling for NVMe controller.
-impl<'a> NvmeController<'a> {
+impl NvmeController<'_> {
     extern "C" fn command_abort_handler(
         ctx: *mut c_void,
         cpl: *const spdk_nvme_cpl,

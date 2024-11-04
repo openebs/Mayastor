@@ -67,12 +67,12 @@ impl TryFrom<&Url> for Nexus {
             uri.query_pairs().into_owned().collect();
 
         let size: u64 = if let Some(value) = parameters.remove("size") {
-            byte_unit::Byte::from_str(value)
+            byte_unit::Byte::parse_str(&value, true)
                 .map_err(|error| BdevError::InvalidUri {
                     uri: uri.to_string(),
                     message: format!("'size' is invalid: {error}"),
                 })?
-                .get_bytes() as u64
+                .as_u64()
         } else {
             return Err(BdevError::InvalidUri {
                 uri: uri.to_string(),

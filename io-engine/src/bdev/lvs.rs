@@ -85,14 +85,14 @@ impl TryFrom<&Url> for Lvol {
                 message: "'size' is not specified".to_string(),
             })
             .and_then(|size| {
-                byte_unit::Byte::from_str(size).map_err(|error| {
+                byte_unit::Byte::parse_str(&size, true).map_err(|error| {
                     BdevError::InvalidUri {
                         uri: uri.to_string(),
                         message: format!("'size' is invalid: {error}"),
                     }
                 })
             })?
-            .get_bytes() as u64;
+            .as_u64();
 
         let lvs = parameters
             .remove("lvs")

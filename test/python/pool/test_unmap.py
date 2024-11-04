@@ -45,7 +45,7 @@ async def mkfs_on_target(target_vm, mayastors):
     print(await run_cmd_async_at(target_vm, "lsblk -o name,fstype -J"))
 
     for d in remote_devices:
-        await run_cmd_async_at(target_vm, f"sudo mkfs.xfs {d}")
+        await run_cmd_async_at(target_vm, f"sudo mkfs.xfs -i nrext64=0 {d}")
 
     for i in range(0, 15):
         dev = await nvme_remote_disconnect(

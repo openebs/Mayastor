@@ -12,7 +12,7 @@ use io_engine_api::v1 as v1_rpc;
 use snafu::ResultExt;
 use std::{convert::TryInto, str::FromStr};
 use strum::VariantNames;
-use strum_macros::{AsRefStr, EnumString, EnumVariantNames};
+use strum_macros::{AsRefStr, EnumString, VariantNames};
 use tonic::Status;
 
 pub fn subcommands() -> Command {
@@ -96,7 +96,7 @@ pub fn subcommands() -> Command {
         .subcommand(wipe)
 }
 
-#[derive(EnumString, EnumVariantNames, AsRefStr)]
+#[derive(EnumString, VariantNames, AsRefStr)]
 #[strum(serialize_all = "camelCase")]
 enum Resource {
     Replica,
@@ -107,13 +107,13 @@ impl Resource {
     }
 }
 
-#[derive(EnumString, EnumVariantNames)]
+#[derive(EnumString, VariantNames)]
 #[strum(serialize_all = "PascalCase")]
 enum CheckSumAlg {
     Crc32c,
 }
 
-#[derive(EnumString, EnumVariantNames, Clone, Copy)]
+#[derive(EnumString, VariantNames, Clone, Copy)]
 #[strum(serialize_all = "PascalCase")]
 enum WipeMethod {
     None,
@@ -243,7 +243,7 @@ async fn replica_wipe(
                             method,
                         ) as i32,
                 }),
-                chunk_size: chunk_size.get_bytes() as u64,
+                chunk_size: chunk_size.as_u64(),
             }),
         })
         .await
@@ -253,10 +253,8 @@ async fn replica_wipe(
 
     fn bandwidth(response: &v1_rpc::test::WipeReplicaResponse) -> String {
         let unknown = String::new();
-        let Some(Ok(elapsed)) = response
-            .since
-            .clone()
-            .map(TryInto::<std::time::Duration>::try_into)
+        let Some(Ok(elapsed)) =
+            response.since.map(TryInto::<std::time::Duration>::try_into)
         else {
             return unknown;
         };
@@ -265,17 +263,17 @@ async fn replica_wipe(
             return unknown;
         }
 
-        let bandwidth = (response.wiped_bytes as f64 / elapsed_f) as u128;
+        let bandwidth = (response.wiped_bytes as f64 / elapsed_f) as u64;
         format!(
-            "{}/s",
-            byte_unit::Byte::from_bytes(bandwidth).get_appropriate_unit(true)
+            "{:.2}/s",
+            Byte::from_u64(bandwidth)
+                .get_appropriate_unit(byte_unit::UnitType::Binary)
         )
     }
 
     fn checksum(response: &v1_rpc::test::WipeReplicaResponse) -> String {
         response
             .checksum
-            .clone()
             .map(|c| match c {
                 v1_rpc::test::wipe_replica_response::Checksum::Crc32(crc) => {
                     format!("{crc:#x}")
@@ -346,9 +344,9 @@ async fn replica_wipe(
 }
 
 fn adjust_bytes(bytes: u64) -> String {
-    let byte = Byte::from_bytes(bytes as u128);
-    let adjusted_byte = byte.get_appropriate_unit(true);
-    adjusted_byte.to_string()
+    let byte = Byte::from_u64(bytes);
+    let adjusted_byte = byte.get_appropriate_unit(byte_unit::UnitType::Binary);
+    format!("{adjusted_byte:.2}")
 }
 
 async fn injections(

@@ -82,12 +82,14 @@ impl Debug for Lvs {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Lvs '{}' [{}/{}] ({}/{})",
+            "Lvs '{}' [{}/{}] ({:.2}/{:.2})",
             self.name(),
             self.base_bdev().name(),
             self.base_bdev().uuid(),
-            Byte::from(self.available()).get_appropriate_unit(true),
-            Byte::from(self.capacity()).get_appropriate_unit(true)
+            Byte::from(self.available())
+                .get_appropriate_unit(byte_unit::UnitType::Binary),
+            Byte::from(self.capacity())
+                .get_appropriate_unit(byte_unit::UnitType::Binary)
         )
     }
 }
@@ -140,7 +142,7 @@ impl Lvs {
                 .expect("receiver gone");
         } else {
             sender
-                .send(Err(Errno::from_i32(errno.abs())))
+                .send(Err(Errno::from_raw(errno.abs())))
                 .expect("receiver gone");
         }
     }
@@ -394,8 +396,9 @@ impl Lvs {
                     ..
                 } => Ok(parsed.get_name()),
                 BdevError::CreateBdevInvalidParams {
-                    source, ..
-                } if source == Errno::EEXIST => Ok(parsed.get_name()),
+                    source: Errno::EEXIST,
+                    ..
+                } => Ok(parsed.get_name()),
                 _ => {
                     tracing::error!("Failed to create pool bdev: {e:?}");
                     Err(LvsError::InvalidBdev {
@@ -587,8 +590,9 @@ impl Lvs {
                     ..
                 } => Ok(bdev_ops.get_name()),
                 BdevError::CreateBdevInvalidParams {
-                    source, ..
-                } if source == Errno::EEXIST => Ok(bdev_ops.get_name()),
+                    source: Errno::EEXIST,
+                    ..
+                } => Ok(bdev_ops.get_name()),
                 _ => {
                     tracing::error!("Failed to create pool bdev: {e:?}");
                     Err(LvsError::InvalidBdev {
@@ -604,8 +608,9 @@ impl Lvs {
             Ok(pool) => Ok(pool),
             // try to create the pool
             Err(LvsError::Import {
-                source, ..
-            }) if matches!(source, BsError::CannotImportLvs {}) => {
+                source: BsError::CannotImportLvs {},
+                ..
+            }) => {
                 match Self::create_from_args_inner(PoolArgs {
                     disks: vec![bdev_name.clone()],
                     ..args

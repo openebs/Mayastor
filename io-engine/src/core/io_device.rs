@@ -61,6 +61,7 @@ impl IoDevice {
         ctx_getter: impl Fn(*mut spdk_io_channel) -> &'static mut I + 'static,
         caller_ctx: T,
     ) {
+        #[allow(clippy::type_complexity)]
         struct TraverseCtx<N, C: 'static> {
             channel_cb: Box<dyn FnMut(&mut C, &mut N) -> i32 + 'static>,
             done_cb: Box<dyn FnMut(i32, N) + 'static>,

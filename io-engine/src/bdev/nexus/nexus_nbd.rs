@@ -196,12 +196,11 @@ pub async fn start(
         .context(StartNbd {
             dev: device_path.to_owned(),
         })
-        .map(|ok| {
+        .inspect(|_| {
             info!(
                 "Nbd device {} for parent {} started",
                 device_path, bdev_name
             );
-            ok
         })
 }
 

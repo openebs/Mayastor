@@ -124,10 +124,10 @@ impl FinalWipeStats {
         let elapsed = self.end - self.start;
         let elapsed_f = elapsed.as_secs_f64();
         let bandwidth = if elapsed_f.is_normal() {
-            let bandwidth = (stats.total_bytes as f64 / elapsed_f) as u128;
-            byte_unit::Byte::from_bytes(bandwidth)
-                .get_appropriate_unit(true)
-                .to_string()
+            let bandwidth = (stats.total_bytes as f64 / elapsed_f) as u64;
+            let adjusted = byte_unit::Byte::from_u64(bandwidth)
+                .get_appropriate_unit(byte_unit::UnitType::Binary);
+            format!("{adjusted:.2}")
         } else {
             "??".to_string()
         };

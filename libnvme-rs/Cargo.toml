@@ -6,25 +6,25 @@ edition = "2018"
 build = "build.rs"
 license = "Apache-2.0"
 authors = [
-  "Jonathan Teh <jonathan.teh@mayadata.io>",
-  "Jeffry Molanus <jeffry.molanus@gmail.com>",
+    "Jonathan Teh <jonathan.teh@mayadata.io>",
+    "Jeffry Molanus <jeffry.molanus@gmail.com>",
 ]
 
 [build-dependencies]
-bindgen = "0.68.1"
-cc = "1.0.83"
+bindgen = "0.70.1"
+cc = "1.1.31"
 
 [dependencies]
 glob = "0.3.1"
 libc = "0.2"
-snafu = "0.7.5"
-url = "2.4.1"
+snafu = "0.8.5"
+url = "2.5.2"
 
-[dependencies.mio08]
+[dependencies.mio]
 package = "mio"
 features = ["os-ext"]
-version = "0.8"
+version = "1.0"
 
 [dependencies.udev]
 features = ["hwdb", "mio"]
-version = "^0.8.0"
+version = "^0.9.1"

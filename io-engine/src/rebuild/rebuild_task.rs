@@ -144,7 +144,7 @@ impl RebuildTasks {
     }
     /// Await for one task to complete and update the task complete count.
     pub(super) async fn await_one_task(&mut self) -> Option<TaskResult> {
-        self.channel.1.next().await.map(|f| {
+        self.channel.1.next().await.inspect(|f| {
             self.active -= 1;
             if f.error.is_none() {
                 self.segments_done += 1;
@@ -152,7 +152,6 @@ impl RebuildTasks {
                     self.segments_transferred += 1;
                 }
             }
-            f
         })
     }
     /// Schedules the run of a task by its id. It will copy the segment size

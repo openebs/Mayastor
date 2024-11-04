@@ -11,7 +11,7 @@ use io_engine_api::v1 as v1rpc;
 use snafu::ResultExt;
 use std::{convert::TryFrom, str::FromStr};
 use strum::VariantNames;
-use strum_macros::{AsRefStr, EnumString, EnumVariantNames};
+use strum_macros::{AsRefStr, EnumString, VariantNames};
 use tonic::Status;
 
 pub fn subcommands() -> Command {
@@ -232,7 +232,7 @@ async fn create(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
 
     let cluster_size = match matches.get_one::<String>("cluster-size") {
         Some(s) => match parse_size(s) {
-            Ok(s) => Some(s.get_bytes() as u32),
+            Ok(s) => Some(s.as_u64() as u32),
             Err(err) => {
                 return Err(Status::invalid_argument(format!(
                     "Bad size '{err}'"
@@ -290,7 +290,7 @@ async fn create(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     Ok(())
 }
 
-#[derive(EnumString, EnumVariantNames, AsRefStr)]
+#[derive(EnumString, VariantNames, AsRefStr)]
 #[strum(serialize_all = "camelCase")]
 pub(super) enum PoolType {
     Lvs,
@@ -505,15 +505,15 @@ async fn list(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
             let table = pools
                 .iter()
                 .map(|p| {
-                    let cap = Byte::from_bytes(p.capacity.into());
-                    let used = Byte::from_bytes(p.used.into());
+                    let cap = Byte::from_u64(p.capacity);
+                    let used = Byte::from_u64(p.used);
                     let state = pool_state_to_str(p.state);
-                    let cluster = Byte::from_bytes(p.cluster_size.into());
+                    let cluster = Byte::from_u64(p.cluster_size.into());
                     let page_size = p
                         .page_size
-                        .map(|s| ctx.units(Byte::from_bytes(s.into())))
+                        .map(|s| ctx.units(Byte::from_u64(s.into())))
                         .unwrap_or("-".to_string());
-                    let disk_cap = Byte::from_bytes(p.disk_capacity.into());
+                    let disk_cap = Byte::from_u64(p.disk_capacity);
 
                     let (md_page_size, md_pages, md_used_pages, md_usage) =
                         if let Some(t) = p.md_info.as_ref() {

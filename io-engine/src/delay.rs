@@ -8,7 +8,7 @@ use spdk_rs::libspdk::{
 
 thread_local! {
     /// Delay poller pointer for unregistering the poller at the end
-    static DELAY_POLLER: RefCell<Option<*mut spdk_poller>> = RefCell::new(None);
+    static DELAY_POLLER: RefCell<Option<*mut spdk_poller>> = const { RefCell::new(None) };
 }
 
 /// Delay function called from the spdk poller to prevent draining of cpu

@@ -35,7 +35,7 @@ use std::{
 };
 
 use crate::core::MayastorEnvironment;
-use strum_macros::{AsRefStr, EnumString, EnumVariantNames};
+use strum_macros::{AsRefStr, EnumString, VariantNames};
 
 pub trait GetOpts {
     fn get(&self) -> Self;
@@ -85,7 +85,7 @@ impl GetOpts for NexusOpts {
 /// Must be equal to the size of `spdk_nvmf_target_opts.crdt`.
 pub const TARGET_CRDT_LEN: usize = 3;
 
-#[derive(Clone, Default, EnumString, EnumVariantNames, AsRefStr)]
+#[derive(Clone, Default, EnumString, VariantNames, AsRefStr)]
 #[strum(serialize_all = "lowercase")]
 pub enum NvmfTgtTransport {
     Rdma,

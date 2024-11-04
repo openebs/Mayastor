@@ -484,7 +484,7 @@ impl NvmfSubsystem {
 
         unsafe { spdk_nvmf_subsystem_set_sn(ss.as_ptr(), sn.as_ptr()) }
             .to_result(|e| Error::Subsystem {
-                source: Errno::from_i32(e),
+                source: Errno::from_raw(e),
                 nqn: uuid.into(),
                 msg: "failed to set serial".into(),
             })?;
@@ -492,7 +492,7 @@ impl NvmfSubsystem {
         let mn = CString::new(NVME_CONTROLLER_MODEL_ID).unwrap();
         unsafe { spdk_nvmf_subsystem_set_mn(ss.as_ptr(), mn.as_ptr()) }
             .to_result(|e| Error::Subsystem {
-                source: Errno::from_i32(e),
+                source: Errno::from_raw(e),
                 nqn: uuid.into(),
                 msg: "failed to set model number".into(),
             })?;
@@ -704,7 +704,7 @@ impl NvmfSubsystem {
             )
         }
         .to_result(|errno| Error::Subsystem {
-            source: Errno::from_i32(errno),
+            source: Errno::from_raw(errno),
             nqn: self.get_nqn(),
             msg: format!("failed to add allowed host: {host:?}"),
         })
@@ -725,7 +725,7 @@ impl NvmfSubsystem {
             spdk_nvmf_subsystem_remove_host(self.0.as_ptr(), host.as_ptr())
         }
         .to_result(|errno| Error::Subsystem {
-            source: Errno::from_i32(errno),
+            source: Errno::from_raw(errno),
             nqn: self.get_nqn(),
             msg: format!("failed to remove allowed host: {host:?}"),
         })?;
@@ -752,7 +752,7 @@ impl NvmfSubsystem {
 
         r.await.expect("done_cb callback gone").to_result(|error| {
             Error::Subsystem {
-                source: Errno::from_i32(error),
+                source: Errno::from_raw(error),
                 msg: "Failed to disconnect host".to_string(),
                 nqn: host.to_owned(),
             }
@@ -775,7 +775,7 @@ impl NvmfSubsystem {
             spdk_nvmf_subsystem_set_ana_reporting(self.0.as_ptr(), enable)
         }
         .to_result(|e| Error::Subsystem {
-            source: Errno::from_i32(e),
+            source: Errno::from_raw(e),
             nqn: self.get_nqn(),
             msg: format!("failed to set ANA reporting, enable {enable}"),
         })?;
@@ -796,7 +796,7 @@ impl NvmfSubsystem {
             )
         }
         .to_result(|e| Error::Subsystem {
-            source: Errno::from_i32(e),
+            source: Errno::from_raw(e),
             nqn: self.get_nqn(),
             msg: format!("failed to set controller ID range [{cntlid_min}, {cntlid_max}]"),
         })?;
@@ -831,7 +831,7 @@ impl NvmfSubsystem {
 
         r.await.expect("listener callback gone").to_result(|e| {
             Error::Transport {
-                source: Errno::from_i32(e),
+                source: Errno::from_raw(e),
                 msg: "Failed to add listener".to_string(),
             }
         })
@@ -888,7 +888,7 @@ impl NvmfSubsystem {
 
             match rc {
                 0 => r.await.unwrap().to_result(|e| Error::Subsystem {
-                    source: Errno::from_i32(e),
+                    source: Errno::from_raw(e),
                     nqn: self.get_nqn(),
                     msg: format!("{op} failed"),
                 }),
@@ -897,7 +897,7 @@ impl NvmfSubsystem {
                     op: op.to_owned(),
                 }),
                 e => Err(Error::Subsystem {
-                    source: Errno::from_i32(e),
+                    source: Errno::from_raw(e),
                     nqn: self.get_nqn(),
                     msg: format!("failed to initiate {op}"),
                 }),
@@ -1033,7 +1033,7 @@ impl NvmfSubsystem {
             r.await
                 .expect("Cancellation is not supported")
                 .to_result(|e| Error::Subsystem {
-                    source: Errno::from_i32(-e),
+                    source: Errno::from_raw(-e),
                     nqn: self.get_nqn(),
                     msg: "failed to set_ana_state of the subsystem".to_string(),
                 })?;
@@ -1185,7 +1185,7 @@ pub enum NqnTarget<'a> {
     None,
 }
 
-impl<'a> NqnTarget<'a> {
+impl NqnTarget<'_> {
     pub fn lookup(nqn: &str) -> Self {
         let Some(bdev) = UntypedBdev::bdev_first() else {
             return Self::None;

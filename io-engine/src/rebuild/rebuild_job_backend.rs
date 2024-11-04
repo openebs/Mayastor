@@ -211,7 +211,7 @@ impl RebuildJobBackendManager {
             // todo: is there a bug here if we fail above?
             self.start_all_tasks();
 
-            let mut recv = self.info_chan.recv_clone();
+            let mut recv = Box::pin(self.info_chan.recv_clone());
             while self.task_pool().running() {
                 futures::select! {
                     message = recv.next() => if !self.handle_message(message).await {
@@ -227,7 +227,7 @@ impl RebuildJobBackendManager {
     }
 
     /// State Management
-
+    ///
     /// Reconciles the pending state to the current and clear the pending.
     fn reconcile(&mut self) -> RebuildState {
         let (old, new) = {
@@ -292,7 +292,7 @@ impl RebuildJobBackendManager {
     }
 
     /// Generic Rebuild Statistics
-
+    ///
     /// Collects generic statistics from the job.
     pub fn stats(&self) -> RebuildStats {
         let descriptor = self.backend.common_desc();
@@ -348,7 +348,6 @@ impl RebuildJobBackendManager {
     }
 
     /// Rebuild Tasks Management
-
     fn task_sync_fail(&mut self) {
         let active = self.task_pool().active;
         error!(

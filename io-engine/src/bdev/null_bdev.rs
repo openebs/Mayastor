@@ -157,7 +157,7 @@ impl CreateDestroy for Null {
 
         if errno != 0 {
             return Err(BdevError::CreateBdevFailed {
-                source: Errno::from_i32(errno.abs()),
+                source: Errno::from_raw(errno.abs()),
                 name: self.name.clone(),
             });
         }

@@ -144,7 +144,7 @@ impl<'a> MayastorTest<'a> {
     }
 }
 
-impl<'a> Drop for MayastorTest<'a> {
+impl Drop for MayastorTest<'_> {
     fn drop(&mut self) {
         self.reactor.send_future(async { mayastor_env_stop(0) });
         // wait for mayastor to stop

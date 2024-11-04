@@ -201,7 +201,7 @@ fn new_filesystem(
             None
         } else {
             // get fstype from the first mount
-            mountinfo.get(0).map(|m| m.fstype.clone())
+            mountinfo.first().map(|m| m.fstype.clone())
         }
     }
 

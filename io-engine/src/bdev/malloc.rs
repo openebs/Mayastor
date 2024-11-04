@@ -196,7 +196,7 @@ impl CreateDestroy for Malloc {
 
         if errno != 0 {
             let err = BdevError::CreateBdevFailed {
-                source: Errno::from_i32(errno.abs()),
+                source: Errno::from_raw(errno.abs()),
                 name: self.name.clone(),
             };
 
@@ -272,7 +272,7 @@ impl Malloc {
 
         if errno != 0 {
             let err = BdevError::ResizeBdevFailed {
-                source: Errno::from_i32(errno.abs()),
+                source: Errno::from_raw(errno.abs()),
                 name: self.name.clone(),
             };
 

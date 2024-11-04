@@ -206,7 +206,7 @@ where
 }
 
 // Display trace context (span) information
-impl<'a, S, N> std::fmt::Display for CustomContext<'a, S, N>
+impl<S, N> std::fmt::Display for CustomContext<'_, S, N>
 where
     S: tracing_core::subscriber::Subscriber + for<'s> LookupSpan<'s>,
     N: for<'w> FormatFields<'w> + 'static,
@@ -366,7 +366,7 @@ pub struct StringVisitor<'a> {
     string: &'a mut String,
 }
 
-impl<'a> Visit for StringVisitor<'a> {
+impl Visit for StringVisitor<'_> {
     fn record_debug(&mut self, field: &Field, value: &dyn fmt::Debug) {
         write!(self.string, "{} = {:?}; ", field.name(), value).unwrap();
     }

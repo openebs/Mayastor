@@ -16,7 +16,7 @@ use crate::core::{NvmfShareProps, Protocol, PtplProps, Share, UpdateProps};
 /// protocol specifics and for bdevs the need for different endpoints
 /// is not implemented yet as the need for it has not arrived yet.
 #[async_trait(? Send)]
-impl<'n> Share for Nexus<'n> {
+impl Share for Nexus<'_> {
     type Error = Error;
     type Output = String;
 

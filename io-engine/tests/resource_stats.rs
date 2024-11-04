@@ -180,14 +180,14 @@ async fn test_resource_stats() {
     let repl_0_stat: &Vec<ReplicaIoStats> = &repl_0_stat.get_ref().stats;
     let repl_1_stat: &Vec<ReplicaIoStats> = &repl_1_stat.get_ref().stats;
     let repl_nex_stat: &Vec<ReplicaIoStats> = &repl_nex_stat.get_ref().stats;
-    let nexus_stat = nexus_stat.get(0).unwrap();
-    let pool_0_stat = pool_0_stat.get(0).unwrap();
-    let pool_1_stat = pool_1_stat.get(0).unwrap();
-    let repl_0_stat = repl_0_stat.get(0).unwrap();
+    let nexus_stat = nexus_stat.first().unwrap();
+    let pool_0_stat = pool_0_stat.first().unwrap();
+    let pool_1_stat = pool_1_stat.first().unwrap();
+    let repl_0_stat = repl_0_stat.first().unwrap();
     let repl_0_stat = repl_0_stat.stats.clone().unwrap();
-    let repl_1_stat = repl_1_stat.get(0).unwrap();
+    let repl_1_stat = repl_1_stat.first().unwrap();
     let repl_1_stat = repl_1_stat.stats.clone().unwrap();
-    let repl_nex_stat = repl_nex_stat.get(0).unwrap();
+    let repl_nex_stat = repl_nex_stat.first().unwrap();
     let repl_nex_stat = repl_nex_stat.stats.clone().unwrap();
 
     // Validate num_read/write_ops reset across resource.
@@ -298,15 +298,15 @@ async fn test_resource_stats() {
     let repl_0_stat: &Vec<ReplicaIoStats> = &repl_0_stat.get_ref().stats;
     let repl_1_stat: &Vec<ReplicaIoStats> = &repl_1_stat.get_ref().stats;
     let repl_nex_stat: &Vec<ReplicaIoStats> = &repl_nex_stat.get_ref().stats;
-    let nexus_stat = nexus_stat.get(0).unwrap();
-    let pool_0_stat = pool_0_stat.get(0).unwrap();
-    let pool_1_stat = pool_1_stat.get(0).unwrap();
-    let pool_nex_stat = pool_nex_stat.get(0).unwrap();
-    let repl_0_stat = repl_0_stat.get(0).unwrap();
+    let nexus_stat = nexus_stat.first().unwrap();
+    let pool_0_stat = pool_0_stat.first().unwrap();
+    let pool_1_stat = pool_1_stat.first().unwrap();
+    let pool_nex_stat = pool_nex_stat.first().unwrap();
+    let repl_0_stat = repl_0_stat.first().unwrap();
     let repl_0_stat = repl_0_stat.stats.clone().unwrap();
-    let repl_1_stat = repl_1_stat.get(0).unwrap();
+    let repl_1_stat = repl_1_stat.first().unwrap();
     let repl_1_stat = repl_1_stat.stats.clone().unwrap();
-    let repl_nex_stat = repl_nex_stat.get(0).unwrap();
+    let repl_nex_stat = repl_nex_stat.first().unwrap();
     let repl_nex_stat = repl_nex_stat.stats.clone().unwrap();
 
     // Validate non zero num_write_ops.

@@ -21,7 +21,7 @@ pub(crate) trait HostTargetMeta {
     fn host_target_meta(&self, meta: EventMeta) -> EventMeta;
 }
 
-impl<'n> HostTargetMeta for Nexus<'n> {
+impl HostTargetMeta for Nexus<'_> {
     fn host_target_meta(&self, mut meta: EventMeta) -> EventMeta {
         if let Some(source) = meta.source {
             let event_source =

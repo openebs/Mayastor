@@ -1054,7 +1054,7 @@ async fn test_snapshot_clone() {
         assert_eq!(1, snapshot_list.len(), "Snapshot Count not matched!!");
         let snapshot_lvol = UntypedBdev::lookup_by_uuid_str(
             snapshot_list
-                .get(0)
+                .first()
                 .unwrap()
                 .snapshot_params()
                 .snapshot_uuid()
@@ -1227,7 +1227,7 @@ async fn test_snapshot_attr() {
         assert_eq!(1, snapshot_list.len(), "Snapshot Count not matched!!");
         let snapshot_lvol = UntypedBdev::lookup_by_uuid_str(
             snapshot_list
-                .get(0)
+                .first()
                 .unwrap()
                 .snapshot_params()
                 .snapshot_uuid()
@@ -1282,7 +1282,7 @@ async fn test_snapshot_attr() {
 
         let imported_snapshot_lvol = UntypedBdev::lookup_by_uuid_str(
             snapshot_list
-                .get(0)
+                .first()
                 .unwrap()
                 .snapshot_params()
                 .snapshot_uuid()
@@ -1352,8 +1352,7 @@ async fn test_delete_snapshot_with_valid_clone() {
         assert_eq!(1, snapshot_list.len(), "Snapshot Count not matched!!");
 
         let snapshot_lvol = UntypedBdev::lookup_by_uuid_str(
-            snapshot_list
-                .get(0)
+            snapshot_list.first()
                 .unwrap()
                 .snapshot_params()
                 .snapshot_uuid()
@@ -1396,8 +1395,7 @@ async fn test_delete_snapshot_with_valid_clone() {
         snapshot_lvol.destroy_snapshot().await.ok();
         let snapshot_list = Lvol::list_all_lvol_snapshots(None);
         let snapshot_lvol = UntypedBdev::lookup_by_uuid_str(
-            snapshot_list
-                .get(0)
+            snapshot_list.first()
                 .unwrap()
                 .snapshot_params()
                 .snapshot_uuid()
@@ -1477,8 +1475,7 @@ async fn test_delete_snapshot_with_valid_clone_fail_1() {
         assert_eq!(1, snapshot_list.len(), "Snapshot Count not matched!!");
 
         let snapshot_lvol = UntypedBdev::lookup_by_uuid_str(
-            snapshot_list
-                .get(0)
+            snapshot_list.first()
                 .unwrap()
                 .snapshot_params()
                 .snapshot_uuid()
@@ -1506,8 +1503,7 @@ async fn test_delete_snapshot_with_valid_clone_fail_1() {
         snapshot_lvol.destroy_snapshot().await.ok();
         let snapshot_list = Lvol::list_all_lvol_snapshots(None);
         let snapshot_lvol = UntypedBdev::lookup_by_uuid_str(
-            snapshot_list
-                .get(0)
+            snapshot_list.first()
                 .unwrap()
                 .snapshot_params()
                 .snapshot_uuid()
@@ -1666,7 +1662,7 @@ async fn test_snapshot_parent_usage_post_snapshot_destroy() {
 
         let snapshot_lvol = UntypedBdev::lookup_by_uuid_str(
             snapshot_list
-                .get(0)
+                .first()
                 .unwrap()
                 .snapshot_params()
                 .snapshot_uuid()
@@ -1752,7 +1748,7 @@ async fn test_clone_snapshot_usage_post_clone_destroy() {
 
         let snapshot_lvol = UntypedBdev::lookup_by_uuid_str(
             snapshot_list
-                .get(0)
+                .first()
                 .unwrap()
                 .snapshot_params()
                 .snapshot_uuid()

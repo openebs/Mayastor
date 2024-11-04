@@ -89,7 +89,7 @@ struct ShutdownCtx {
 static ADMINQ_CORE_SELECTOR: OnceCell<Mutex<RoundRobinCoreSelector>> =
     OnceCell::new();
 
-impl<'a> NvmeControllerInner<'a> {
+impl NvmeControllerInner<'_> {
     fn new(
         ctrlr: SpdkNvmeController,
         name: String,
@@ -138,8 +138,8 @@ pub struct NvmeControllerInner<'a> {
     io_device: Arc<IoDevice>,
 }
 
-unsafe impl<'a> Send for NvmeControllerInner<'a> {}
-unsafe impl<'a> Sync for NvmeControllerInner<'a> {}
+unsafe impl Send for NvmeControllerInner<'_> {}
+unsafe impl Sync for NvmeControllerInner<'_> {}
 
 /// NVME controller implementation.
 /// TODO
@@ -156,7 +156,7 @@ pub struct NvmeController<'a> {
     pub(crate) timeout_config: NonNull<TimeoutConfig>,
 }
 
-impl<'a> fmt::Debug for NvmeController<'a> {
+impl fmt::Debug for NvmeController<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("NvmeController")
             .field("name", &self.name)
@@ -166,10 +166,10 @@ impl<'a> fmt::Debug for NvmeController<'a> {
     }
 }
 
-unsafe impl<'a> Send for NvmeController<'a> {}
-unsafe impl<'a> Sync for NvmeController<'a> {}
+unsafe impl Send for NvmeController<'_> {}
+unsafe impl Sync for NvmeController<'_> {}
 
-impl<'a> NvmeController<'a> {
+impl NvmeController<'_> {
     /// Creates a new NVMe controller with the given name.
     pub fn new(name: &str, prchk_flags: u32) -> Option<Self> {
         let l = NvmeController {
@@ -222,7 +222,7 @@ impl<'a> NvmeController<'a> {
             .as_ref()
             .expect("(BUG) no inner NVMe controller defined yet");
 
-        if let Some(ns) = inner.namespaces.get(0) {
+        if let Some(ns) = inner.namespaces.first() {
             Some(ns.clone())
         } else {
             debug!("no namespaces associated with the current controller");
@@ -731,7 +731,7 @@ impl<'a> NvmeController<'a> {
     }
 }
 
-impl<'a> Drop for NvmeController<'a> {
+impl Drop for NvmeController<'_> {
     fn drop(&mut self) {
         let curr_state = self.get_state();
         debug!("{} dropping controller (state={:?})", self.name, curr_state);
@@ -847,7 +847,7 @@ pub extern "C" fn nvme_poll_adminq(ctx: *mut c_void) -> i32 {
                 "process adminq: {}: ctrl failed: {}, error: {}",
                 context.name,
                 context.is_failed(),
-                Errno::from_i32(result.abs())
+                Errno::from_raw(result.abs())
             );
             info!("dispatching nexus fault and retire: {}", context.name);
             let dev_name = context.name.as_str();
@@ -1034,7 +1034,6 @@ pub(crate) mod options {
     /// structure that holds the default NVMe controller options. This is
     /// different from ['NvmeBdevOpts'] as it exposes more control over
     /// variables.
-
     pub struct NvmeControllerOpts(spdk_nvme_ctrlr_opts);
     impl NvmeControllerOpts {
         pub fn as_ptr(&self) -> *const spdk_nvme_ctrlr_opts {
@@ -1283,7 +1282,6 @@ pub(crate) mod transport {
             self
         }
         /// svcid (port) to connect to
-
         pub fn with_svcid(mut self, svcid: &str) -> Self {
             self.svcid = svcid.to_string();
             self

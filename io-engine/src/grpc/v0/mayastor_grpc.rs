@@ -68,9 +68,6 @@ use std::{
     time::Duration,
 };
 use tonic::{Request, Response, Status};
-/// TODO
-#[derive(Debug)]
-struct UnixStream(tokio::net::UnixStream);
 
 use crate::core::{UpdateProps, VerboseError};
 use ::function_name::named;
@@ -438,7 +435,7 @@ impl From<blk_device::BlockDevice> for BlockDevice {
 
 impl From<blk_device::FileSystem> for block_device::Filesystem {
     fn from(fs: blk_device::FileSystem) -> Self {
-        let mountpoint = fs.mountpoints.get(0).cloned().unwrap_or_default();
+        let mountpoint = fs.mountpoints.first().cloned().unwrap_or_default();
         Self {
             fstype: fs.fstype,
             label: fs.label,

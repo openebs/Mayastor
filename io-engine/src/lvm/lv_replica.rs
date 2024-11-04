@@ -647,10 +647,11 @@ impl LogicalVolume {
 /// 1. It uses Pin which is not required for our lvm
 /// 2. Some of the functions part of the Share trait are blocking but we're
 ///    currently using a trampoline between tokio and spdk reactors which makes
-/// this difficult.
-///    todo: would reactor block on help here?
-///     we could go the other way and use trampoline from spdk to tokio, but
-///     then also hit the problem?
+///    this difficult.
+///
+/// todo: would reactor block on help here? we could go the
+///    other way and use trampoline from spdk to tokio, but then also hit the
+///    problem?
 impl LogicalVolume {
     pub(crate) fn bdev(uri: &str) -> Result<UntypedBdev, Error> {
         UntypedBdev::get_by_name(uri).map_err(|_| Error::BdevMissing {})
