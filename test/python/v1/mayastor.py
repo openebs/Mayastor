@@ -17,8 +17,8 @@ def check_size(prev, current, delta):
 def containers(docker_project, function_scoped_container_getter):
     "Fixture to get handles to mayastor containers."
     containers = {}
-    for name in docker_project.service_names:
-        containers[name] = function_scoped_container_getter.get(name)
+    for container in docker_project.compose.ps():
+        containers[container.name] = container
     yield containers
 
 
@@ -28,7 +28,7 @@ def mayastors(docker_project, containers):
     handles = {}
     for name, container in containers.items():
         handles[name] = MayastorHandle(
-            container.get("NetworkSettings.Networks.mayastor_net.IPAddress")
+            container.network_settings.networks.get("mayastor_net").ip_address
         )
     yield handles
 
@@ -46,8 +46,8 @@ def create_temp_files(containers):
 def container_mod(docker_project, module_scoped_container_getter):
     "Fixture to get handles to mayastor containers."
     containers = {}
-    for name in docker_project.service_names:
-        containers[name] = module_scoped_container_getter.get(name)
+    for container in docker_project.compose.ps():
+        containers[container.name] = container
     yield containers
 
 
@@ -57,6 +57,6 @@ def mayastor_mod(docker_project, container_mod):
     handles = {}
     for name, container in container_mod.items():
         handles[name] = MayastorHandle(
-            container.get("NetworkSettings.Networks.mayastor_net.IPAddress")
+            container.network_settings.networks.get("mayastor_net").ip_address
         )
     yield handles

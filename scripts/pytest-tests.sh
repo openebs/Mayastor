@@ -106,7 +106,7 @@ while [ "$#" -gt 0 ]; do
       real_1="$(realpath $1 2>/dev/null)"
       real_2="$(realpath $SRCDIR/test/python/$1 2>/dev/null)"
       set -e
-      param="$1"
+      param=""
       if is_test "$real_1"; then
         param="$real_1"
       elif is_test "$real_2"; then
@@ -114,7 +114,9 @@ while [ "$#" -gt 0 ]; do
       else
         TEST_ARGS="${TEST_ARGS:-}$1"
       fi
-      TEST_LIST="$TEST_LIST \n$param"
+      if [ "$param" != "" ]; then
+        TEST_LIST="${TEST_LIST:-}\n$param"
+      fi
       ;;
   esac
   shift
