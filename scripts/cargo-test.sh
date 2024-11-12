@@ -19,6 +19,17 @@ trap cleanup_handler INT QUIT TERM HUP EXIT
 export PATH=$PATH:${HOME}/.cargo/bin
 set -euxo pipefail
 
+# Warn if rdma-rxe and nvme-rdme kernel modules are not
+# available. Absence of rdma-rxe can be ignored on hardware
+# RDMA setups.
+if ! lsmod | grep -q rdma_rxe; then
+  echo "Warning: rdma_rxe kernel module is not loaded. Please load it for rdma tests to work."
+fi
+
+if ! lsmod | grep -q nvme_rdma; then
+  echo "Warning: nvme_rdma kernel module is not loaded. Please load it for rdma tests to work."
+fi
+
 ( cd jsonrpc && cargo test )
 # test dependencies
 cargo build --bins --features=io-engine-testing

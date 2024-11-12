@@ -21,6 +21,9 @@ done
 # Delete the directory too
 nix-sudo rmdir --ignore-fail-on-non-empty "/tmp/io-engine-tests" 2>/dev/null
 
+# If there was a soft rdma device created and left undeleted by nvmf rdma test,
+# delete that now. Not removing rdma-rxe kernel module.
+nix-sudo rdma link delete io-engine-rxe0 2>/dev/null
 
 for c in $(docker ps -a --filter "label=io.composer.test.name" --format '{{.ID}}') ; do
   docker kill "$c"
