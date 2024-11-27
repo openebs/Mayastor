@@ -29,33 +29,16 @@ use futures::channel::oneshot;
 use snafu::ResultExt;
 
 use super::{
-    nexus_err,
-    nexus_lookup,
-    nexus_lookup_mut,
-    ChildState,
-    ChildSyncState,
-    Error,
-    FaultReason,
-    IOLogChannel,
-    IoMode,
-    Nexus,
-    NexusChild,
-    NexusOperation,
-    NexusPauseState,
-    NexusState,
-    NexusStatus,
-    PersistOp,
+    nexus_err, nexus_lookup, nexus_lookup_mut, ChildState, ChildSyncState, Error, FaultReason,
+    IOLogChannel, IoMode, Nexus, NexusChild, NexusOperation, NexusPauseState, NexusState,
+    NexusStatus, PersistOp,
 };
 
 use crate::{
     bdev::{dev::device_name, device_create, device_destroy, device_lookup},
     bdev_api::BdevError,
     core::{
-        device_cmd_queue,
-        DeviceCommand,
-        DeviceEventListener,
-        DeviceEventType,
-        Reactors,
+        device_cmd_queue, DeviceCommand, DeviceEventListener, DeviceEventType, Reactors,
         VerboseError,
     },
     eventing::{EventMetaGen, EventWithMeta},
@@ -64,19 +47,12 @@ use crate::{
 
 use events_api::event::EventAction;
 
-use spdk_rs::{
-    ffihelper::cb_arg,
-    ChannelTraverseStatus,
-    IoDeviceChannelTraverse,
-};
+use spdk_rs::{ffihelper::cb_arg, ChannelTraverseStatus, IoDeviceChannelTraverse};
 
 impl<'n> Nexus<'n> {
     /// Create and register a single child to nexus, only allowed during the
     /// nexus init phase
-    pub async fn new_child(
-        mut self: Pin<&mut Self>,
-        uri: &str,
-    ) -> Result<(), BdevError> {
+    pub async fn new_child(mut self: Pin<&mut Self>, uri: &str) -> Result<(), BdevError> {
         assert_eq!(*self.state.lock(), NexusState::Init);
 
         info!("{:?}: adding child: '{}'...", self, uri);
@@ -84,11 +60,7 @@ impl<'n> Nexus<'n> {
         let nexus_name = self.nexus_name().to_owned();
         let device_name = device_create(uri).await?;
 
-        let c = NexusChild::new(
-            uri.to_string(),
-            nexus_name,
-            device_lookup(&device_name),
-        );
+        let c = NexusChild::new(uri.to_string(), nexus_name, device_lookup(&device_name));
 
         info!("{:?}: added to nexus", c);
 
@@ -121,16 +93,9 @@ impl<'n> Nexus<'n> {
             match self.start_rebuild(uri).await {
                 Err(e) => {
                     // todo: CAS-253 retry starting the rebuild again when ready
-                    error!(
-                        "Child added but rebuild failed to start: {}",
-                        e.verbose()
-                    );
+                    error!("Child added but rebuild failed to start: {}", e.verbose());
                     match self.child(uri) {
-                        Ok(child) => {
-                            child
-                                .close_faulted(FaultReason::RebuildFailed)
-                                .await
-                        }
+                        Ok(child) => child.close_faulted(FaultReason::RebuildFailed).await,
                         Err(e) => error!(
                             "Failed to find newly added child {}, error: {}",
                             uri,
@@ -151,16 +116,12 @@ impl<'n> Nexus<'n> {
 
     /// The child may require a rebuild first, so the nexus will
     /// transition to degraded mode when the addition has been successful.
-    async fn add_child_only(
-        mut self: Pin<&mut Self>,
-        uri: &str,
-    ) -> Result<NexusStatus, Error> {
+    async fn add_child_only(mut self: Pin<&mut Self>, uri: &str) -> Result<NexusStatus, Error> {
         self.check_nexus_operation(NexusOperation::ReplicaAdd)?;
 
-        let name =
-            device_create(uri).await.context(nexus_err::CreateChild {
-                name: self.name.clone(),
-            })?;
+        let name = device_create(uri).await.context(nexus_err::CreateChild {
+            name: self.name.clone(),
+        })?;
 
         assert!(self.num_blocks() > 0);
         assert!(self.block_len() > 0);
@@ -235,10 +196,7 @@ impl<'n> Nexus<'n> {
                 }
 
                 match self
-                    .persist(PersistOp::AddChild {
-                        child_uri,
-                        healthy,
-                    })
+                    .persist(PersistOp::AddChild { child_uri, healthy })
                     .await
                 {
                     Ok(_) => Ok(self.status()),
@@ -284,10 +242,7 @@ impl<'n> Nexus<'n> {
 
     /// Destroy child with given uri.
     /// If the child does not exist the method returns success.
-    pub async fn remove_child(
-        mut self: Pin<&mut Self>,
-        uri: &str,
-    ) -> Result<(), Error> {
+    pub async fn remove_child(mut self: Pin<&mut Self>, uri: &str) -> Result<(), Error> {
         info!("{:?}: remove child request: '{}'", self, uri);
 
         self.check_nexus_operation(NexusOperation::ReplicaRemove)?;
@@ -302,9 +257,7 @@ impl<'n> Nexus<'n> {
         debug!("{self:?}: remove child '{uri}': pausing...");
         let paused = self.pause_rebuild_jobs(uri).await;
         if let Err(e) = self.as_mut().pause().await {
-            error!(
-                "{self:?}: remove child '{uri}': failed to pause subsystem: {e}"
-            );
+            error!("{self:?}: remove child '{uri}': failed to pause subsystem: {e}");
             paused.resume().await;
             return Ok(());
         }
@@ -402,10 +355,7 @@ impl<'n> Nexus<'n> {
     }
 
     /// Checks that the given child can be removed or offlined.
-    fn check_child_remove_operation(
-        &self,
-        child_uri: &str,
-    ) -> Result<(), Error> {
+    fn check_child_remove_operation(&self, child_uri: &str) -> Result<(), Error> {
         let _ = self.child(child_uri)?;
 
         if self.child_count() == 1 {
@@ -505,9 +455,7 @@ impl<'n> Nexus<'n> {
     /// Tries to open all the child devices.
     /// Opens children, determines and validates block size and block count
     /// of underlying devices.
-    pub(crate) async fn try_open_children(
-        mut self: Pin<&mut Self>,
-    ) -> Result<(), Error> {
+    pub(crate) async fn try_open_children(mut self: Pin<&mut Self>) -> Result<(), Error> {
         info!("{:?}: opening nexus children...", self);
 
         let name = self.name.clone();
@@ -555,9 +503,7 @@ impl<'n> Nexus<'n> {
         // if any one fails, close all children.
         let mut write_ex_err: Result<(), Error> = Ok(());
         for child in self.children_iter() {
-            if let Err(error) =
-                child.reservation_acquire(&self.nvme_params).await
-            {
+            if let Err(error) = child.reservation_acquire(&self.nvme_params).await {
                 write_ex_err = Err(Error::ChildWriteExclusiveResvFailed {
                     source: error,
                     child: child.uri().to_owned(),
@@ -624,19 +570,13 @@ impl<'n> Nexus<'n> {
     }
 
     /// Looks up a child by device name.
-    pub fn lookup_child_by_device(
-        &self,
-        device_name: &str,
-    ) -> Option<&NexusChild<'n>> {
+    pub fn lookup_child_by_device(&self, device_name: &str) -> Option<&NexusChild<'n>> {
         self.children_iter()
             .find(|c| c.match_device_name(device_name))
     }
 
     /// Looks up a child by its UUID.
-    pub fn child_by_uuid(
-        &self,
-        device_uuid: &str,
-    ) -> Result<&NexusChild<'n>, Error> {
+    pub fn child_by_uuid(&self, device_uuid: &str) -> Result<&NexusChild<'n>, Error> {
         let dev = self.children_iter().find(|c| match c.get_uuid() {
             Some(u) => u.eq(device_uuid),
             None => false,
@@ -649,16 +589,12 @@ impl<'n> Nexus<'n> {
 
     /// Looks up a child by device name.
     /// Returns an error if child is not found.
-    pub fn child_by_device(
-        &self,
-        device_name: &str,
-    ) -> Result<&NexusChild<'n>, Error> {
-        self.lookup_child_by_device(device_name).ok_or_else(|| {
-            Error::ChildNotFound {
+    pub fn child_by_device(&self, device_name: &str) -> Result<&NexusChild<'n>, Error> {
+        self.lookup_child_by_device(device_name)
+            .ok_or_else(|| Error::ChildNotFound {
                 child: device_name.to_owned(),
                 name: self.name.clone(),
-            }
-        })
+            })
     }
 
     /// Looks up a child by device name and returns a mutable reference.
@@ -680,12 +616,11 @@ impl<'n> Nexus<'n> {
         device_name: &str,
     ) -> Result<&mut NexusChild<'n>, Error> {
         let nexus_name = self.name.clone();
-        self.lookup_child_by_device_mut(device_name).ok_or_else(|| {
-            Error::ChildNotFound {
+        self.lookup_child_by_device_mut(device_name)
+            .ok_or_else(|| Error::ChildNotFound {
                 child: device_name.to_owned(),
                 name: nexus_name,
-            }
-        })
+            })
     }
 
     /// Looks up a child by its URI.
@@ -704,19 +639,13 @@ impl<'n> Nexus<'n> {
     }
 
     /// Looks up a child by its URI and returns a mutable reference.
-    pub fn lookup_child_mut(
-        self: Pin<&mut Self>,
-        child_uri: &str,
-    ) -> Option<&mut NexusChild<'n>> {
+    pub fn lookup_child_mut(self: Pin<&mut Self>, child_uri: &str) -> Option<&mut NexusChild<'n>> {
         unsafe { self.children_iter_mut().find(|c| c.uri() == child_uri) }
     }
 
     /// Looks up a child by its URI and returns a mutable reference.
     /// Returns an error if child is not found.
-    pub fn child_mut(
-        self: Pin<&mut Self>,
-        child_uri: &str,
-    ) -> Result<&mut NexusChild<'n>, Error> {
+    pub fn child_mut(self: Pin<&mut Self>, child_uri: &str) -> Result<&mut NexusChild<'n>, Error> {
         let nexus_name = self.name.clone();
         self.lookup_child_mut(child_uri)
             .ok_or_else(|| Error::ChildNotFound {
@@ -733,24 +662,18 @@ impl<'n> Nexus<'n> {
         child_uri: &str,
     ) -> Result<&'static mut NexusChild<'static>, Error> {
         self.child_mut(child_uri).map(|c| {
-            std::mem::transmute::<
-                &mut NexusChild<'n>,
-                &'static mut NexusChild<'static>,
-            >(c)
+            std::mem::transmute::<&mut NexusChild<'n>, &'static mut NexusChild<'static>>(c)
         })
     }
 
     /// Looks up a child by its URI and returns child device name.
-    pub fn get_child_device_name(
-        &self,
-        child_uri: &str,
-    ) -> Result<String, Error> {
-        self.child(child_uri)?.get_device_name().ok_or_else(|| {
-            Error::ChildDeviceNotOpen {
+    pub fn get_child_device_name(&self, child_uri: &str) -> Result<String, Error> {
+        self.child(child_uri)?
+            .get_device_name()
+            .ok_or_else(|| Error::ChildDeviceNotOpen {
                 child: child_uri.to_owned(),
                 name: self.name.clone(),
-            }
-        })
+            })
     }
 
     /// Returns the list of URIs of all children.
@@ -769,8 +692,7 @@ impl<'n> Nexus<'n> {
 impl DeviceEventListener for Nexus<'_> {
     fn handle_device_event(&self, evt: DeviceEventType, dev_name: &str) {
         match evt {
-            DeviceEventType::DeviceRemoved
-            | DeviceEventType::LoopbackRemoved => {
+            DeviceEventType::DeviceRemoved | DeviceEventType::LoopbackRemoved => {
                 Reactors::master().send_future(Nexus::child_remove_routine(
                     self.name.clone(),
                     dev_name.to_owned(),
@@ -782,11 +704,7 @@ impl DeviceEventListener for Nexus<'_> {
                     retiring child '{}'",
                     self, dev_name
                 );
-                self.retire_child_device(
-                    dev_name,
-                    FaultReason::AdminCommandFailed,
-                    false,
-                );
+                self.retire_child_device(dev_name, FaultReason::AdminCommandFailed, false);
             }
             DeviceEventType::AdminQNoticeCtrlFailed => {
                 Reactors::master().send_future(Nexus::disconnect_failed_child(
@@ -904,17 +822,11 @@ impl<'n> Nexus<'n> {
         if let Some(mut nexus) = nexus_lookup_mut(&nexus_name) {
             match nexus.as_mut().lookup_child_by_device_mut(&child_device) {
                 Some(child) => {
-                    info!(
-                        nexus_name,
-                        child_device, "Unplugging nexus child device",
-                    );
+                    info!(nexus_name, child_device, "Unplugging nexus child device",);
                     child.unplug().await;
                 }
                 None => {
-                    warn!(
-                        nexus_name,
-                        child_device, "Nexus child device not found",
-                    );
+                    warn!(nexus_name, child_device, "Nexus child device not found",);
                 }
             }
         } else {
@@ -948,11 +860,7 @@ impl<'n> Nexus<'n> {
     }
 
     /// Retires a child device for the given nexus.
-    async fn child_retire_routine(
-        nexus_name: String,
-        dev: String,
-        retry: bool,
-    ) {
+    async fn child_retire_routine(nexus_name: String, dev: String, retry: bool) {
         let Some(mut nex) = nexus_lookup_mut(&nexus_name) else {
             warn!(
                 "Nexus '{nexus_name}': retiring device '{dev}': \
@@ -972,9 +880,8 @@ impl<'n> Nexus<'n> {
 
                 assert!(Reactors::is_master());
 
-                Reactors::current().send_future(Nexus::child_retire_routine(
-                    nexus_name, dev, retry,
-                ));
+                Reactors::current()
+                    .send_future(Nexus::child_retire_routine(nexus_name, dev, retry));
             } else {
                 warn!(
                     "{nex:?}: retire failed (double pause): {err}",
@@ -990,10 +897,7 @@ impl<'n> Nexus<'n> {
     }
 
     /// Retires a child with the given device.
-    async fn do_child_retire(
-        mut self: Pin<&mut Self>,
-        dev: String,
-    ) -> Result<(), Error> {
+    async fn do_child_retire(mut self: Pin<&mut Self>, dev: String) -> Result<(), Error> {
         warn!("{self:?}: retiring child device '{dev}'...");
 
         // Update persistent store. To prevent data inconsistency across
@@ -1072,13 +976,11 @@ impl<'n> Nexus<'n> {
                 // Determine the amount of healthy replicas in the persistent
                 // state and check against the last healthy
                 // replica remaining.
-                let num_healthy = nexus_info.children.iter().fold(0, |n, c| {
-                    if c.healthy {
-                        n + 1
-                    } else {
-                        n
-                    }
-                });
+                let num_healthy =
+                    nexus_info
+                        .children
+                        .iter()
+                        .fold(0, |n, c| if c.healthy { n + 1 } else { n });
 
                 match num_healthy {
                     0 => {

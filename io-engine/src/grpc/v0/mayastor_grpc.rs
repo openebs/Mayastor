@@ -11,44 +11,21 @@
 use crate::{
     bdev::{
         nexus,
-        nexus::{
-            Error as NexusError,
-            FaultReason,
-            NexusReplicaSnapshotDescriptor,
-        },
-        NvmeControllerState as ControllerState,
-        PtplFileOps,
+        nexus::{Error as NexusError, FaultReason, NexusReplicaSnapshotDescriptor},
+        NvmeControllerState as ControllerState, PtplFileOps,
     },
     bdev_api::BdevError,
     core::{
         lock::{ProtectedSubsystems, ResourceLockManager},
         logical_volume::{LogicalVolume, LvolSpaceUsage},
-        BlockDeviceIoStats,
-        CoreError,
-        MayastorFeatures,
-        NvmfShareProps,
-        Protocol,
-        Share,
-        SnapshotParams,
-        ToErrno,
-        UntypedBdev,
+        BlockDeviceIoStats, CoreError, MayastorFeatures, NvmfShareProps, Protocol, Share,
+        SnapshotParams, ToErrno, UntypedBdev,
     },
     grpc::{
-        controller_grpc::{
-            controller_stats,
-            list_controllers,
-            NvmeControllerInfo,
-        },
+        controller_grpc::{controller_stats, list_controllers, NvmeControllerInfo},
         rpc_submit,
-        v0::nexus_grpc::{
-            nexus_add_child,
-            nexus_destroy,
-            nexus_lookup,
-            uuid_to_name,
-        },
-        GrpcClientContext,
-        GrpcResult,
-        Serializer,
+        v0::nexus_grpc::{nexus_add_child, nexus_destroy, nexus_lookup, uuid_to_name},
+        GrpcClientContext, GrpcResult, Serializer,
     },
     host::{blk_device, resource},
     lvs::{lvs_lvol::LvsLvol, BsError, Lvol, Lvs, LvsError},
@@ -155,10 +132,11 @@ impl MayastorSvc {
             let _global_guard = if global_operation {
                 match lock_manager.lock(Some(ctx.timeout), false).await {
                     Some(g) => Some(g),
-                    None => return Err(Status::deadline_exceeded(
-                        "Failed to acquire access to object within given timeout"
-                        .to_string()
-                    )),
+                    None => {
+                        return Err(Status::deadline_exceeded(
+                            "Failed to acquire access to object within given timeout".to_string(),
+                        ))
+                    }
                 }
             } else {
                 None
@@ -168,13 +146,15 @@ impl MayastorSvc {
             let _resource_guard = match lock_manager
                 .get_subsystem(ProtectedSubsystems::NEXUS)
                 .lock_resource(nexus_uuid, Some(ctx.timeout), false)
-                .await {
-                    Some(g) => g,
-                    None => return Err(Status::deadline_exceeded(
-                        "Failed to acquire access to object within given timeout"
-                        .to_string()
-                    )),
-                };
+                .await
+            {
+                Some(g) => g,
+                None => {
+                    return Err(Status::deadline_exceeded(
+                        "Failed to acquire access to object within given timeout".to_string(),
+                    ))
+                }
+            };
             let r = fut.await;
 
             match r {
@@ -188,9 +168,10 @@ impl MayastorSvc {
                 }
             }
         })
-        .await {
+        .await
+        {
             Ok(r) => r,
-            Err(_) => Err(Status::cancelled("gRPC call cancelled"))
+            Err(_) => Err(Status::cancelled("gRPC call cancelled")),
         }
     }
 }
@@ -215,73 +196,48 @@ impl TryFrom<CreatePoolRequest> for PoolArgs {
 impl From<LvsError> for tonic::Status {
     fn from(e: LvsError) -> Self {
         match e {
-            LvsError::Import {
-                source, ..
-            } => match source.to_errno() {
+            LvsError::Import { source, .. } => match source.to_errno() {
                 Errno::EINVAL => Status::invalid_argument(e.to_string()),
                 Errno::EEXIST => Status::already_exists(e.to_string()),
                 _ => Status::invalid_argument(e.to_string()),
             },
-            LvsError::RepCreate {
-                source, ..
-            } => {
+            LvsError::RepCreate { source, .. } => {
                 if source.to_errno() == Errno::ENOSPC {
                     Status::resource_exhausted(e.to_string())
                 } else {
                     Status::invalid_argument(e.to_string())
                 }
             }
-            LvsError::RepDestroy {
-                source, ..
-            } => match source.to_errno() {
+            LvsError::RepDestroy { source, .. } => match source.to_errno() {
                 Errno::ENOENT => {
                     let mut status = Status::not_found(e.to_string());
-                    status.metadata_mut().insert(
-                        "gtm-602",
-                        tonic::metadata::MetadataValue::from(0),
-                    );
+                    status
+                        .metadata_mut()
+                        .insert("gtm-602", tonic::metadata::MetadataValue::from(0));
                     status
                 }
                 Errno::ENOMEDIUM => Status::failed_precondition(e.to_string()),
                 Errno::EMEDIUMTYPE => Status::aborted(e.to_string()),
                 _ => Status::internal(e.to_string()),
             },
-            LvsError::RepResize {
-                source, ..
-            } => match source.to_errno() {
-                Errno::ENOSPC | Errno::ENOMEM => {
-                    Status::resource_exhausted(e.to_string())
-                }
+            LvsError::RepResize { source, .. } => match source.to_errno() {
+                Errno::ENOSPC | Errno::ENOMEM => Status::resource_exhausted(e.to_string()),
                 Errno::EPERM => Status::permission_denied(e.to_string()),
-                Errno::EINVAL | Errno::ENOENT => {
-                    Status::invalid_argument(e.to_string())
-                }
+                Errno::EINVAL | Errno::ENOENT => Status::invalid_argument(e.to_string()),
                 _ => Status::internal(e.to_string()),
             },
-            LvsError::RepExists {
-                ..
-            } => Status::already_exists(e.to_string()),
-            LvsError::ReplicaShareProtocol {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            LvsError::Destroy {
-                source, ..
-            } => source.into(),
-            LvsError::Invalid {
-                source, ..
-            } => match source.to_errno() {
+            LvsError::RepExists { .. } => Status::already_exists(e.to_string()),
+            LvsError::ReplicaShareProtocol { .. } => Status::invalid_argument(e.to_string()),
+            LvsError::Destroy { source, .. } => source.into(),
+            LvsError::Invalid { source, .. } => match source.to_errno() {
                 Errno::EINVAL => Status::invalid_argument(e.to_string()),
                 Errno::ENOMEDIUM => Status::failed_precondition(e.to_string()),
                 Errno::ENOENT => Status::not_found(e.to_string()),
                 Errno::EEXIST => Status::already_exists(e.to_string()),
                 _ => Status::invalid_argument(e.to_string()),
             },
-            LvsError::PoolNotFound {
-                ..
-            } => Status::not_found(e.to_string()),
-            LvsError::PoolCreate {
-                source, ..
-            } => {
+            LvsError::PoolNotFound { .. } => Status::not_found(e.to_string()),
+            LvsError::PoolCreate { source, .. } => {
                 if source.to_errno() == Errno::EEXIST {
                     Status::already_exists(e.to_string())
                 } else if source.to_errno() == Errno::EINVAL {
@@ -290,18 +246,10 @@ impl From<LvsError> for tonic::Status {
                     Status::internal(e.to_string())
                 }
             }
-            LvsError::InvalidBdev {
-                source, ..
-            } => source.into(),
-            LvsError::SetProperty {
-                ..
-            } => Status::data_loss(e.to_string()),
-            LvsError::WipeFailed {
-                source,
-            } => source.into(),
-            LvsError::ResourceLockFailed {
-                ..
-            } => Status::aborted(e.to_string()),
+            LvsError::InvalidBdev { source, .. } => source.into(),
+            LvsError::SetProperty { .. } => Status::data_loss(e.to_string()),
+            LvsError::WipeFailed { source } => source.into(),
+            LvsError::ResourceLockFailed { .. } => Status::aborted(e.to_string()),
             _ => Status::internal(e.verbose()),
         }
     }
@@ -320,10 +268,7 @@ impl From<Lvs> for Pool {
     fn from(l: Lvs) -> Self {
         Self {
             name: l.name().into(),
-            disks: vec![l
-                .base_bdev()
-                .bdev_uri_str()
-                .unwrap_or_else(|| "".into())],
+            disks: vec![l.base_bdev().bdev_uri_str().unwrap_or_else(|| "".into())],
             state: PoolState::PoolOnline.into(),
             capacity: l.capacity(),
             used: l.used(),
@@ -494,9 +439,7 @@ impl From<ControllerState> for NvmeControllerState {
             ControllerState::Initializing => NvmeControllerState::Initializing,
             ControllerState::Running => NvmeControllerState::Running,
             ControllerState::Faulted(_) => NvmeControllerState::Faulted,
-            ControllerState::Unconfiguring => {
-                NvmeControllerState::Unconfiguring
-            }
+            ControllerState::Unconfiguring => NvmeControllerState::Unconfiguring,
             ControllerState::Unconfigured => NvmeControllerState::Unconfigured,
         }
     }
@@ -521,18 +464,10 @@ impl From<NvmeReservation> for nexus::NvmeReservation {
             NvmeReservation::Reserved => Self::Reserved,
             NvmeReservation::WriteExclusive => Self::WriteExclusive,
             NvmeReservation::ExclusiveAccess => Self::ExclusiveAccess,
-            NvmeReservation::WriteExclusiveRegsOnly => {
-                Self::WriteExclusiveRegsOnly
-            }
-            NvmeReservation::ExclusiveAccessRegsOnly => {
-                Self::ExclusiveAccessRegsOnly
-            }
-            NvmeReservation::WriteExclusiveAllRegs => {
-                Self::WriteExclusiveAllRegs
-            }
-            NvmeReservation::ExclusiveAccessAllRegs => {
-                Self::ExclusiveAccessAllRegs
-            }
+            NvmeReservation::WriteExclusiveRegsOnly => Self::WriteExclusiveRegsOnly,
+            NvmeReservation::ExclusiveAccessRegsOnly => Self::ExclusiveAccessRegsOnly,
+            NvmeReservation::WriteExclusiveAllRegs => Self::WriteExclusiveAllRegs,
+            NvmeReservation::ExclusiveAccessAllRegs => Self::ExclusiveAccessAllRegs,
         }
     }
 }
@@ -556,12 +491,8 @@ impl TryFrom<NvmePreemptionConv> for nexus::NexusNvmePreemption {
     type Error = tonic::Status;
     fn try_from(value: NvmePreemptionConv) -> Result<Self, Self::Error> {
         match NexusNvmePreemption::try_from(value.0) {
-            Ok(NexusNvmePreemption::ArgKey) => {
-                Ok(nexus::NexusNvmePreemption::ArgKey)
-            }
-            Ok(NexusNvmePreemption::Holder) => {
-                Ok(nexus::NexusNvmePreemption::Holder)
-            }
+            Ok(NexusNvmePreemption::ArgKey) => Ok(nexus::NexusNvmePreemption::ArgKey),
+            Ok(NexusNvmePreemption::Holder) => Ok(nexus::NexusNvmePreemption::Holder),
             Err(_) => Err(tonic::Status::invalid_argument(format!(
                 "Invalid reservation preempt policy {}",
                 value.0
@@ -573,10 +504,7 @@ impl TryFrom<NvmePreemptionConv> for nexus::NexusNvmePreemption {
 #[tonic::async_trait]
 impl mayastor_server::Mayastor for MayastorSvc {
     #[named]
-    async fn create_pool(
-        &self,
-        request: Request<CreatePoolRequest>,
-    ) -> GrpcResult<Pool> {
+    async fn create_pool(&self, request: Request<CreatePoolRequest>) -> GrpcResult<Pool> {
         self.locked(
             GrpcClientContext::new(&request, function_name!()),
             async move {
@@ -587,26 +515,18 @@ impl mayastor_server::Mayastor for MayastorSvc {
                 }
 
                 let rx = rpc_submit::<_, _, LvsError>(async move {
-                    let pool =
-                        match Lvs::create_or_import(PoolArgs::try_from(args)?)
-                            .await
+                    let pool = match Lvs::create_or_import(PoolArgs::try_from(args)?).await {
+                        Ok(p) => p,
+                        // this check is added specifically so that the
+                        // create_pool is idempotent
+                        Err(LvsError::PoolCreate { source, name })
+                            if source.to_errno() == Errno::EEXIST =>
                         {
-                            Ok(p) => p,
-                            // this check is added specifically so that the
-                            // create_pool is idempotent
-                            Err(LvsError::PoolCreate {
-                                source,
-                                name,
-                            }) if source.to_errno() == Errno::EEXIST => {
-                                info!(
-                                    "returning already created pool {}",
-                                    name,
-                                );
-                                Lvs::lookup(name.as_str())
-                                    .expect("Already exists")
-                            }
-                            Err(e) => return Err(e),
-                        };
+                            info!("returning already created pool {}", name,);
+                            Lvs::lookup(name.as_str()).expect("Already exists")
+                        }
+                        Err(e) => return Err(e),
+                    };
                     // Capture current pool config and export to file.
                     PoolConfig::capture().export().await;
                     Ok(Pool::from(pool))
@@ -622,10 +542,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     #[named]
-    async fn destroy_pool(
-        &self,
-        request: Request<DestroyPoolRequest>,
-    ) -> GrpcResult<Null> {
+    async fn destroy_pool(&self, request: Request<DestroyPoolRequest>) -> GrpcResult<Null> {
         self.locked(
             GrpcClientContext::new(&request, function_name!()),
             async move {
@@ -654,18 +571,13 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     #[named]
-    async fn list_pools(
-        &self,
-        request: Request<Null>,
-    ) -> GrpcResult<ListPoolsReply> {
+    async fn list_pools(&self, request: Request<Null>) -> GrpcResult<ListPoolsReply> {
         self.locked(
             GrpcClientContext::new(&request, function_name!()),
             async move {
                 let rx = rpc_submit::<_, _, LvsError>(async move {
                     Ok(ListPoolsReply {
-                        pools: Lvs::iter()
-                            .map(|l| l.into())
-                            .collect::<Vec<Pool>>(),
+                        pools: Lvs::iter().map(|l| l.into()).collect::<Vec<Pool>>(),
                     })
                 })?;
 
@@ -679,10 +591,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     #[named]
-    async fn create_replica(
-        &self,
-        request: Request<CreateReplicaRequest>,
-    ) -> GrpcResult<Replica> {
+    async fn create_replica(&self, request: Request<CreateReplicaRequest>) -> GrpcResult<Replica> {
         self.locked(
             GrpcClientContext::new(&request, function_name!()),
             async move {
@@ -705,49 +614,36 @@ impl mayastor_server::Mayastor for MayastorSvc {
                         Protocol::try_from(args.share)?,
                         Protocol::Off | Protocol::Nvmf
                     ) {
-                        return Err(LvsError::ReplicaShareProtocol {
-                            value: args.share,
-                        });
+                        return Err(LvsError::ReplicaShareProtocol { value: args.share });
                     }
 
                     let p = Lvs::lookup(&args.pool).unwrap();
                     match p
-                        .create_lvol(
-                            &args.uuid, args.size, None, args.thin, None,
-                        )
+                        .create_lvol(&args.uuid, args.size, None, args.thin, None)
                         .await
                     {
-                        Ok(mut lvol)
-                            if Protocol::try_from(args.share)?
-                                == Protocol::Nvmf =>
-                        {
+                        Ok(mut lvol) if Protocol::try_from(args.share)? == Protocol::Nvmf => {
                             let props = NvmfShareProps::new()
                                 .with_allowed_hosts(args.allowed_hosts)
-                                .with_ptpl(lvol.ptpl().create().map_err(
-                                    |source| LvsError::LvolShare {
+                                .with_ptpl(lvol.ptpl().create().map_err(|source| {
+                                    LvsError::LvolShare {
                                         source: crate::core::CoreError::Ptpl {
                                             reason: source.to_string(),
                                         },
                                         name: lvol.name(),
-                                    },
-                                )?);
-                            match Pin::new(&mut lvol)
-                                .share_nvmf(Some(props))
-                                .await
-                            {
+                                    }
+                                })?);
+                            match Pin::new(&mut lvol).share_nvmf(Some(props)).await {
                                 Ok(s) => {
-                                    debug!(
-                                        "Created and shared {:?} as {}",
-                                        lvol, s
-                                    );
+                                    debug!("Created and shared {:?} as {}", lvol, s);
                                     Ok(Replica::from(lvol))
                                 }
                                 Err(e) => {
                                     debug!(
-                                "Failed to share created {:?}: {} (destroying)",
-                                lvol,
-                                e.to_string()
-                            );
+                                        "Failed to share created {:?}: {} (destroying)",
+                                        lvol,
+                                        e.to_string()
+                                    );
                                     let _ = lvol.destroy().await;
                                     Err(e)
                                 }
@@ -800,52 +696,35 @@ impl mayastor_server::Mayastor for MayastorSvc {
                         Protocol::try_from(args.share)?,
                         Protocol::Off | Protocol::Nvmf
                     ) {
-                        return Err(LvsError::ReplicaShareProtocol {
-                            value: args.share,
-                        });
+                        return Err(LvsError::ReplicaShareProtocol { value: args.share });
                     }
 
                     match lvs
-                        .create_lvol(
-                            &args.name,
-                            args.size,
-                            Some(&args.uuid),
-                            args.thin,
-                            None,
-                        )
+                        .create_lvol(&args.name, args.size, Some(&args.uuid), args.thin, None)
                         .await
                     {
-                        Ok(mut lvol)
-                            if Protocol::try_from(args.share)?
-                                == Protocol::Nvmf =>
-                        {
+                        Ok(mut lvol) if Protocol::try_from(args.share)? == Protocol::Nvmf => {
                             let props = NvmfShareProps::new()
                                 .with_allowed_hosts(args.allowed_hosts)
-                                .with_ptpl(lvol.ptpl().create().map_err(
-                                    |source| LvsError::LvolShare {
+                                .with_ptpl(lvol.ptpl().create().map_err(|source| {
+                                    LvsError::LvolShare {
                                         source: crate::core::CoreError::Ptpl {
                                             reason: source.to_string(),
                                         },
                                         name: lvol.name(),
-                                    },
-                                )?);
-                            match Pin::new(&mut lvol)
-                                .share_nvmf(Some(props))
-                                .await
-                            {
+                                    }
+                                })?);
+                            match Pin::new(&mut lvol).share_nvmf(Some(props)).await {
                                 Ok(s) => {
-                                    debug!(
-                                        "Created and shared {:?} as {}",
-                                        lvol, s
-                                    );
+                                    debug!("Created and shared {:?} as {}", lvol, s);
                                     Ok(ReplicaV2::from(lvol))
                                 }
                                 Err(e) => {
                                     debug!(
-                                "Failed to share created {:?}: {} (destroying)",
-                                lvol,
-                                e.to_string()
-                            );
+                                        "Failed to share created {:?}: {} (destroying)",
+                                        lvol,
+                                        e.to_string()
+                                    );
                                     let _ = lvol.destroy().await;
                                     Err(e)
                                 }
@@ -869,10 +748,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     #[named]
-    async fn destroy_replica(
-        &self,
-        request: Request<DestroyReplicaRequest>,
-    ) -> GrpcResult<Null> {
+    async fn destroy_replica(&self, request: Request<DestroyReplicaRequest>) -> GrpcResult<Null> {
         self.locked(GrpcClientContext::new(&request, function_name!()), async {
             let args = request.into_inner();
             let rx = rpc_submit::<_, _, LvsError>(async move {
@@ -892,10 +768,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     #[named]
-    async fn list_replicas(
-        &self,
-        request: Request<Null>,
-    ) -> GrpcResult<ListReplicasReply> {
+    async fn list_replicas(&self, request: Request<Null>) -> GrpcResult<ListReplicasReply> {
         self.locked(GrpcClientContext::new(&request, function_name!()), async {
             let rx = rpc_submit::<_, _, LvsError>(async move {
                 let mut replicas = Vec::new();
@@ -907,9 +780,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
                         .collect();
                 }
 
-                Ok(ListReplicasReply {
-                    replicas,
-                })
+                Ok(ListReplicasReply { replicas })
             })?;
 
             rx.await
@@ -921,10 +792,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     #[named]
-    async fn list_replicas_v2(
-        &self,
-        request: Request<Null>,
-    ) -> GrpcResult<ListReplicasReplyV2> {
+    async fn list_replicas_v2(&self, request: Request<Null>) -> GrpcResult<ListReplicasReplyV2> {
         self.locked(GrpcClientContext::new(&request, function_name!()), async {
             let rx = rpc_submit::<_, _, LvsError>(async move {
                 let mut replicas = Vec::new();
@@ -936,9 +804,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
                         .collect();
                 }
 
-                Ok(ListReplicasReplyV2 {
-                    replicas,
-                })
+                Ok(ListReplicasReplyV2 { replicas })
             })?;
 
             rx.await
@@ -950,10 +816,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     // TODO; lost track of what this is supposed to do
-    async fn stat_replicas(
-        &self,
-        _request: Request<Null>,
-    ) -> GrpcResult<StatReplicasReply> {
+    async fn stat_replicas(&self, _request: Request<Null>) -> GrpcResult<StatReplicasReply> {
         let rx = rpc_submit::<_, _, CoreError>(async {
             let mut lvols = Vec::new();
             if let Some(bdev) = UntypedBdev::bdev_first() {
@@ -976,9 +839,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
                 });
             }
 
-            Ok(StatReplicasReply {
-                replicas,
-            })
+            Ok(StatReplicasReply { replicas })
         })?;
 
         rx.await
@@ -1002,14 +863,10 @@ impl mayastor_server::Mayastor for MayastorSvc {
                             let mut lvol = Lvol::try_from(bdev)?;
 
                             // if we are already shared ...
-                            if lvol.shared()
-                                == Some(Protocol::try_from(args.share)?)
-                            {
+                            if lvol.shared() == Some(Protocol::try_from(args.share)?) {
                                 Pin::new(&mut lvol)
                                     .update_properties(
-                                        UpdateProps::new().with_allowed_hosts(
-                                            args.allowed_hosts,
-                                        ),
+                                        UpdateProps::new().with_allowed_hosts(args.allowed_hosts),
                                     )
                                     .await?;
                                 return Ok(ShareReplicaReply {
@@ -1025,14 +882,14 @@ impl mayastor_server::Mayastor for MayastorSvc {
                                 Protocol::Nvmf => {
                                     let props = NvmfShareProps::new()
                                         .with_allowed_hosts(args.allowed_hosts)
-                                        .with_ptpl(lvol.ptpl().create().map_err(
-                                            |source| LvsError::LvolShare {
+                                        .with_ptpl(lvol.ptpl().create().map_err(|source| {
+                                            LvsError::LvolShare {
                                                 source: crate::core::CoreError::Ptpl {
                                                     reason: source.to_string(),
                                                 },
                                                 name: lvol.name(),
-                                            },
-                                        )?);
+                                            }
+                                        })?);
                                     lvol.as_mut().share_nvmf(Some(props)).await?;
                                 }
                             }
@@ -1061,10 +918,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     #[named]
-    async fn create_nexus(
-        &self,
-        request: Request<CreateNexusRequest>,
-    ) -> GrpcResult<Nexus> {
+    async fn create_nexus(&self, request: Request<CreateNexusRequest>) -> GrpcResult<Nexus> {
         let ctx = GrpcClientContext::new(&request, function_name!());
         let args = request.into_inner();
 
@@ -1072,13 +926,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
             let rx = rpc_submit::<_, _, nexus::Error>(async move {
                 let uuid = args.uuid.clone();
                 let name = uuid_to_name(&args.uuid)?;
-                nexus::nexus_create(
-                    &name,
-                    args.size,
-                    Some(&args.uuid),
-                    &args.children,
-                )
-                .await?;
+                nexus::nexus_create(&name, args.size, Some(&args.uuid), &args.children).await?;
                 let nexus = nexus_lookup(&uuid)?;
                 info!("Created nexus: '{}'", uuid);
                 Ok(nexus.to_grpc().await)
@@ -1092,17 +940,13 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     #[named]
-    async fn create_nexus_v2(
-        &self,
-        request: Request<CreateNexusV2Request>,
-    ) -> GrpcResult<Nexus> {
+    async fn create_nexus_v2(&self, request: Request<CreateNexusV2Request>) -> GrpcResult<Nexus> {
         let ctx = GrpcClientContext::new(&request, function_name!());
         let args = request.into_inner();
 
         self.serialized(ctx, args.uuid.clone(), true, async move {
             let resv_type = NvmeReservationConv(args.resv_type).try_into()?;
-            let preempt_policy =
-                NvmePreemptionConv(args.preempt_policy).try_into()?;
+            let preempt_policy = NvmePreemptionConv(args.preempt_policy).try_into()?;
             // If the control plane has supplied a key, use it to store the
             // NexusInfo.
             let nexus_info_key = if args.nexus_info_key.is_empty() {
@@ -1144,10 +988,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     #[named]
-    async fn destroy_nexus(
-        &self,
-        request: Request<DestroyNexusRequest>,
-    ) -> GrpcResult<Null> {
+    async fn destroy_nexus(&self, request: Request<DestroyNexusRequest>) -> GrpcResult<Null> {
         let ctx = GrpcClientContext::new(&request, function_name!());
         let args = request.into_inner();
 
@@ -1168,10 +1009,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     #[named]
-    async fn shutdown_nexus(
-        &self,
-        request: Request<ShutdownNexusRequest>,
-    ) -> GrpcResult<Null> {
+    async fn shutdown_nexus(&self, request: Request<ShutdownNexusRequest>) -> GrpcResult<Null> {
         let ctx = GrpcClientContext::new(&request, function_name!());
         let args = request.into_inner();
 
@@ -1191,18 +1029,14 @@ impl mayastor_server::Mayastor for MayastorSvc {
         .await
     }
 
-    async fn list_nexus(
-        &self,
-        request: Request<Null>,
-    ) -> GrpcResult<ListNexusReply> {
+    async fn list_nexus(&self, request: Request<Null>) -> GrpcResult<ListNexusReply> {
         let args = request.into_inner();
         trace!("{:?}", args);
 
         let rx = rpc_submit::<_, _, nexus::Error>(async move {
             Ok(ListNexusReply {
                 nexus_list: {
-                    let mut nexus_list =
-                        Vec::with_capacity(nexus::nexus_iter().count());
+                    let mut nexus_list = Vec::with_capacity(nexus::nexus_iter().count());
                     for n in nexus::nexus_iter() {
                         if n.state.lock().deref() != &nexus::NexusState::Init {
                             nexus_list.push(n.to_grpc().await);
@@ -1219,10 +1053,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
             .map(Response::new)
     }
 
-    async fn list_nexus_v2(
-        &self,
-        request: Request<Null>,
-    ) -> GrpcResult<ListNexusV2Reply> {
+    async fn list_nexus_v2(&self, request: Request<Null>) -> GrpcResult<ListNexusV2Reply> {
         let args = request.into_inner();
         trace!("{:?}", args);
 
@@ -1235,9 +1066,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
                 }
             }
 
-            Ok(ListNexusV2Reply {
-                nexus_list,
-            })
+            Ok(ListNexusV2Reply { nexus_list })
         })?;
 
         rx.await
@@ -1247,10 +1076,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     #[named]
-    async fn add_child_nexus(
-        &self,
-        request: Request<AddChildNexusRequest>,
-    ) -> GrpcResult<Child> {
+    async fn add_child_nexus(&self, request: Request<AddChildNexusRequest>) -> GrpcResult<Child> {
         let ctx = GrpcClientContext::new(&request, function_name!());
         let args = request.into_inner();
 
@@ -1368,9 +1194,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
                     "Published nexus {} under {} for {:?}",
                     uuid, device_uri, args.allowed_hosts
                 );
-                Ok(PublishNexusReply {
-                    device_uri,
-                })
+                Ok(PublishNexusReply { device_uri })
             })?;
             rx.await
                 .map_err(|_| Status::cancelled("cancelled"))?
@@ -1381,10 +1205,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     #[named]
-    async fn unpublish_nexus(
-        &self,
-        request: Request<UnpublishNexusRequest>,
-    ) -> GrpcResult<Null> {
+    async fn unpublish_nexus(&self, request: Request<UnpublishNexusRequest>) -> GrpcResult<Null> {
         let ctx = GrpcClientContext::new(&request, function_name!());
         let args = request.into_inner();
 
@@ -1418,8 +1239,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
             let rx = rpc_submit::<_, _, nexus::Error>(async move {
                 let uuid = args.uuid.clone();
                 debug!("Getting NVMe ANA state for nexus {} ...", uuid);
-                let ana_state =
-                    nexus_lookup(&args.uuid)?.get_ana_state().await?;
+                let ana_state = nexus_lookup(&args.uuid)?.get_ana_state().await?;
                 info!("Got nexus {} NVMe ANA state {:?}", uuid, ana_state);
                 Ok(GetNvmeAnaStateReply {
                     ana_state: ana_state as i32,
@@ -1448,8 +1268,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
                 debug!("Setting NVMe ANA state for nexus {} ...", uuid);
                 let ana_state = nexus::NvmeAnaState::from_i32(args.ana_state)?;
 
-                let ana_state =
-                    nexus_lookup(&args.uuid)?.set_ana_state(ana_state).await?;
+                let ana_state = nexus_lookup(&args.uuid)?.set_ana_state(ana_state).await?;
                 info!("Set nexus {} NVMe ANA state {:?}", uuid, ana_state);
                 Ok(Null {})
             })?;
@@ -1463,10 +1282,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     #[named]
-    async fn child_operation(
-        &self,
-        request: Request<ChildNexusRequest>,
-    ) -> GrpcResult<Null> {
+    async fn child_operation(&self, request: Request<ChildNexusRequest>) -> GrpcResult<Null> {
         let ctx = GrpcClientContext::new(&request, function_name!());
         let args = request.into_inner();
 
@@ -1477,13 +1293,9 @@ impl mayastor_server::Mayastor for MayastorSvc {
                 let nexus = nexus_lookup(&args.uuid)?;
 
                 match args.action {
-                    0 => {
-                        nexus.fault_child(&args.uri, FaultReason::Offline).await
-                    }
+                    0 => nexus.fault_child(&args.uri, FaultReason::Offline).await,
                     1 => nexus.online_child(&args.uri).await,
-                    2 => {
-                        nexus.fault_child(&args.uri, FaultReason::IoError).await
-                    }
+                    2 => nexus.fault_child(&args.uri, FaultReason::IoError).await,
                     _ => Err(nexus::Error::InvalidKey {}),
                 }?;
 
@@ -1499,10 +1311,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     #[named]
-    async fn start_rebuild(
-        &self,
-        request: Request<StartRebuildRequest>,
-    ) -> GrpcResult<Null> {
+    async fn start_rebuild(&self, request: Request<StartRebuildRequest>) -> GrpcResult<Null> {
         let ctx = GrpcClientContext::new(&request, function_name!());
         let args = request.into_inner();
 
@@ -1525,10 +1334,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     #[named]
-    async fn stop_rebuild(
-        &self,
-        request: Request<StopRebuildRequest>,
-    ) -> GrpcResult<Null> {
+    async fn stop_rebuild(&self, request: Request<StopRebuildRequest>) -> GrpcResult<Null> {
         let ctx = GrpcClientContext::new(&request, function_name!());
         let args = request.into_inner();
 
@@ -1549,10 +1355,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     #[named]
-    async fn pause_rebuild(
-        &self,
-        request: Request<PauseRebuildRequest>,
-    ) -> GrpcResult<Null> {
+    async fn pause_rebuild(&self, request: Request<PauseRebuildRequest>) -> GrpcResult<Null> {
         let ctx = GrpcClientContext::new(&request, function_name!());
         let msg = request.into_inner();
 
@@ -1572,10 +1375,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
     }
 
     #[named]
-    async fn resume_rebuild(
-        &self,
-        request: Request<ResumeRebuildRequest>,
-    ) -> GrpcResult<Null> {
+    async fn resume_rebuild(&self, request: Request<ResumeRebuildRequest>) -> GrpcResult<Null> {
         let ctx = GrpcClientContext::new(&request, function_name!());
         let msg = request.into_inner();
 
@@ -1655,9 +1455,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
                 nexus_lookup(&args.uuid)?
                     .rebuild_progress(&args.uri)
                     .await
-                    .map(|p| RebuildProgressReply {
-                        progress: p,
-                    })
+                    .map(|p| RebuildProgressReply { progress: p })
             })?;
 
             rx.await
@@ -1705,17 +1503,13 @@ impl mayastor_server::Mayastor for MayastorSvc {
                             })
                         }
                         None => {
-                            let emsg =
-                                format!("Replica {} has no UUID", r.uri());
+                            let emsg = format!("Replica {} has no UUID", r.uri());
                             error!(
                                 nexus = uuid,
                                 error = emsg,
                                 "Failed to create a snapshot for nexus"
                             );
-                            return Err(NexusError::FailedCreateSnapshot {
-                                name,
-                                reason: emsg,
-                            });
+                            return Err(NexusError::FailedCreateSnapshot { name, reason: emsg });
                         }
                     };
                 }
@@ -1723,9 +1517,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
                 let reply = nexus
                     .create_snapshot(snapshot, replicas)
                     .await
-                    .map(|_r| CreateSnapshotReply {
-                        name,
-                    })?;
+                    .map(|_r| CreateSnapshotReply { name })?;
                 info!("Created snapshot on nexus {}", uuid);
                 trace!("{:?}", reply);
                 Ok(reply)
@@ -1780,9 +1572,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
                         .into_iter()
                         .map(NvmeController::from)
                         .collect();
-                    Ok(ListNvmeControllersReply {
-                        controllers,
-                    })
+                    Ok(ListNvmeControllersReply { controllers })
                 })?;
 
                 rx.await
@@ -1810,15 +1600,11 @@ impl mayastor_server::Mayastor for MayastorSvc {
                         if stats.is_ok() {
                             res.push(NvmeControllerStats {
                                 name: ctrl.name,
-                                stats: stats
-                                    .ok()
-                                    .map(NvmeControllerIoStats::from),
+                                stats: stats.ok().map(NvmeControllerIoStats::from),
                             });
                         }
                     }
-                    Ok(StatNvmeControllersReply {
-                        controllers: res,
-                    })
+                    Ok(StatNvmeControllersReply { controllers: res })
                 })?;
                 rx.await
                     .map_err(|_| Status::cancelled("cancelled"))?
@@ -1829,10 +1615,7 @@ impl mayastor_server::Mayastor for MayastorSvc {
         .await
     }
 
-    async fn get_mayastor_info(
-        &self,
-        _request: Request<Null>,
-    ) -> GrpcResult<MayastorInfoRequest> {
+    async fn get_mayastor_info(&self, _request: Request<Null>) -> GrpcResult<MayastorInfoRequest> {
         let features = MayastorFeatures::get().into();
 
         let reply = MayastorInfoRequest {

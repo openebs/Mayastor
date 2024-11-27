@@ -5,9 +5,7 @@ pub(crate) struct NvmeRoot {
 
 impl NvmeRoot {
     pub(crate) fn new(root: *mut crate::bindings::nvme_root) -> Self {
-        NvmeRoot {
-            root,
-        }
+        NvmeRoot { root }
     }
     pub(crate) fn as_mut_ptr(&self) -> *mut crate::bindings::nvme_root {
         self.root

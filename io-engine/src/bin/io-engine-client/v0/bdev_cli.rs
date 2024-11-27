@@ -3,8 +3,7 @@
 
 use crate::{
     context::{Context, OutputFormat},
-    ClientError,
-    GrpcStatus,
+    ClientError, GrpcStatus,
 };
 use clap::{Arg, ArgMatches, Command};
 use colored_json::prelude::*;
@@ -20,8 +19,7 @@ pub async fn handler(ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
         ("destroy", args) => destroy(ctx, args).await,
         ("unshare", args) => unshare(ctx, args).await,
         (cmd, _) => {
-            Err(Status::not_found(format!("command {cmd} does not exist")))
-                .context(GrpcStatus)
+            Err(Status::not_found(format!("command {cmd} does not exist"))).context(GrpcStatus)
         }
     }
 }
@@ -52,9 +50,7 @@ pub fn subcommands() -> Command {
                 .long("allowed-host")
                 .action(clap::ArgAction::Append)
                 .required(false)
-                .help(
-                    "NQN of hosts which are allowed to connect to the target",
-                ),
+                .help("NQN of hosts which are allowed to connect to the target"),
         );
 
     let unshare = Command::new("unshare")
@@ -127,13 +123,7 @@ async fn create(mut ctx: Context, args: &ArgMatches) -> crate::Result<()> {
         })?
         .to_owned();
 
-    let response = ctx
-        .bdev
-        .create(BdevUri {
-            uri,
-        })
-        .await
-        .context(GrpcStatus)?;
+    let response = ctx.bdev.create(BdevUri { uri }).await.context(GrpcStatus)?;
 
     match ctx.output {
         OutputFormat::Json => {
@@ -177,9 +167,7 @@ async fn destroy(mut ctx: Context, args: &ArgMatches) -> crate::Result<()> {
     // un share the bdev
     let _ = ctx
         .bdev
-        .unshare(CreateReply {
-            name,
-        })
+        .unshare(CreateReply { name })
         .await
         .context(GrpcStatus)?;
 
@@ -265,9 +253,7 @@ async fn unshare(mut ctx: Context, args: &ArgMatches) -> crate::Result<()> {
 
     let response = ctx
         .bdev
-        .unshare(CreateReply {
-            name: name.clone(),
-        })
+        .unshare(CreateReply { name: name.clone() })
         .await
         .context(GrpcStatus)?;
 

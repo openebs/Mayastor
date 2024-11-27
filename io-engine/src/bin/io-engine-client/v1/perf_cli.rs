@@ -28,16 +28,12 @@ pub async fn handler(ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     match matches.subcommand().unwrap() {
         ("resource", args) => get_resource_usage(ctx, args).await,
         (cmd, _) => {
-            Err(Status::not_found(format!("command {cmd} does not exist")))
-                .context(GrpcStatus)
+            Err(Status::not_found(format!("command {cmd} does not exist"))).context(GrpcStatus)
         }
     }
 }
 // TODO: There's no rpc for this API in v1.
-async fn get_resource_usage(
-    mut ctx: Context,
-    _matches: &ArgMatches,
-) -> crate::Result<()> {
+async fn get_resource_usage(mut ctx: Context, _matches: &ArgMatches) -> crate::Result<()> {
     ctx.v2("Requesting resource usage statistics");
 
     let mut table: Vec<Vec<String>> = Vec::new();

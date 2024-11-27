@@ -13,9 +13,7 @@ pub fn mayastor_sleep(duration: Duration) -> oneshot::Receiver<()> {
         tokio::time::sleep(duration).await;
         let rx = Reactor::spawn_at_primary(async move {
             if tx.send(()).is_err() {
-                tracing::error!(
-                    "Failed to send completion for Mayastor sleep."
-                );
+                tracing::error!("Failed to send completion for Mayastor sleep.");
             }
         })
         .unwrap();

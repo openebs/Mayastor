@@ -115,8 +115,7 @@ fn usable_device(devmajor: &u32) -> bool {
         8,  // SCSI disk devices
         43, // Network block devices
         // START 240-254 block
-        240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253,
-        254, // END
+        240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, // END
         255, // Reserved
         259, // Block Extended Major
     ];
@@ -173,12 +172,9 @@ fn new_partition(parent: Option<&str>, device: &Device) -> Option<Partition> {
                 parent: String::from(parent.unwrap_or("")),
                 number: Property(device.property_value("PARTN")).into(),
                 name: Property(device.property_value("PARTNAME")).into(),
-                scheme: Property(device.property_value("ID_PART_ENTRY_SCHEME"))
-                    .into(),
-                typeid: Property(device.property_value("ID_PART_ENTRY_TYPE"))
-                    .into(),
-                uuid: Property(device.property_value("ID_PART_ENTRY_UUID"))
-                    .into(),
+                scheme: Property(device.property_value("ID_PART_ENTRY_SCHEME")).into(),
+                typeid: Property(device.property_value("ID_PART_ENTRY_TYPE")).into(),
+                uuid: Property(device.property_value("ID_PART_ENTRY_UUID")).into(),
             });
         }
     }
@@ -189,12 +185,8 @@ fn new_partition(parent: Option<&str>, device: &Device) -> Option<Partition> {
 // and the list of current filesystem mounts.
 // Note that the result can be None if there is no filesystem
 // associated with this Device.
-fn new_filesystem(
-    device: &Device,
-    mountinfo: &[MountInfo],
-) -> Option<FileSystem> {
-    let mut fstype: Option<String> =
-        Property(device.property_value("ID_FS_TYPE")).into();
+fn new_filesystem(device: &Device, mountinfo: &[MountInfo]) -> Option<FileSystem> {
+    let mut fstype: Option<String> = Property(device.property_value("ID_FS_TYPE")).into();
 
     if fstype.is_none() {
         fstype = if mountinfo.is_empty() {
@@ -205,19 +197,13 @@ fn new_filesystem(
         }
     }
 
-    let label: Option<String> =
-        Property(device.property_value("ID_FS_LABEL")).into();
+    let label: Option<String> = Property(device.property_value("ID_FS_LABEL")).into();
 
-    let uuid: Option<String> =
-        Property(device.property_value("ID_FS_UUID")).into();
+    let uuid: Option<String> = Property(device.property_value("ID_FS_UUID")).into();
 
     // Do no return an actual object if none of the fields therein have actual
     // values.
-    if fstype.is_none()
-        && label.is_none()
-        && uuid.is_none()
-        && mountinfo.is_empty()
-    {
+    if fstype.is_none() && label.is_none() && uuid.is_none() && mountinfo.is_empty() {
         return None;
     }
 
@@ -243,8 +229,7 @@ fn new_device(
 ) -> Option<BlockDevice> {
     if let Some(devname) = device.property_value("DEVNAME") {
         let partition = new_partition(parent, device);
-        let filesystem =
-            new_filesystem(device, mounts.get(devname).unwrap_or(&Vec::new()));
+        let filesystem = new_filesystem(device, mounts.get(devname).unwrap_or(&Vec::new()));
         let devmajor: u32 = Property(device.property_value("MAJOR")).into();
         let size: u64 = Property(device.attribute_value("size")).into();
 
@@ -316,9 +301,7 @@ fn get_disks(
         if let Some(devname) = entry.property_value("DEVNAME") {
             let partitions = get_partitions(devname.to_str(), &entry, mounts)?;
 
-            if let Some(device) =
-                new_device(None, partitions.is_empty(), &entry, mounts)
-            {
+            if let Some(device) = new_device(None, partitions.is_empty(), &entry, mounts) {
                 if all || device.available {
                     list.push(device);
                 }

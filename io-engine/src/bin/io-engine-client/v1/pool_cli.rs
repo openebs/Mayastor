@@ -1,8 +1,6 @@
 use crate::{
     context::{Context, OutputFormat},
-    parse_size,
-    ClientError,
-    GrpcStatus,
+    parse_size, ClientError, GrpcStatus,
 };
 use byte_unit::Byte;
 use clap::{Arg, ArgMatches, Command};
@@ -199,8 +197,7 @@ pub async fn handler(ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
         ("grow", args) => grow(ctx, args).await,
         ("list", args) => list(ctx, args).await,
         (cmd, _) => {
-            Err(Status::not_found(format!("command {cmd} does not exist")))
-                .context(GrpcStatus)
+            Err(Status::not_found(format!("command {cmd} does not exist"))).context(GrpcStatus)
         }
     }
 }
@@ -234,10 +231,8 @@ async fn create(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
         Some(s) => match parse_size(s) {
             Ok(s) => Some(s.as_u64() as u32),
             Err(err) => {
-                return Err(Status::invalid_argument(format!(
-                    "Bad size '{err}'"
-                )))
-                .context(GrpcStatus);
+                return Err(Status::invalid_argument(format!("Bad size '{err}'")))
+                    .context(GrpcStatus);
             }
         },
         None => None,
@@ -265,9 +260,7 @@ async fn create(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
             disks: disks_list,
             pooltype: v1rpc::pool::PoolType::from(pooltype) as i32,
             cluster_size,
-            md_args: Some(v1rpc::pool::PoolMetadataArgs {
-                md_resv_ratio,
-            }),
+            md_args: Some(v1rpc::pool::PoolMetadataArgs { md_resv_ratio }),
         })
         .await
         .context(GrpcStatus)?;

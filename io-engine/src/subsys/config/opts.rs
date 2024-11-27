@@ -8,20 +8,10 @@ use serde::{Deserialize, Serialize};
 use spdk_rs::{
     ffihelper::copy_str_with_null,
     libspdk::{
-        bdev_nvme_get_opts,
-        bdev_nvme_set_opts,
-        spdk_bdev_get_opts,
-        spdk_bdev_nvme_opts,
-        spdk_bdev_opts,
-        spdk_bdev_set_opts,
-        spdk_iobuf_get_opts,
-        spdk_iobuf_opts,
-        spdk_iobuf_set_opts,
-        spdk_nvmf_target_opts,
-        spdk_nvmf_transport_opts,
-        spdk_sock_impl_get_opts,
-        spdk_sock_impl_opts,
-        spdk_sock_impl_set_opts,
+        bdev_nvme_get_opts, bdev_nvme_set_opts, spdk_bdev_get_opts, spdk_bdev_nvme_opts,
+        spdk_bdev_opts, spdk_bdev_set_opts, spdk_iobuf_get_opts, spdk_iobuf_opts,
+        spdk_iobuf_set_opts, spdk_nvmf_target_opts, spdk_nvmf_transport_opts,
+        spdk_sock_impl_get_opts, spdk_sock_impl_opts, spdk_sock_impl_set_opts,
     },
     struct_size_init,
 };
@@ -96,15 +86,11 @@ pub enum NvmfTgtTransport {
 impl NvmfTransportOpts {
     /// Tweak a few opts more suited for rdma.
     fn for_rdma(mut self) -> Self {
-        self.in_capsule_data_size = try_from_env(
-            "NVMF_RDMA_IN_CAPSULE_DATA_SIZE",
-            self.in_capsule_data_size,
-        );
+        self.in_capsule_data_size =
+            try_from_env("NVMF_RDMA_IN_CAPSULE_DATA_SIZE", self.in_capsule_data_size);
         self.io_unit_size = try_from_env("NVMF_RDMA_IO_UNIT_SIZE", 8192); // SPDK_NVMF_RDMA_MIN_IO_BUFFER_SIZE
-        self.data_wr_pool_size =
-            try_from_env("NVMF_RDMA_DATA_WR_POOL_SIZE", 4095); // SPDK_NVMF_RDMA_DEFAULT_DATA_WR_POOL_SIZE
-        self.num_shared_buf =
-            try_from_env("NVMF_RDMA_NUM_SHARED_BUF", self.num_shared_buf);
+        self.data_wr_pool_size = try_from_env("NVMF_RDMA_DATA_WR_POOL_SIZE", 4095); // SPDK_NVMF_RDMA_DEFAULT_DATA_WR_POOL_SIZE
+        self.num_shared_buf = try_from_env("NVMF_RDMA_NUM_SHARED_BUF", self.num_shared_buf);
         self
     }
 }
@@ -271,8 +257,7 @@ where
                     if in_units == 0 && !value.is_zero() {
                         Err(format!("must be at least 1{}", unit.units()))
                     } else {
-                        T::try_from(unit.value(value))
-                            .map_err(|error| error.to_string())
+                        T::try_from(unit.value(value)).map_err(|error| error.to_string())
                     }
                 }
                 Err(error) => Err(error.to_string()),
@@ -299,10 +284,7 @@ impl Default for NvmfTransportOpts {
             in_capsule_data_size: 4096,
             max_io_size: 131_072,
             io_unit_size: 131_072,
-            max_qpairs_per_ctrl: try_from_env(
-                "NVMF_TCP_MAX_QPAIRS_PER_CTRL",
-                32,
-            ),
+            max_qpairs_per_ctrl: try_from_env("NVMF_TCP_MAX_QPAIRS_PER_CTRL", 32),
             num_shared_buf: try_from_env("NVMF_TCP_NUM_SHARED_BUF", 2047),
             buf_cache_size: try_from_env("NVMF_TCP_BUF_CACHE_SIZE", 64),
             dif_insert_or_strip: false,
@@ -399,9 +381,7 @@ pub struct NvmeBdevOpts {
 impl GetOpts for NvmeBdevOpts {
     fn get(&self) -> Self {
         let opts: spdk_bdev_nvme_opts = unsafe { zeroed() };
-        unsafe {
-            bdev_nvme_get_opts(&opts as *const _ as *mut spdk_bdev_nvme_opts)
-        };
+        unsafe { bdev_nvme_get_opts(&opts as *const _ as *mut spdk_bdev_nvme_opts) };
         opts.into()
     }
 
@@ -421,21 +401,13 @@ impl Default for NvmeBdevOpts {
     fn default() -> Self {
         Self {
             action_on_timeout: 4,
-            timeout_us: time_try_from_env(
-                "NVME_TIMEOUT",
-                5_000_000,
-                TimeUnit::MicroSeconds,
-            ),
+            timeout_us: time_try_from_env("NVME_TIMEOUT", 5_000_000, TimeUnit::MicroSeconds),
             timeout_admin_us: time_try_from_env(
                 "NVME_TIMEOUT_ADMIN",
                 5_000_000,
                 TimeUnit::MicroSeconds,
             ),
-            keep_alive_timeout_ms: time_try_from_env(
-                "NVME_KATO",
-                10_000,
-                TimeUnit::MilliSeconds,
-            ),
+            keep_alive_timeout_ms: time_try_from_env("NVME_KATO", 10_000, TimeUnit::MilliSeconds),
             transport_retry_count: try_from_env("NVME_RETRY_COUNT", 0),
             arbitration_burst: 0,
             low_priority_weight: 0,
@@ -631,14 +603,8 @@ impl Default for PosixSocketOpts {
             enable_zero_copy_send: true,
             enable_quickack: try_from_env("SOCK_ENABLE_QUICKACK", true),
             enable_placement_id: try_from_env("SOCK_ENABLE_PLACEMENT_ID", 0),
-            enable_zerocopy_send_server: try_from_env(
-                "SOCK_ZEROCOPY_SEND_SERVER",
-                true,
-            ),
-            enable_zerocopy_send_client: try_from_env(
-                "SOCK_ZEROCOPY_SEND_CLIENT",
-                false,
-            ),
+            enable_zerocopy_send_server: try_from_env("SOCK_ZEROCOPY_SEND_SERVER", true),
+            enable_zerocopy_send_client: try_from_env("SOCK_ZEROCOPY_SEND_CLIENT", false),
             zerocopy_threshold: 0,
         }
     }

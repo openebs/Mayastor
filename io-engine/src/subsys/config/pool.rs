@@ -114,9 +114,7 @@ impl PoolConfig {
     /// Capture current pool configuration
     pub fn capture() -> PoolConfig {
         let pools = LvsBdev::iter().map(Pool::from).collect();
-        PoolConfig {
-            pools: Some(pools),
-        }
+        PoolConfig { pools: Some(pools) }
     }
 
     /// Create pools specified in this configuration
@@ -126,11 +124,7 @@ impl PoolConfig {
             for pool in pools.iter() {
                 info!("creating pool {}", pool.name);
                 if let Err(error) = create_pool(pool.into()).await {
-                    error!(
-                        "failed to create pool {}: {}",
-                        pool.name,
-                        error.verbose()
-                    );
+                    error!("failed to create pool {}: {}", pool.name, error.verbose());
                     failures += 1;
                 }
             }
@@ -212,9 +206,7 @@ struct Replica {
     share: Option<ShareType>,
 }
 
-async fn create_pool(
-    args: PoolArgs,
-) -> Result<io_engine_api::v0::Pool, Status> {
+async fn create_pool(args: PoolArgs) -> Result<io_engine_api::v0::Pool, Status> {
     if args.disks.is_empty() {
         return Err(Status::invalid_argument("Missing devices"));
     }

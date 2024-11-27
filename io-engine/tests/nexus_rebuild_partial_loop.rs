@@ -10,9 +10,7 @@ use std::{
 use common::{
     compose::{
         rpc::v1::{nexus::ChildState, GrpcConnect, SharedRpcHandle, Status},
-        Binary,
-        Builder,
-        ComposeTest,
+        Binary, Builder, ComposeTest,
     },
     file_io::DataSize,
     fio::{spawn_fio_task, FioBuilder, FioJobBuilder},
@@ -225,10 +223,8 @@ async fn nexus_rebuild_partial_loop() {
 
                 println!("[B]: node restart iter #{itr} ...");
 
-                for (idx, node) in nodes[0 ..= 1].iter_mut().enumerate() {
-                    println!(
-                        "[B]:      sleeping before restarting node {idx} ..."
-                    );
+                for (idx, node) in nodes[0..=1].iter_mut().enumerate() {
+                    println!("[B]:      sleeping before restarting node {idx} ...");
                     tokio::time::sleep(Duration::from_secs(2)).await;
 
                     println!("[B]:      restarting node {idx} ...");
@@ -236,9 +232,7 @@ async fn nexus_rebuild_partial_loop() {
 
                     nex.online_child_replica(&node.repl).await.unwrap();
 
-                    monitor_nexus(&nex, Duration::from_secs(120))
-                        .await
-                        .unwrap();
+                    monitor_nexus(&nex, Duration::from_secs(120)).await.unwrap();
 
                     println!("[B]:      restarting node {idx} done");
                 }
@@ -247,9 +241,7 @@ async fn nexus_rebuild_partial_loop() {
 
                 itr += 1;
             }
-            println!(
-                "[B]: starting node restart loop finished after {itr} iteration(s)"
-            );
+            println!("[B]: starting node restart loop finished after {itr} iteration(s)");
         }
     });
     tokio::pin!(j1);
@@ -264,10 +256,7 @@ async fn nexus_rebuild_partial_loop() {
 
 /// Periodically polls the nexus, prints its child status, and checks if the
 /// children are online.
-async fn monitor_nexus(
-    nex: &NexusBuilder,
-    timeout: Duration,
-) -> Result<(), Status> {
+async fn monitor_nexus(nex: &NexusBuilder, timeout: Duration) -> Result<(), Status> {
     let start = Instant::now();
 
     loop {
@@ -277,11 +266,7 @@ async fn monitor_nexus(
             .iter()
             .map(|c| {
                 let s = if c.rebuild_progress >= 0 {
-                    format!(
-                        "{s:?} [{p}]",
-                        s = c.state(),
-                        p = c.rebuild_progress,
-                    )
+                    format!("{s:?} [{p}]", s = c.state(), p = c.rebuild_progress,)
                 } else {
                     format!("{s:?}", s = c.state())
                 };

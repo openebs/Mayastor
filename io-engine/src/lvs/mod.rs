@@ -1,35 +1,16 @@
 use crate::{
     bdev::PtplFileOps,
     core::{
-        snapshot::SnapshotDescriptor,
-        CloneParams,
-        LogicalVolume,
-        Protocol,
-        PtplProps,
-        Share,
-        SnapshotParams,
-        UpdateProps,
+        snapshot::SnapshotDescriptor, CloneParams, LogicalVolume, Protocol, PtplProps, Share,
+        SnapshotParams, UpdateProps,
     },
     pool_backend::{
-        Error,
-        FindPoolArgs,
-        IPoolFactory,
-        IPoolProps,
-        ListPoolArgs,
-        PoolArgs,
-        PoolBackend,
-        PoolMetadataInfo,
-        PoolOps,
-        ReplicaArgs,
+        Error, FindPoolArgs, IPoolFactory, IPoolProps, ListPoolArgs, PoolArgs, PoolBackend,
+        PoolMetadataInfo, PoolOps, ReplicaArgs,
     },
     replica_backend::{
-        FindReplicaArgs,
-        IReplicaFactory,
-        ListCloneArgs,
-        ListReplicaArgs,
-        ListSnapshotArgs,
-        ReplicaOps,
-        SnapshotOps,
+        FindReplicaArgs, IReplicaFactory, ListCloneArgs, ListReplicaArgs, ListSnapshotArgs,
+        ReplicaOps, SnapshotOps,
     },
 };
 pub use lvol_snapshot::LvolSnapshotIter;
@@ -60,16 +41,13 @@ impl ReplicaOps for Lvol {
         self.as_bdev().shared()
     }
 
-    fn create_ptpl(
-        &self,
-    ) -> Result<Option<PtplProps>, crate::pool_backend::Error> {
-        let ptpl =
-            self.ptpl().create().map_err(|source| LvsError::LvolShare {
-                source: crate::core::CoreError::Ptpl {
-                    reason: source.to_string(),
-                },
-                name: self.name(),
-            })?;
+    fn create_ptpl(&self) -> Result<Option<PtplProps>, crate::pool_backend::Error> {
+        let ptpl = self.ptpl().create().map_err(|source| LvsError::LvolShare {
+            source: crate::core::CoreError::Ptpl {
+                reason: source.to_string(),
+            },
+            name: self.name(),
+        })?;
         Ok(ptpl)
     }
 
@@ -93,24 +71,16 @@ impl ReplicaOps for Lvol {
         Ok(())
     }
 
-    async fn resize(
-        &mut self,
-        size: u64,
-    ) -> Result<(), crate::pool_backend::Error> {
+    async fn resize(&mut self, size: u64) -> Result<(), crate::pool_backend::Error> {
         self.resize_replica(size).await.map_err(Into::into)
     }
 
-    async fn set_entity_id(
-        &mut self,
-        id: String,
-    ) -> Result<(), crate::pool_backend::Error> {
+    async fn set_entity_id(&mut self, id: String) -> Result<(), crate::pool_backend::Error> {
         Pin::new(self).set(PropValue::EntityId(id)).await?;
         Ok(())
     }
 
-    async fn destroy(
-        self: Box<Self>,
-    ) -> Result<(), crate::pool_backend::Error> {
+    async fn destroy(self: Box<Self>) -> Result<(), crate::pool_backend::Error> {
         self.destroy_replica().await?;
         Ok(())
     }
@@ -149,10 +119,7 @@ impl SnapshotOps for Lvol {
         Ok(())
     }
 
-    async fn create_clone(
-        &self,
-        params: CloneParams,
-    ) -> Result<Box<dyn ReplicaOps>, Error> {
+    async fn create_clone(&self, params: CloneParams) -> Result<Box<dyn ReplicaOps>, Error> {
         let clone = LvolSnapshotOps::create_clone(self, params).await?;
         Ok(Box::new(clone))
     }
@@ -175,9 +142,7 @@ impl PoolOps for Lvs {
         Ok(Box::new(lvol))
     }
 
-    async fn destroy(
-        self: Box<Self>,
-    ) -> Result<(), crate::pool_backend::Error> {
+    async fn destroy(self: Box<Self>) -> Result<(), crate::pool_backend::Error> {
         (*self).destroy().await?;
         Ok(())
     }
@@ -263,18 +228,12 @@ pub struct PoolLvsFactory {}
 
 #[async_trait::async_trait(?Send)]
 impl IPoolFactory for PoolLvsFactory {
-    async fn create(
-        &self,
-        args: PoolArgs,
-    ) -> Result<Box<dyn PoolOps>, crate::pool_backend::Error> {
+    async fn create(&self, args: PoolArgs) -> Result<Box<dyn PoolOps>, crate::pool_backend::Error> {
         let lvs = Lvs::create_or_import(args).await?;
         Ok(Box::new(lvs))
     }
 
-    async fn import(
-        &self,
-        args: PoolArgs,
-    ) -> Result<Box<dyn PoolOps>, crate::pool_backend::Error> {
+    async fn import(&self, args: PoolArgs) -> Result<Box<dyn PoolOps>, crate::pool_backend::Error> {
         let lvs = Lvs::import_from_args(args).await?;
         Ok(Box::new(lvs))
     }
@@ -285,13 +244,8 @@ impl IPoolFactory for PoolLvsFactory {
     ) -> Result<Option<Box<dyn PoolOps>>, crate::pool_backend::Error> {
         let lvs = match args {
             FindPoolArgs::Uuid(uuid) => Lvs::lookup_by_uuid(uuid),
-            FindPoolArgs::UuidOrName(id) => {
-                Lvs::lookup_by_uuid(id).or_else(|| Lvs::lookup(id))
-            }
-            FindPoolArgs::NameUuid {
-                name,
-                uuid,
-            } => match uuid {
+            FindPoolArgs::UuidOrName(id) => Lvs::lookup_by_uuid(id).or_else(|| Lvs::lookup(id)),
+            FindPoolArgs::NameUuid { name, uuid } => match uuid {
                 Some(uuid) => match Lvs::lookup_by_uuid(uuid) {
                     Some(pool) if pool.name() == name => Some(pool),
                     Some(_) => None,
@@ -340,10 +294,7 @@ pub struct ReplLvsFactory {}
 
 #[async_trait::async_trait(?Send)]
 impl IReplicaFactory for ReplLvsFactory {
-    fn bdev_as_replica(
-        &self,
-        bdev: crate::core::UntypedBdev,
-    ) -> Option<Box<dyn ReplicaOps>> {
+    fn bdev_as_replica(&self, bdev: crate::core::UntypedBdev) -> Option<Box<dyn ReplicaOps>> {
         let lvol = Lvol::ok_from(bdev)?;
         if lvol.is_snapshot() {
             return None;
@@ -377,13 +328,9 @@ impl IReplicaFactory for ReplLvsFactory {
         Ok(lvol.map(|l| Box::new(l) as _))
     }
 
-    async fn list(
-        &self,
-        args: &ListReplicaArgs,
-    ) -> Result<Vec<Box<dyn ReplicaOps>>, Error> {
-        let retain = |arg: Option<&String>, val: &String| -> bool {
-            arg.is_none() || arg == Some(val)
-        };
+    async fn list(&self, args: &ListReplicaArgs) -> Result<Vec<Box<dyn ReplicaOps>>, Error> {
+        let retain =
+            |arg: Option<&String>, val: &String| -> bool { arg.is_none() || arg == Some(val) };
 
         let lvols = lvol_iter::LvolIter::new().filter(|lvol| {
             retain(args.pool_name.as_ref(), &lvol.pool_name())
@@ -400,9 +347,7 @@ impl IReplicaFactory for ReplLvsFactory {
     ) -> Result<Vec<SnapshotDescriptor>, crate::pool_backend::Error> {
         // if snapshot_uuid is input, get specific snapshot result
         Ok(if let Some(ref snapshot_uuid) = args.uuid {
-            let lvol = match crate::core::UntypedBdev::lookup_by_uuid_str(
-                snapshot_uuid,
-            ) {
+            let lvol = match crate::core::UntypedBdev::lookup_by_uuid_str(snapshot_uuid) {
                 Some(bdev) => Lvol::try_from(bdev)?,
                 None => {
                     return Err(LvsError::Invalid {
@@ -414,9 +359,7 @@ impl IReplicaFactory for ReplLvsFactory {
             };
             lvol.list_snapshot_by_snapshot_uuid()
         } else if let Some(ref replica_uuid) = args.source_uuid {
-            let lvol = match crate::core::UntypedBdev::lookup_by_uuid_str(
-                replica_uuid,
-            ) {
+            let lvol = match crate::core::UntypedBdev::lookup_by_uuid_str(replica_uuid) {
                 Some(bdev) => Lvol::try_from(bdev)?,
                 None => {
                     return Err(LvsError::Invalid {
@@ -437,9 +380,7 @@ impl IReplicaFactory for ReplLvsFactory {
         args: &ListCloneArgs,
     ) -> Result<Vec<Box<dyn ReplicaOps>>, crate::pool_backend::Error> {
         let clones = if let Some(snapshot_uuid) = &args.snapshot_uuid {
-            let snap_lvol = match crate::core::UntypedBdev::lookup_by_uuid_str(
-                snapshot_uuid,
-            ) {
+            let snap_lvol = match crate::core::UntypedBdev::lookup_by_uuid_str(snapshot_uuid) {
                 Some(bdev) => Lvol::try_from(bdev),
                 None => Err(LvsError::Invalid {
                     source: BsError::LvolNotFound {},

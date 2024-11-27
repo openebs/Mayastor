@@ -6,9 +6,7 @@ use common::{
             nexus::{ChildState, ChildStateReason},
             GrpcConnect,
         },
-        Binary,
-        Builder,
-        ComposeTest,
+        Binary, Builder, ComposeTest,
     },
     file_io::DataSize,
     nexus::{test_write_to_nexus, NexusBuilder},
@@ -127,14 +125,9 @@ async fn nexus_child_online() {
         nex_0,
     } = create_test_storage(&test).await;
 
-    test_write_to_nexus(
-        &nex_0,
-        DataSize::from_bytes(0),
-        1,
-        DataSize::from_kb(1),
-    )
-    .await
-    .unwrap();
+    test_write_to_nexus(&nex_0, DataSize::from_bytes(0), 1, DataSize::from_kb(1))
+        .await
+        .unwrap();
 
     nex_0
         .offline_child_replica_wait(&repl_0, Duration::from_secs(1))

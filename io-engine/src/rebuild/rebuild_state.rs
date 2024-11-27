@@ -182,9 +182,7 @@ impl RebuildStates {
                 }
             },
             RebuildOperation::Complete => match self.current {
-                S::Init | S::Paused | S::Stopped | S::Failed | S::Completed => {
-                    Err(e)
-                }
+                S::Init | S::Paused | S::Stopped | S::Failed | S::Completed => Err(e),
                 S::Running => {
                     self.set_pending(S::Completed, override_pending)?;
                     Ok(false)

@@ -198,17 +198,17 @@ impl LvmCmd {
     /// `Error::LvmBinErr` => Completed with an exit code.
     /// `Error::JsonParsing` => StdOut output is not a valid json for `T`.
     /// `Error::ReportMissing` => Output does not contain a report for `T`.
-    pub(super) async fn report<T: for<'a> Deserialize<'a>>(
-        self,
-    ) -> Result<T, Error> {
+    pub(super) async fn report<T: for<'a> Deserialize<'a>>(self) -> Result<T, Error> {
         let cmd = self.cmd;
         let json_output: LvReport<T> = self.output_json().await?;
 
-        let report: T = json_output.report.into_iter().next().ok_or(
-            Error::ReportMissing {
+        let report: T = json_output
+            .report
+            .into_iter()
+            .next()
+            .ok_or(Error::ReportMissing {
                 command: cmd.to_string(),
-            },
-        )?;
+            })?;
 
         Ok(report)
     }
@@ -222,15 +222,14 @@ impl LvmCmd {
     /// `Error::LvmBinSpawnErr` => Failed to execute or await for completion.
     /// `Error::LvmBinErr` => Completed with an exit code.
     /// `Error::JsonParsing` => StdOut output is not a valid json for `T`.
-    pub(super) async fn output_json<T: for<'a> Deserialize<'a>>(
-        self,
-    ) -> Result<T, Error> {
+    pub(super) async fn output_json<T: for<'a> Deserialize<'a>>(self) -> Result<T, Error> {
         let cmd = self.cmd;
         let output = self.output().await?;
-        let json_output: T = serde_json::from_slice(output.stdout.as_slice())
-            .map_err(|error| Error::JsonParsing {
-            command: cmd.to_string(),
-            error: error.to_string(),
+        let json_output: T = serde_json::from_slice(output.stdout.as_slice()).map_err(|error| {
+            Error::JsonParsing {
+                command: cmd.to_string(),
+                error: error.to_string(),
+            }
         })?;
 
         Ok(json_output)
@@ -283,17 +282,17 @@ impl LvmCmd {
     ///
     /// `Error::LvmBinSpawnErr` => Failed to execute or await for completion.
     /// `Error::LvmBinErr` => Completed with an exit code.
-    pub(super) async fn output(
-        mut self,
-    ) -> Result<std::process::Output, Error> {
+    pub(super) async fn output(mut self) -> Result<std::process::Output, Error> {
         tracing::trace!("{:?}", self.cmder);
 
         crate::tokio_run!(async move {
-            let output = self.cmder.output().await.context(
-                error::LvmBinSpawnErrSnafu {
+            let output = self
+                .cmder
+                .output()
+                .await
+                .context(error::LvmBinSpawnErrSnafu {
                     command: self.cmd.to_string(),
-                },
-            )?;
+                })?;
             if !output.status.success() {
                 let error = String::from_utf8_lossy(&output.stderr).to_string();
                 return Err(Error::LvmBinErr {
@@ -309,17 +308,10 @@ impl LvmCmd {
 /// Serde deserializer helpers to help decode LVM json output from the cli.
 pub(super) mod de {
     use serde::de::{self, Deserialize, Deserializer, Visitor};
-    use std::{
-        fmt::Display,
-        iter::FromIterator,
-        marker::PhantomData,
-        str::FromStr,
-    };
+    use std::{fmt::Display, iter::FromIterator, marker::PhantomData, str::FromStr};
 
     /// Decode a number from a number as a string, example: "10".
-    pub(crate) fn number_from_string<'de, T, D>(
-        deserializer: D,
-    ) -> Result<T, D::Error>
+    pub(crate) fn number_from_string<'de, T, D>(deserializer: D) -> Result<T, D::Error>
     where
         T: FromStr,
         T::Err: Display,
@@ -330,9 +322,7 @@ pub(super) mod de {
     }
 
     /// Decode a comma-separated string into a vector of strings.
-    pub(crate) fn comma_separated<'de, V, T, D>(
-        deserializer: D,
-    ) -> Result<V, D::Error>
+    pub(crate) fn comma_separated<'de, V, T, D>(deserializer: D) -> Result<V, D::Error>
     where
         V: FromIterator<T>,
         T: FromStr,
@@ -349,12 +339,8 @@ pub(super) mod de {
         {
             type Value = V;
 
-            fn expecting(
-                &self,
-                formatter: &mut std::fmt::Formatter,
-            ) -> std::fmt::Result {
-                formatter
-                    .write_str("string containing comma-separated elements")
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("string containing comma-separated elements")
             }
 
             fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>

@@ -24,9 +24,7 @@ impl TryFrom<i32> for Protocol {
             // 2 was for iSCSI
             // the gRPC code does not validate enums so we have
             // to do it here
-            _ => Err(LvsError::ReplicaShareProtocol {
-                value,
-            }),
+            _ => Err(LvsError::ReplicaShareProtocol { value }),
         }
     }
 }
@@ -70,9 +68,7 @@ pub struct PtplProps {
 impl PtplProps {
     /// Create a new `Self` with the given json file path.
     pub fn new(file: std::path::PathBuf) -> Self {
-        Self {
-            file,
-        }
+        Self { file }
     }
     /// Get the json file path.
     pub fn path(&self) -> &std::path::PathBuf {

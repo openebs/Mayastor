@@ -17,9 +17,7 @@ pub enum RebuildError {
     InvalidSrcDstRange {},
     #[snafu(display("Map range is not compatible with rebuild range"))]
     InvalidMapRange {},
-    #[snafu(display(
-        "The same device was specified for both source and destination: {bdev}"
-    ))]
+    #[snafu(display("The same device was specified for both source and destination: {bdev}"))]
     SameBdev { bdev: String },
     #[snafu(display("Failed to get a handle for bdev {}", bdev))]
     NoBdevHandle { source: CoreError, bdev: String },
@@ -33,11 +31,7 @@ pub enum RebuildError {
     WriteIoFailed { source: CoreError, bdev: String },
     #[snafu(display("Verify IO failed for bdev {}", bdev))]
     VerifyIoFailed { source: CoreError, bdev: String },
-    #[snafu(display(
-        "Verify compare failed for bdev {}: {}",
-        bdev,
-        verify_message
-    ))]
+    #[snafu(display("Verify compare failed for bdev {}: {}", bdev, verify_message))]
     VerifyCompareFailed {
         bdev: String,
         verify_message: String,
@@ -82,7 +76,10 @@ pub enum RebuildError {
     FrontendGone,
     #[snafu(display("The rebuild backend has been dropped"))]
     BackendGone,
-    #[snafu(display("The rebuild task pool channel is unexpectedly closed with {} active tasks", active))]
+    #[snafu(display(
+        "The rebuild task pool channel is unexpectedly closed with {} active tasks",
+        active
+    ))]
     RebuildTasksChannel { active: usize },
     #[snafu(display("Snapshot Rebuild: {source}"))]
     SnapshotRebuild { source: SnapshotRebuildError },
@@ -105,8 +102,6 @@ pub enum SnapshotRebuildError {
 
 impl From<SnapshotRebuildError> for RebuildError {
     fn from(source: SnapshotRebuildError) -> Self {
-        Self::SnapshotRebuild {
-            source,
-        }
+        Self::SnapshotRebuild { source }
     }
 }

@@ -44,9 +44,7 @@ impl Share for Nexus<'_> {
                     .pin_bdev_mut()
                     .share_nvmf(props)
                     .await
-                    .context(nexus_err::ShareNvmfNexus {
-                        name,
-                    })?;
+                    .context(nexus_err::ShareNvmfNexus { name })?;
 
                 let uri = self.share_uri().unwrap();
                 info!("{:?}: shared NVMF target as '{}'", self, uri);
@@ -67,11 +65,10 @@ impl Share for Nexus<'_> {
         props: P,
     ) -> Result<(), Self::Error> {
         let name = self.name.clone();
-        self.pin_bdev_mut().update_properties(props).await.context(
-            nexus_err::UpdateShareProperties {
-                name,
-            },
-        )
+        self.pin_bdev_mut()
+            .update_properties(props)
+            .await
+            .context(nexus_err::UpdateShareProperties { name })
     }
 
     /// TODO
@@ -79,11 +76,11 @@ impl Share for Nexus<'_> {
         info!("{:?}: unsharing nexus bdev...", self);
 
         let name = self.name.clone();
-        self.as_mut().pin_bdev_mut().unshare().await.context(
-            nexus_err::UnshareNexus {
-                name,
-            },
-        )?;
+        self.as_mut()
+            .pin_bdev_mut()
+            .unshare()
+            .await
+            .context(nexus_err::UnshareNexus { name })?;
 
         info!("{:?}: unshared nexus bdev", self);
 
@@ -150,9 +147,7 @@ impl<'n> Nexus<'n> {
                 warn!("{} is already shared", self.name);
 
                 self.as_mut()
-                    .update_properties(
-                        UpdateProps::new().with_allowed_hosts(allowed_hosts),
-                    )
+                    .update_properties(UpdateProps::new().with_allowed_hosts(allowed_hosts))
                     .await?;
 
                 return Ok(self.get_share_uri().unwrap());
@@ -168,11 +163,11 @@ impl<'n> Nexus<'n> {
             // right now Off is mapped to Nbd, will clean up the Nbd related
             // code once we refactor the rust tests that use nbd.
             Protocol::Off => {
-                let disk = NbdDisk::create(&self.name).await.context(
-                    nexus_err::ShareNbdNexus {
+                let disk = NbdDisk::create(&self.name)
+                    .await
+                    .context(nexus_err::ShareNbdNexus {
                         name: self.name.clone(),
-                    },
-                )?;
+                    })?;
                 let uri = disk.as_uri();
                 unsafe {
                     self.as_mut().get_unchecked_mut().nexus_target =
@@ -241,9 +236,7 @@ pub(crate) struct NexusPtpl {
 impl NexusPtpl {
     /// Get a `Self` with the given uuid.
     pub(crate) fn new(uuid: uuid::Uuid) -> Self {
-        Self {
-            uuid,
-        }
+        Self { uuid }
     }
     fn uuid(&self) -> &uuid::Uuid {
         &self.uuid
@@ -251,9 +244,7 @@ impl NexusPtpl {
 }
 impl<'n> From<&Nexus<'n>> for NexusPtpl {
     fn from(n: &Nexus<'n>) -> Self {
-        NexusPtpl {
-            uuid: n.uuid(),
-        }
+        NexusPtpl { uuid: n.uuid() }
     }
 }
 impl PtplFileOps for NexusPtpl {

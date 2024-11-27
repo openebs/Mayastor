@@ -9,26 +9,16 @@ use std::{
 use crossbeam::atomic::AtomicCell;
 
 use spdk_rs::libspdk::{
-    spdk_nvme_cmd_cb,
-    spdk_nvme_cpl,
-    spdk_nvme_ctrlr,
-    spdk_nvme_ctrlr_cmd_abort,
-    spdk_nvme_ctrlr_fail,
-    spdk_nvme_ctrlr_get_regs_csts,
-    spdk_nvme_ctrlr_process_admin_completions,
-    spdk_nvme_ctrlr_register_timeout_callback,
-    spdk_nvme_qpair,
-    SPDK_BDEV_NVME_TIMEOUT_ACTION_ABORT,
-    SPDK_BDEV_NVME_TIMEOUT_ACTION_NONE,
+    spdk_nvme_cmd_cb, spdk_nvme_cpl, spdk_nvme_ctrlr, spdk_nvme_ctrlr_cmd_abort,
+    spdk_nvme_ctrlr_fail, spdk_nvme_ctrlr_get_regs_csts, spdk_nvme_ctrlr_process_admin_completions,
+    spdk_nvme_ctrlr_register_timeout_callback, spdk_nvme_qpair,
+    SPDK_BDEV_NVME_TIMEOUT_ACTION_ABORT, SPDK_BDEV_NVME_TIMEOUT_ACTION_NONE,
     SPDK_BDEV_NVME_TIMEOUT_ACTION_RESET,
 };
 
 use crate::{
     bdev::nvmx::{
-        nvme_bdev_running_config,
-        utils::nvme_cpl_succeeded,
-        NvmeController,
-        NVME_CONTROLLERS,
+        nvme_bdev_running_config, utils::nvme_cpl_succeeded, NvmeController, NVME_CONTROLLERS,
     },
     core::{CoreError, DeviceIoController, DeviceTimeoutAction},
 };
@@ -43,9 +33,7 @@ impl TryFrom<u32> for DeviceTimeoutAction {
             SPDK_BDEV_NVME_TIMEOUT_ACTION_ABORT => DeviceTimeoutAction::Abort,
             4 => DeviceTimeoutAction::HotRemove,
             _ => {
-                return Err(format!(
-                    "Invalid timeout action in config: {action}"
-                ));
+                return Err(format!("Invalid timeout action in config: {action}"));
             }
         };
 
@@ -113,9 +101,7 @@ impl TimeoutConfig {
     }
 
     pub fn process_adminq(&self) -> i32 {
-        unsafe {
-            spdk_nvme_ctrlr_process_admin_completions(self.ctrlr.as_ptr())
-        }
+        unsafe { spdk_nvme_ctrlr_process_admin_completions(self.ctrlr.as_ptr()) }
     }
 
     /// Check if the SPDK's nvme controller is failed.
@@ -151,8 +137,7 @@ impl TimeoutConfig {
             // Setup the reset cooldown interval in case of the last
             // failed reset attempt.
             if timeout_ctx.reset_attempts == 0 {
-                timeout_ctx.next_reset_time =
-                    Instant::now() + RESET_COOLDOWN_INTERVAL;
+                timeout_ctx.next_reset_time = Instant::now() + RESET_COOLDOWN_INTERVAL;
                 info!(
                     "{} reset cool down interval activated ({} secs)",
                     timeout_ctx.name,
@@ -225,10 +210,7 @@ impl TimeoutConfig {
                     self as *mut TimeoutConfig as *mut c_void,
                     false,
                 ) {
-                    error!(
-                        "{}: failed to initiate controller reset: {}",
-                        self.name, e
-                    );
+                    error!("{}: failed to initiate controller reset: {}", self.name, e);
                 } else {
                     info!(
                         "{} controller reset initiated ({} reset attempts left)",
@@ -309,9 +291,7 @@ impl SpdkNvmeController {
         cb: spdk_nvme_cmd_cb,
         cb_arg: *mut c_void,
     ) -> i32 {
-        unsafe {
-            spdk_nvme_ctrlr_cmd_abort(self.0.as_ptr(), qpair, cid, cb, cb_arg)
-        }
+        unsafe { spdk_nvme_ctrlr_cmd_abort(self.0.as_ptr(), qpair, cid, cb, cb_arg) }
     }
 
     /// Returns a pointer to the underlying SPDK struct.
@@ -328,8 +308,7 @@ impl SpdkNvmeController {
 
 impl From<*mut spdk_nvme_ctrlr> for SpdkNvmeController {
     fn from(ctrlr: *mut spdk_nvme_ctrlr) -> Self {
-        Self::from_ptr(ctrlr)
-            .expect("nullptr dereference while accessing NVME controller")
+        Self::from_ptr(ctrlr).expect("nullptr dereference while accessing NVME controller")
     }
 }
 
@@ -341,10 +320,7 @@ impl DeviceIoController for NvmeController<'_> {
     }
 
     /// Set current I/O timeout action.
-    fn set_timeout_action(
-        &mut self,
-        action: DeviceTimeoutAction,
-    ) -> Result<(), CoreError> {
+    fn set_timeout_action(&mut self, action: DeviceTimeoutAction) -> Result<(), CoreError> {
         unsafe {
             self.timeout_config.as_mut().set_timeout_action(action);
         };
@@ -355,10 +331,7 @@ impl DeviceIoController for NvmeController<'_> {
 
 // I/O timeout handling for NVMe controller.
 impl NvmeController<'_> {
-    extern "C" fn command_abort_handler(
-        ctx: *mut c_void,
-        cpl: *const spdk_nvme_cpl,
-    ) {
+    extern "C" fn command_abort_handler(ctx: *mut c_void, cpl: *const spdk_nvme_cpl) {
         let timeout_ctx = TimeoutConfig::from_ptr(ctx as *mut TimeoutConfig);
 
         if nvme_cpl_succeeded(cpl) {
@@ -415,10 +388,7 @@ impl NvmeController<'_> {
                             cb_arg,
                         );
                         if rc == 0 {
-                            info!(
-                                "{}: initiated abort for CID {}",
-                                timeout_cfg.name, cid
-                            );
+                            info!("{}: initiated abort for CID {}", timeout_cfg.name, cid);
                             return;
                         }
                         error!(
@@ -467,9 +437,7 @@ impl NvmeController<'_> {
             return;
         }
 
-        let action = match DeviceTimeoutAction::try_from(
-            device_defaults.action_on_timeout,
-        ) {
+        let action = match DeviceTimeoutAction::try_from(device_defaults.action_on_timeout) {
             Ok(action) => action,
             Err(e) => {
                 error!(

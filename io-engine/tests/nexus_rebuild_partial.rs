@@ -6,9 +6,7 @@ use common::{
             nexus::{ChildState, ChildStateReason},
             GrpcConnect,
         },
-        Binary,
-        Builder,
-        ComposeTest,
+        Binary, Builder, ComposeTest,
     },
     file_io::DataSize,
     nexus::{test_write_to_nexus, NexusBuilder},
@@ -24,10 +22,7 @@ use io_engine_tests::{
 
 #[cfg(feature = "fault-injection")]
 use io_engine::core::fault_injection::{
-    FaultDomain,
-    FaultIoOperation,
-    FaultIoStage,
-    InjectionBuilder,
+    FaultDomain, FaultIoOperation, FaultIoStage, InjectionBuilder,
 };
 
 #[cfg(feature = "fault-injection")]
@@ -72,11 +67,7 @@ async fn create_compose_test() -> ComposeTest {
         .unwrap()
         .add_container_bin(
             "ms_nex",
-            Binary::from_dbg("io-engine").with_args(vec![
-                "-l",
-                "1,2,3,4",
-                "-Fcompact,color",
-            ]),
+            Binary::from_dbg("io-engine").with_args(vec!["-l", "1,2,3,4", "-Fcompact,color"]),
             // Binary::from_dbg("io-engine").with_args(vec!["-l", "1,2,3,4"]),
         )
         .add_container_bin(
@@ -201,7 +192,7 @@ async fn nexus_partial_rebuild_io_fault() {
         .with_domain(FaultDomain::NexusChild)
         .with_io_operation(FaultIoOperation::Write)
         .with_io_stage(FaultIoStage::Completion)
-        .with_block_range(7 * SEG_BLK .. u64::MAX)
+        .with_block_range(7 * SEG_BLK..u64::MAX)
         .build_uri()
         .unwrap();
     add_fault_injection(nex_0.rpc(), &inj_uri).await.unwrap();
@@ -314,14 +305,9 @@ async fn nexus_partial_rebuild_offline_online() {
     assert_eq!(children.len(), 2);
 
     // Write 10 x 16 KiB buffers.
-    test_write_to_nexus(
-        &nex_0,
-        DataSize::from_bytes(0),
-        10,
-        DataSize::from_kb(16),
-    )
-    .await
-    .unwrap();
+    test_write_to_nexus(&nex_0, DataSize::from_bytes(0), 10, DataSize::from_kb(16))
+        .await
+        .unwrap();
 
     // Offline the replica.
     nex_0

@@ -59,9 +59,7 @@ impl BsError {
                 // Unknown errno may indicate that the source negative i32 value
                 // was passed instead of taking the abs.
                 warn!("Blob store: got unknown errno");
-                BsError::Generic {
-                    source: value,
-                }
+                BsError::Generic { source: value }
             }
             Errno::EINVAL => BsError::InvalidArgument {},
             Errno::ENOENT => BsError::LvolNotFound {},
@@ -73,9 +71,7 @@ impl BsError {
             Errno::ENOSPC => BsError::NoSpace {},
             Errno::EMFILE => BsError::OutOfMetadata {},
             Errno::EOVERFLOW => BsError::CapacityOverflow {},
-            _ => BsError::Generic {
-                source: value,
-            },
+            _ => BsError::Generic { source: value },
         }
     }
 
@@ -94,9 +90,7 @@ impl BsError {
 impl ToErrno for BsError {
     fn to_errno(self) -> Errno {
         match self {
-            Self::Generic {
-                source,
-            } => source,
+            Self::Generic { source } => source,
             Self::InvalidArgument {} => Errno::EINVAL,
             Self::LvolNotFound {} => Errno::ENOENT,
             Self::VolAlreadyExists {} => Errno::EEXIST,
@@ -155,12 +149,7 @@ pub enum LvsError {
         source: BsError,
         msg: String,
     },
-    #[snafu(display(
-        "errno {}: Invalid cluster-size {}, for pool {}",
-        source,
-        msg,
-        name
-    ))]
+    #[snafu(display("errno {}: Invalid cluster-size {}, for pool {}", source, msg, name))]
     InvalidClusterSize {
         source: BsError,
         name: String,
@@ -212,12 +201,7 @@ pub enum LvsError {
         source: CoreError,
         name: String,
     },
-    #[snafu(display(
-        "failed to get property {} ({}) from {}",
-        prop,
-        source,
-        name
-    ))]
+    #[snafu(display("failed to get property {} ({}) from {}", prop, source, name))]
     GetProperty {
         source: BsError,
         prop: PropName,
@@ -257,20 +241,12 @@ pub enum LvsError {
     FlushFailed {
         name: String,
     },
-    #[snafu(display(
-        "Snapshot parameters for replica {} is not correct: {}",
-        name,
-        msg
-    ))]
+    #[snafu(display("Snapshot parameters for replica {} is not correct: {}", name, msg))]
     SnapshotConfigFailed {
         name: String,
         msg: String,
     },
-    #[snafu(display(
-        "Clone parameters for replica {} are not correct: {}",
-        name,
-        msg
-    ))]
+    #[snafu(display("Clone parameters for replica {} are not correct: {}", name, msg))]
     CloneConfigFailed {
         name: String,
         msg: String,
@@ -289,104 +265,41 @@ pub enum LvsError {
 impl ToErrno for LvsError {
     fn to_errno(self) -> Errno {
         match self {
-            Self::Import {
-                source, ..
-            } => source.to_errno(),
-            Self::PoolCreate {
-                source, ..
-            } => source.to_errno(),
-            Self::Export {
-                source, ..
-            } => source.to_errno(),
-            Self::Destroy {
-                ..
-            } => Errno::ENXIO,
-            Self::Grow {
-                ..
-            } => Errno::ENXIO,
-            Self::PoolNotFound {
-                source, ..
-            } => source.to_errno(),
-            Self::InvalidBdev {
-                ..
-            } => Errno::ENXIO,
-            Self::Invalid {
-                source, ..
-            } => source.to_errno(),
-            Self::InvalidClusterSize {
-                source, ..
-            } => source.to_errno(),
-            Self::InvalidMetadataParam {
-                ..
-            } => Errno::EINVAL,
-            Self::RepExists {
-                source, ..
-            } => source.to_errno(),
-            Self::RepCreate {
-                source, ..
-            } => source.to_errno(),
-            Self::RepDestroy {
-                source, ..
-            } => source.to_errno(),
-            Self::RepResize {
-                source, ..
-            } => source.to_errno(),
-            Self::NotALvol {
-                source, ..
-            } => source.to_errno(),
-            Self::LvolShare {
-                source, ..
-            } => source.to_errno(),
-            Self::UpdateShareProperties {
-                source, ..
-            } => source.to_errno(),
-            Self::LvolUnShare {
-                source, ..
-            } => source.to_errno(),
-            Self::GetProperty {
-                source, ..
-            } => source.to_errno(),
-            Self::SetProperty {
-                source, ..
-            } => source.to_errno(),
-            Self::SyncProperty {
-                source, ..
-            } => source.to_errno(),
-            Self::SnapshotCreate {
-                source, ..
-            } => source.to_errno(),
-            Self::FlushFailed {
-                ..
-            } => Errno::EIO,
-            Self::Property {
-                source, ..
-            } => source.to_errno(),
-            Self::SnapshotConfigFailed {
-                ..
-            }
-            | Self::ReplicaShareProtocol {
-                ..
-            } => Errno::EINVAL,
-            Self::SnapshotCloneCreate {
-                source, ..
-            } => source.to_errno(),
-            Self::CloneConfigFailed {
-                ..
-            } => Errno::EINVAL,
-            Self::WipeFailed {
-                ..
-            } => Errno::EINVAL,
-            Self::ResourceLockFailed {
-                ..
-            } => Errno::EBUSY,
+            Self::Import { source, .. } => source.to_errno(),
+            Self::PoolCreate { source, .. } => source.to_errno(),
+            Self::Export { source, .. } => source.to_errno(),
+            Self::Destroy { .. } => Errno::ENXIO,
+            Self::Grow { .. } => Errno::ENXIO,
+            Self::PoolNotFound { source, .. } => source.to_errno(),
+            Self::InvalidBdev { .. } => Errno::ENXIO,
+            Self::Invalid { source, .. } => source.to_errno(),
+            Self::InvalidClusterSize { source, .. } => source.to_errno(),
+            Self::InvalidMetadataParam { .. } => Errno::EINVAL,
+            Self::RepExists { source, .. } => source.to_errno(),
+            Self::RepCreate { source, .. } => source.to_errno(),
+            Self::RepDestroy { source, .. } => source.to_errno(),
+            Self::RepResize { source, .. } => source.to_errno(),
+            Self::NotALvol { source, .. } => source.to_errno(),
+            Self::LvolShare { source, .. } => source.to_errno(),
+            Self::UpdateShareProperties { source, .. } => source.to_errno(),
+            Self::LvolUnShare { source, .. } => source.to_errno(),
+            Self::GetProperty { source, .. } => source.to_errno(),
+            Self::SetProperty { source, .. } => source.to_errno(),
+            Self::SyncProperty { source, .. } => source.to_errno(),
+            Self::SnapshotCreate { source, .. } => source.to_errno(),
+            Self::FlushFailed { .. } => Errno::EIO,
+            Self::Property { source, .. } => source.to_errno(),
+            Self::SnapshotConfigFailed { .. } | Self::ReplicaShareProtocol { .. } => Errno::EINVAL,
+            Self::SnapshotCloneCreate { source, .. } => source.to_errno(),
+            Self::CloneConfigFailed { .. } => Errno::EINVAL,
+            Self::WipeFailed { .. } => Errno::EINVAL,
+            Self::ResourceLockFailed { .. } => Errno::EBUSY,
         }
     }
 }
 
 impl From<crate::core::wiper::Error> for LvsError {
     fn from(source: crate::core::wiper::Error) -> Self {
-        Self::WipeFailed {
-            source,
-        }
+        Self::WipeFailed { source }
     }
 }

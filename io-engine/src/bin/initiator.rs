@@ -2,8 +2,7 @@
 //! target type understood by the nexus.
 
 use std::{
-    fmt,
-    fs,
+    fmt, fs,
     io::{self, Write},
 };
 
@@ -17,17 +16,11 @@ use io_engine::{
     bdev::{device_create, device_open},
     bdev_api::{bdev_create, BdevError},
     core::{
-        mayastor_env_stop,
-        CoreError,
-        MayastorCliArgs,
-        MayastorEnvironment,
-        Reactor,
-        SnapshotParams,
-        UntypedBdev,
+        mayastor_env_stop, CoreError, MayastorCliArgs, MayastorEnvironment, Reactor,
+        SnapshotParams, UntypedBdev,
     },
     jsonrpc::print_error_chain,
-    logger,
-    subsys,
+    logger, subsys,
     subsys::Config,
 };
 use spdk_rs::DmaError;
@@ -84,8 +77,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 /// Create initiator bdev.
 async fn create_bdev(uri: &str) -> Result<UntypedBdev> {
     let bdev_name = bdev_create(uri).await?;
-    let bdev = UntypedBdev::lookup_by_name(&bdev_name)
-        .expect("Failed to lookup the created bdev");
+    let bdev = UntypedBdev::lookup_by_name(&bdev_name).expect("Failed to lookup the created bdev");
     Ok(bdev)
 }
 
@@ -167,44 +159,64 @@ fn main() {
     let matches = Command::new("Test initiator for nexus replica")
         .version(version_info_str!())
         .about("Connect, read or write a block to a nexus replica using its URI")
-        .arg(Arg::new("URI")
-            .help("URI of the replica to connect to")
-            .required(true)
-            .index(1))
-        .arg(Arg::new("offset")
-            .short('o')
-            .long("offset")
-            .value_name("NUMBER")
-            .help("Offset of IO operation on the replica in bytes (default 0)"))
-        .subcommand(Command::new("connect")
-            .about("Connect to and disconnect from the replica"))
-        .subcommand(Command::new("read")
-            .about("Read bytes from the replica")
-            .arg(Arg::new("FILE")
-                .help("File to write data that were read from the replica")
+        .arg(
+            Arg::new("URI")
+                .help("URI of the replica to connect to")
                 .required(true)
-                .index(1)))
-        .subcommand(Command::new("write")
-            .about("Write bytes to the replica")
-            .arg(Arg::new("FILE")
-                .help("File to read data from that will be written to the replica")
-                .required(true)
-                .index(1)))
-        .subcommand(Command::new("nvme-admin")
-            .about("Send a custom NVMe Admin command")
-            .arg(Arg::new("opcode")
-                .help("Admin command opcode to send")
-                .required(true)
-                .index(1)))
-        .subcommand(Command::new("id-ctrlr")
-            .about("Send NVMe Admin identify controller command")
-            .arg(Arg::new("FILE")
-                .help("File to write output of identify controller command")
-                .required(true)
-                .index(1)))
-        .subcommand(Command::new("create-snapshot")
-            .about("Create a snapshot on the replica"))
-        .subcommand_required(true).subcommand_required(true).get_matches();
+                .index(1),
+        )
+        .arg(
+            Arg::new("offset")
+                .short('o')
+                .long("offset")
+                .value_name("NUMBER")
+                .help("Offset of IO operation on the replica in bytes (default 0)"),
+        )
+        .subcommand(Command::new("connect").about("Connect to and disconnect from the replica"))
+        .subcommand(
+            Command::new("read")
+                .about("Read bytes from the replica")
+                .arg(
+                    Arg::new("FILE")
+                        .help("File to write data that were read from the replica")
+                        .required(true)
+                        .index(1),
+                ),
+        )
+        .subcommand(
+            Command::new("write")
+                .about("Write bytes to the replica")
+                .arg(
+                    Arg::new("FILE")
+                        .help("File to read data from that will be written to the replica")
+                        .required(true)
+                        .index(1),
+                ),
+        )
+        .subcommand(
+            Command::new("nvme-admin")
+                .about("Send a custom NVMe Admin command")
+                .arg(
+                    Arg::new("opcode")
+                        .help("Admin command opcode to send")
+                        .required(true)
+                        .index(1),
+                ),
+        )
+        .subcommand(
+            Command::new("id-ctrlr")
+                .about("Send NVMe Admin identify controller command")
+                .arg(
+                    Arg::new("FILE")
+                        .help("File to write output of identify controller command")
+                        .required(true)
+                        .index(1),
+                ),
+        )
+        .subcommand(Command::new("create-snapshot").about("Create a snapshot on the replica"))
+        .subcommand_required(true)
+        .subcommand_required(true)
+        .get_matches();
 
     logger::init("INFO");
 
@@ -228,8 +240,7 @@ fn main() {
         let res = if let Some(matches) = matches.subcommand_matches("read") {
             read(&uri, offset, matches.get_one::<String>("FILE").unwrap()).await
         } else if let Some(matches) = matches.subcommand_matches("write") {
-            write(&uri, offset, matches.get_one::<String>("FILE").unwrap())
-                .await
+            write(&uri, offset, matches.get_one::<String>("FILE").unwrap()).await
         } else if let Some(matches) = matches.subcommand_matches("nvme-admin") {
             let opcode: u8 = match matches.get_one::<String>("opcode") {
                 Some(val) => val.parse().expect("Opcode must be a number"),
@@ -237,8 +248,7 @@ fn main() {
             };
             nvme_admin(&uri, opcode).await
         } else if let Some(matches) = matches.subcommand_matches("id-ctrlr") {
-            identify_ctrlr(&uri, matches.get_one::<String>("FILE").unwrap())
-                .await
+            identify_ctrlr(&uri, matches.get_one::<String>("FILE").unwrap()).await
         } else if matches.subcommand_matches("create-snapshot").is_some() {
             create_snapshot(&uri).await
         } else {

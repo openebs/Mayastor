@@ -33,9 +33,7 @@ impl Display for FaultMethod {
         use IoCompletionStatus::*;
 
         match self {
-            Self::Status(NvmeError(NvmeStatus::DATA_TRANSFER_ERROR)) => {
-                f.write_str("status")
-            }
+            Self::Status(NvmeError(NvmeStatus::DATA_TRANSFER_ERROR)) => f.write_str("status"),
             Self::Status(NvmeError(s)) => {
                 let (sct, sc) = s.as_sct_sc_codes();
                 write!(f, "status-nvme-{sct:x}-{sc:x}",)
@@ -65,9 +63,9 @@ impl Display for FaultMethod {
 
 impl FaultMethod {
     /// A shorthand for a generic data transfer error.
-    pub const DATA_TRANSFER_ERROR: Self = Self::Status(
-        IoCompletionStatus::NvmeError(NvmeStatus::DATA_TRANSFER_ERROR),
-    );
+    pub const DATA_TRANSFER_ERROR: Self = Self::Status(IoCompletionStatus::NvmeError(
+        NvmeStatus::DATA_TRANSFER_ERROR,
+    ));
 
     /// TODO
     pub(super) fn inject(
@@ -91,7 +89,7 @@ impl FaultMethod {
         };
 
         for iov in iovs {
-            for i in 0 .. iov.len() {
+            for i in 0..iov.len() {
                 iov[i] = s.rng.next_u32() as u8;
             }
         }
@@ -118,15 +116,13 @@ impl FaultMethod {
         }
 
         let r = match s {
-            "status-lvol-nospace" => {
-                IoCompletionStatus::LvolError(LvolFailure::NoSpace)
-            }
+            "status-lvol-nospace" => IoCompletionStatus::LvolError(LvolFailure::NoSpace),
             "status-submit-read" => {
                 IoCompletionStatus::IoSubmissionError(IoSubmissionFailure::Read)
             }
-            "status-submit-write" => IoCompletionStatus::IoSubmissionError(
-                IoSubmissionFailure::Write,
-            ),
+            "status-submit-write" => {
+                IoCompletionStatus::IoSubmissionError(IoSubmissionFailure::Write)
+            }
             "status-admin" => IoCompletionStatus::AdminCommandError,
             _ => return None,
         };

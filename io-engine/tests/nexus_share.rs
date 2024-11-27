@@ -1,13 +1,6 @@
 use io_engine::{
     bdev::nexus::{nexus_create, nexus_lookup_mut},
-    core::{
-        mayastor_env_stop,
-        MayastorCliArgs,
-        Protocol,
-        Reactor,
-        Share,
-        UntypedBdev,
-    },
+    core::{mayastor_env_stop, MayastorCliArgs, Protocol, Reactor, Share, UntypedBdev},
 };
 use std::pin::Pin;
 

@@ -10,8 +10,7 @@ pub const METADATA_RESERVATION_OFFSET: u64 = 1024 * 1024;
 pub const METADATA_RESERVATION_SIZE: u64 = 4 * 1024 * 1024;
 
 /// Start of data partition, in bytes.
-pub const DATA_PARTITION_OFFSET: u64 =
-    METADATA_RESERVATION_OFFSET + METADATA_RESERVATION_SIZE;
+pub const DATA_PARTITION_OFFSET: u64 = METADATA_RESERVATION_OFFSET + METADATA_RESERVATION_SIZE;
 
 /// Calculates offsets of the first and last blocks of the data
 /// partition for the given device size and block size.
@@ -55,15 +54,13 @@ pub fn calc_data_partition(
     let gpt_blocks = bytes_to_alinged_blocks(GPT_TABLE_SIZE, block_size);
 
     // First block of metadata reservation.
-    let lba_start =
-        bytes_to_alinged_blocks(METADATA_RESERVATION_OFFSET, block_size);
+    let lba_start = bytes_to_alinged_blocks(METADATA_RESERVATION_OFFSET, block_size);
 
     // Last usable device block.
     let lba_end = num_blocks - gpt_blocks - 2;
 
     // Blocks used by metadata reservation.
-    let meta_blocks =
-        bytes_to_alinged_blocks(METADATA_RESERVATION_SIZE, block_size);
+    let meta_blocks = bytes_to_alinged_blocks(METADATA_RESERVATION_SIZE, block_size);
 
     // First block of data.
     let data_start = lba_start + meta_blocks;

@@ -2,29 +2,13 @@ use crate::common::fio_run_verify;
 use common::compose::{
     rpc::v0::{
         mayastor::{
-            AddChildNexusRequest,
-            BdevShareRequest,
-            BdevUri,
-            Child,
-            ChildState,
-            CreateNexusRequest,
-            CreateReply,
-            DestroyNexusRequest,
-            Nexus,
-            NexusState,
-            Null,
-            PublishNexusRequest,
-            RebuildStateRequest,
-            RemoveChildNexusRequest,
-            ShareProtocolNexus,
+            AddChildNexusRequest, BdevShareRequest, BdevUri, Child, ChildState, CreateNexusRequest,
+            CreateReply, DestroyNexusRequest, Nexus, NexusState, Null, PublishNexusRequest,
+            RebuildStateRequest, RemoveChildNexusRequest, ShareProtocolNexus,
         },
-        GrpcConnect,
-        RpcHandle,
+        GrpcConnect, RpcHandle,
     },
-    Binary,
-    Builder,
-    ComposeTest,
-    ContainerSpec,
+    Binary, Builder, ComposeTest, ContainerSpec,
 };
 use etcd_client::Client;
 
@@ -187,9 +171,7 @@ async fn persist_io_failure() {
         .with_rand_hostnqn(true);
     target.connect().unwrap();
     let devices = target.block_devices(2).unwrap();
-    let fio_hdl = tokio::spawn(async move {
-        fio_run_verify(&devices[0].to_string()).unwrap()
-    });
+    let fio_hdl = tokio::spawn(async move { fio_run_verify(&devices[0].to_string()).unwrap() });
 
     fio_hdl.await.unwrap();
 
@@ -403,12 +385,7 @@ async fn create_nexus(hdl: &mut RpcHandle, uuid: &str, children: Vec<String>) {
         .expect("Failed to create nexus.");
 }
 
-async fn add_child_nexus(
-    hdl: &mut RpcHandle,
-    uuid: &str,
-    child: &str,
-    norebuild: bool,
-) {
+async fn add_child_nexus(hdl: &mut RpcHandle, uuid: &str, child: &str, norebuild: bool) {
     hdl.mayastor
         .add_child_nexus(AddChildNexusRequest {
             uuid: uuid.to_string(),
@@ -501,11 +478,7 @@ async fn get_nexus_state(hdl: &mut RpcHandle, uuid: &str) -> Option<i32> {
 }
 
 /// Returns a child with the given URI.
-async fn get_child(
-    hdl: &mut RpcHandle,
-    nexus_uuid: &str,
-    child_uri: &str,
-) -> Child {
+async fn get_child(hdl: &mut RpcHandle, nexus_uuid: &str, child_uri: &str) -> Child {
     let n = get_nexus(hdl, nexus_uuid)
         .await
         .expect("Failed to get nexus");

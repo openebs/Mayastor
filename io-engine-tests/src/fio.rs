@@ -225,10 +225,7 @@ impl FioBuilder {
             .expect("FIO builder is expected to succeed")
     }
 
-    pub fn with_jobs(
-        &mut self,
-        jobs: impl Iterator<Item = FioJob>,
-    ) -> &mut Self {
+    pub fn with_jobs(&mut self, jobs: impl Iterator<Item = FioJob>) -> &mut Self {
         jobs.for_each(|j| {
             self.with_job(j);
         });
@@ -254,8 +251,7 @@ impl Fio {
             self.fio_binary = "$FIO".to_string();
         }
 
-        let cmd =
-            format!("sudo LD_PRELOAD=$FIO_SPDK {fio}", fio = self.fio_binary);
+        let cmd = format!("sudo LD_PRELOAD=$FIO_SPDK {fio}", fio = self.fio_binary);
 
         let args = self
             .jobs
@@ -271,12 +267,8 @@ impl Fio {
         }
 
         let start_time = Instant::now();
-        let (exit, stdout, stderr) = run_script::run(
-            &self.script,
-            &Vec::new(),
-            &run_script::ScriptOptions::new(),
-        )
-        .unwrap();
+        let (exit, stdout, stderr) =
+            run_script::run(&self.script, &Vec::new(), &run_script::ScriptOptions::new()).unwrap();
 
         self.total_time = start_time.elapsed();
         self.push_err(&stderr);
@@ -325,8 +317,7 @@ impl Fio {
             .ok_or_else(|| "'jobs' item in output is not an array".to_string())?
             .iter()
             .for_each(|j| {
-                let name =
-                    j.get("jobname").unwrap().as_str().unwrap().to_string();
+                let name = j.get("jobname").unwrap().as_str().unwrap().to_string();
                 let err = j.get("error").unwrap().as_i64().unwrap() as i32;
 
                 if let Some(j) = self.find_job_mut(&name) {

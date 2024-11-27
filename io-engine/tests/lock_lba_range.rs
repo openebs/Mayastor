@@ -6,13 +6,7 @@ use crossbeam::channel::{unbounded, Receiver};
 
 use io_engine::{
     bdev::nexus::{nexus_create, nexus_lookup_mut},
-    core::{
-        MayastorCliArgs,
-        MayastorEnvironment,
-        Reactor,
-        Reactors,
-        UntypedBdev,
-    },
+    core::{MayastorCliArgs, MayastorEnvironment, Reactor, Reactors, UntypedBdev},
 };
 use spdk_rs::{BdevDescError, DmaBuf, LbaRange, LbaRangeLock};
 
@@ -25,7 +19,7 @@ const NUM_NEXUS_CHILDREN: u64 = 2;
 
 fn test_ini() {
     test_init!();
-    for i in 0 .. NUM_NEXUS_CHILDREN {
+    for i in 0..NUM_NEXUS_CHILDREN {
         common::delete_file(&[get_disk(i)]);
         common::truncate_file_bytes(&get_disk(i), NEXUS_SIZE);
     }
@@ -36,7 +30,7 @@ fn test_ini() {
 }
 
 fn test_fini() {
-    for i in 0 .. NUM_NEXUS_CHILDREN {
+    for i in 0..NUM_NEXUS_CHILDREN {
         common::delete_file(&[get_disk(i)]);
     }
 
@@ -56,7 +50,7 @@ fn get_dev(number: u64) -> String {
 
 async fn create_nexus() {
     let mut ch = Vec::new();
-    for i in 0 .. NUM_NEXUS_CHILDREN {
+    for i in 0..NUM_NEXUS_CHILDREN {
         ch.push(get_dev(i));
     }
 

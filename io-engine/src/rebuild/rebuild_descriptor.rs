@@ -1,28 +1,17 @@
 use chrono::{DateTime, Utc};
 use snafu::ResultExt;
-use spdk_rs::{
-    libspdk::SPDK_NVME_SC_COMPARE_FAILURE,
-    DmaBuf,
-    IoVec,
-    NvmeStatus,
-};
+use spdk_rs::{libspdk::SPDK_NVME_SC_COMPARE_FAILURE, DmaBuf, IoVec, NvmeStatus};
 
 use crate::{
     bdev::device_open,
     bdev_api::bdev_get_name,
     core::{
-        BlockDevice,
-        BlockDeviceDescriptor,
-        BlockDeviceHandle,
-        CoreError,
-        IoCompletionStatus,
-        ReadOptions,
-        SegmentMap,
+        BlockDevice, BlockDeviceDescriptor, BlockDeviceHandle, CoreError, IoCompletionStatus,
+        ReadOptions, SegmentMap,
     },
     rebuild::{
         rebuild_error::{BdevInvalidUri, NoCopyBuffer},
-        WithinRange,
-        SEGMENT_SIZE,
+        WithinRange, SEGMENT_SIZE,
     },
 };
 
@@ -100,16 +89,12 @@ impl RebuildDescriptor {
                 let dst_size = dst_descriptor.get_device().size_in_bytes();
                 let dst_blk_size = dst_descriptor.get_device().block_len();
 
-                0 .. dst_size / dst_blk_size
+                0..dst_size / dst_blk_size
             }
             Some(range) => range,
         };
 
-        if !Self::validate(
-            src_handle.get_device(),
-            dst_handle.get_device(),
-            &range,
-        ) {
+        if !Self::validate(src_handle.get_device(), dst_handle.get_device(), &range) {
             return Err(RebuildError::InvalidSrcDstRange {});
         }
 
@@ -140,16 +125,13 @@ impl RebuildDescriptor {
     ) -> bool {
         // todo: make sure we don't overwrite the labels
         let data_partition_start = 0;
-        range.within(data_partition_start .. source.num_blocks())
-            && range.within(data_partition_start .. destination.num_blocks())
+        range.within(data_partition_start..source.num_blocks())
+            && range.within(data_partition_start..destination.num_blocks())
             && source.block_len() == destination.block_len()
     }
 
     /// Check if the rebuild range is compatible with the rebuild segment map.
-    pub(super) fn validate_map(
-        &self,
-        map: &SegmentMap,
-    ) -> Result<(), RebuildError> {
+    pub(super) fn validate_map(&self, map: &SegmentMap) -> Result<(), RebuildError> {
         if map.size_blks() > self.range.end {
             return Err(RebuildError::InvalidMapRange {});
         }
@@ -206,11 +188,7 @@ impl RebuildDescriptor {
     /// Returns `IoVec` for the givem `DmaBuf`, with length adjusted to the copy
     /// size for the given offset. Given `DmaBuf` must be large enough.
     #[inline(always)]
-    pub(super) fn adjusted_iov(
-        &self,
-        buffer: &DmaBuf,
-        offset_blk: u64,
-    ) -> IoVec {
+    pub(super) fn adjusted_iov(&self, buffer: &DmaBuf, offset_blk: u64) -> IoVec {
         let mut iov = buffer.to_io_vec();
 
         let iov_len = self.get_segment_size_blks(offset_blk) * self.block_size;
@@ -243,8 +221,7 @@ impl RebuildDescriptor {
 
             // Read from an unallocated block occured, no need to copy it.
             Err(CoreError::ReadFailed {
-                status:
-                    IoCompletionStatus::NvmeError(NvmeStatus::UNWRITTEN_BLOCK),
+                status: IoCompletionStatus::NvmeError(NvmeStatus::UNWRITTEN_BLOCK),
                 ..
             }) => Ok(false),
 
@@ -263,11 +240,7 @@ impl RebuildDescriptor {
         iovs: &[IoVec],
     ) -> Result<(), RebuildError> {
         self.dst_io_handle()
-            .writev_blocks_async(
-                iovs,
-                offset_blk,
-                self.get_segment_size_blks(offset_blk),
-            )
+            .writev_blocks_async(iovs, offset_blk, self.get_segment_size_blks(offset_blk))
             .await
             .map_err(|err| RebuildError::WriteIoFailed {
                 source: err,
@@ -298,17 +271,13 @@ impl RebuildDescriptor {
 
         match self
             .dst_io_handle()
-            .comparev_blocks_async(
-                iovs,
-                offset_blk,
-                self.get_segment_size_blks(offset_blk),
-            )
+            .comparev_blocks_async(iovs, offset_blk, self.get_segment_size_blks(offset_blk))
             .await
         {
             Ok(_) => Ok(()),
             Err(CoreError::CompareFailed {
                 status:
-                IoCompletionStatus::NvmeError(NvmeStatus::Media(SPDK_NVME_SC_COMPARE_FAILURE)),
+                    IoCompletionStatus::NvmeError(NvmeStatus::Media(SPDK_NVME_SC_COMPARE_FAILURE)),
                 ..
             }) => self.verify_failure(offset_blk),
             Err(err) => Err(RebuildError::VerifyIoFailed {

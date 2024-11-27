@@ -15,10 +15,7 @@ use common::{
     compose::{
         rpc::v0::{
             mayastor::{
-                CreatePoolRequest,
-                CreateReplicaRequest,
-                ShareProtocolReplica,
-                ShareReplicaRequest,
+                CreatePoolRequest, CreateReplicaRequest, ShareProtocolReplica, ShareReplicaRequest,
             },
             GrpcConnect,
         },
@@ -112,9 +109,9 @@ async fn replica_snapshot() {
             // Issue an unimplemented vendor command
             // This checks that the target is correctly rejecting such commands
             // In practice the nexus will not send such commands
-            custom_nvme_admin(0xc1).await.expect_err(
-                "unexpectedly succeeded invalid nvme admin command",
-            );
+            custom_nvme_admin(0xc1)
+                .await
+                .expect_err("unexpectedly succeeded invalid nvme admin command");
             bdev_io::read_some(NXNAME, 0, 2, 0xff).await.unwrap();
             let ts = create_snapshot().await.unwrap();
             // Check that IO to the replica still works after creating a

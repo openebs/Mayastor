@@ -8,27 +8,18 @@ use common::compose::{
         mayastor::{BdevShareRequest, BdevUri, JsonRpcRequest, Null},
         GrpcConnect,
     },
-    Builder,
-    ComposeTest,
-    MayastorTest,
+    Builder, ComposeTest, MayastorTest,
 };
 
 use io_engine::{
     bdev::{device_create, device_destroy, device_lookup, device_open},
     constants::NVME_NQN_PREFIX,
-    core::{
-        BlockDevice,
-        BlockDeviceHandle,
-        DeviceEventType,
-        IoCompletionStatus,
-        MayastorCliArgs,
-    },
+    core::{BlockDevice, BlockDeviceHandle, DeviceEventType, IoCompletionStatus, MayastorCliArgs},
     subsys::{Config, NvmeBdevOpts},
 };
 
 use std::{
-    slice,
-    str,
+    slice, str,
     sync::{
         atomic::{AtomicBool, AtomicPtr, AtomicU64, Ordering},
         Arc,
@@ -263,12 +254,7 @@ fn clear_callback_invocation_flag() {
 
 fn flag_callback_invocation() {
     assert_eq!(
-        INVOCATION_FLAG.compare_exchange(
-            false,
-            true,
-            Ordering::Acquire,
-            Ordering::Relaxed,
-        ),
+        INVOCATION_FLAG.compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed,),
         Ok(false),
         "Callback is called more than once"
     );
@@ -276,12 +262,7 @@ fn flag_callback_invocation() {
 
 fn check_callback_invocation() {
     assert_eq!(
-        INVOCATION_FLAG.compare_exchange(
-            true,
-            false,
-            Ordering::Acquire,
-            Ordering::Relaxed,
-        ),
+        INVOCATION_FLAG.compare_exchange(true, false, Ordering::Acquire, Ordering::Relaxed,),
         Ok(true),
         "Callback has not been called"
     );
@@ -456,11 +437,7 @@ async fn nvmf_io_stats() {
             );
 
             let mut ctx = IoCtx {
-                dma_buf: vec![create_io_buffer(
-                    alignment,
-                    6 * BUF_SIZE,
-                    IO_PATTERN,
-                )],
+                dma_buf: vec![create_io_buffer(alignment, 6 * BUF_SIZE, IO_PATTERN)],
                 handle,
             };
 
@@ -564,8 +541,7 @@ async fn nvmf_device_read_write_at() {
         let handle = descr.into_handle().unwrap();
         let device = handle.get_device();
 
-        let guard_buf =
-            create_io_buffer(device.alignment(), BUF_SIZE, GUARD_PATTERN);
+        let guard_buf = create_io_buffer(device.alignment(), BUF_SIZE, GUARD_PATTERN);
 
         // First, write 2 guard buffers before and after target I/O location.
         let mut r = handle.write_at(OP_OFFSET, &guard_buf).await.unwrap();
@@ -577,8 +553,7 @@ async fn nvmf_device_read_write_at() {
         assert_eq!(r, BUF_SIZE, "The amount of data written mismatches");
 
         // Write data buffer between guard buffers.
-        let data_buf =
-            create_io_buffer(device.alignment(), BUF_SIZE, IO_PATTERN);
+        let data_buf = create_io_buffer(device.alignment(), BUF_SIZE, IO_PATTERN);
         r = handle
             .write_at(OP_OFFSET + BUF_SIZE, &data_buf)
             .await
@@ -644,11 +619,7 @@ async fn nvmf_device_readv_test() {
         // Make sure callback is invoked only once.
         flag_callback_invocation();
 
-        assert_eq!(
-            status,
-            IoCompletionStatus::Success,
-            "readv_blocks() failed"
-        );
+        assert_eq!(status, IoCompletionStatus::Success, "readv_blocks() failed");
 
         // Make sure we have the correct device.
         assert_eq!(
@@ -659,10 +630,7 @@ async fn nvmf_device_readv_test() {
 
         // Make sure we were passed the same pattern string as requested.
         let s = unsafe {
-            let slice = slice::from_raw_parts(
-                ctx as *const u8,
-                MAYASTOR_CTRLR_TITLE.len(),
-            );
+            let slice = slice::from_raw_parts(ctx as *const u8, MAYASTOR_CTRLR_TITLE.len());
             str::from_utf8(slice).unwrap()
         };
 
@@ -687,11 +655,7 @@ async fn nvmf_device_readv_test() {
 
             // Create a buffer with the guard pattern.
             let mut io_ctx = IoCtx {
-                dma_buf: vec![create_io_buffer(
-                    alignment,
-                    BUF_SIZE,
-                    GUARD_PATTERN,
-                )],
+                dma_buf: vec![create_io_buffer(alignment, BUF_SIZE, GUARD_PATTERN)],
                 handle,
             };
 
@@ -781,10 +745,7 @@ async fn nvmf_device_writev_test() {
 
         // Make sure we were passed the same pattern string as requested.
         let s = unsafe {
-            let slice = slice::from_raw_parts(
-                ctx as *const u8,
-                MAYASTOR_CTRLR_TITLE.len(),
-            );
+            let slice = slice::from_raw_parts(ctx as *const u8, MAYASTOR_CTRLR_TITLE.len());
             str::from_utf8(slice).unwrap()
         };
 
@@ -813,8 +774,7 @@ async fn nvmf_device_writev_test() {
             // Store device name for further checking from I/O callback.
             DEVICE_NAME.set(name.clone()).unwrap();
 
-            let guard_buf =
-                create_io_buffer(alignment, BUF_SIZE, GUARD_PATTERN);
+            let guard_buf = create_io_buffer(alignment, BUF_SIZE, GUARD_PATTERN);
 
             // First, write 2 guard buffers before and after target I/O
             // location.
@@ -827,9 +787,7 @@ async fn nvmf_device_writev_test() {
             assert_eq!(r, BUF_SIZE, "The amount of data written mismatches");
 
             let ctx = IoCtx {
-                dma_buf: vec![create_io_buffer(
-                    alignment, BUF_SIZE, IO_PATTERN,
-                )],
+                dma_buf: vec![create_io_buffer(alignment, BUF_SIZE, IO_PATTERN)],
                 handle,
             };
 
@@ -932,11 +890,7 @@ async fn nvmf_device_readv_iovs_test() {
         // Make sure callback is invoked only once.
         flag_callback_invocation();
 
-        assert_eq!(
-            status,
-            IoCompletionStatus::Success,
-            "readv_blocks() failed"
-        );
+        assert_eq!(status, IoCompletionStatus::Success, "readv_blocks() failed");
 
         // Make sure we have the correct device.
         assert_eq!(
@@ -947,10 +901,7 @@ async fn nvmf_device_readv_iovs_test() {
 
         // Make sure we were passed the same pattern string as requested.
         let s = unsafe {
-            let slice = slice::from_raw_parts(
-                ctx as *const u8,
-                MAYASTOR_CTRLR_TITLE.len(),
-            );
+            let slice = slice::from_raw_parts(ctx as *const u8, MAYASTOR_CTRLR_TITLE.len());
             str::from_utf8(slice).unwrap()
         };
 
@@ -1093,10 +1044,7 @@ async fn nvmf_device_writev_iovs_test() {
 
         // Make sure we were passed the same pattern string as requested.
         let s = unsafe {
-            let slice = slice::from_raw_parts(
-                ctx as *const u8,
-                MAYASTOR_CTRLR_TITLE.len(),
-            );
+            let slice = slice::from_raw_parts(ctx as *const u8, MAYASTOR_CTRLR_TITLE.len());
             str::from_utf8(slice).unwrap()
         };
 
@@ -1129,15 +1077,11 @@ async fn nvmf_device_writev_iovs_test() {
                 buffers.push(buf);
             }
 
-            let io_ctx = IoCtx {
-                buffers,
-                handle,
-            };
+            let io_ctx = IoCtx { buffers, handle };
 
             // First, write 2 guard buffers before and after target I/O
             // location.
-            let guard_buf =
-                create_io_buffer(alignment, GUARD_SIZE, GUARD_PATTERN);
+            let guard_buf = create_io_buffer(alignment, GUARD_SIZE, GUARD_PATTERN);
             let mut r = io_ctx
                 .handle
                 .write_at(OP_OFFSET - GUARD_SIZE, &guard_buf)
@@ -1236,9 +1180,10 @@ async fn nvmf_device_admin_ctrl() {
         let descr = device_open(&name, false).unwrap();
         let handle = descr.into_handle().unwrap();
 
-        handle.nvme_admin_custom(0xCF).await.expect_err(
-            "successfully executed invalid NVMe admin command (0xCF)",
-        );
+        handle
+            .nvme_admin_custom(0xCF)
+            .await
+            .expect_err("successfully executed invalid NVMe admin command (0xCF)");
     })
     .await;
 
@@ -1284,10 +1229,7 @@ async fn nvmf_device_reset() {
 
         // Make sure we were passed the same pattern string as requested.
         let s = unsafe {
-            let slice = slice::from_raw_parts(
-                ctx as *const u8,
-                MAYASTOR_CTRLR_TITLE.len(),
-            );
+            let slice = slice::from_raw_parts(ctx as *const u8, MAYASTOR_CTRLR_TITLE.len());
             str::from_utf8(slice).unwrap()
         };
 
@@ -1315,9 +1257,7 @@ async fn nvmf_device_reset() {
                 )
                 .unwrap();
 
-            AtomicPtr::new(Box::into_raw(Box::new(DeviceIoCtx {
-                handle,
-            })))
+            AtomicPtr::new(Box::into_raw(Box::new(DeviceIoCtx { handle })))
         })
         .await;
 
@@ -1331,9 +1271,7 @@ async fn nvmf_device_reset() {
 
     ms.spawn(async move {
         let io_ctx = unsafe { Box::from_raw(op_ctx.into_inner()) };
-        println!(
-            "Identifying controller using a newly recreated I/O channels."
-        );
+        println!("Identifying controller using a newly recreated I/O channels.");
         io_ctx.handle.nvme_identify_ctrlr().await.unwrap();
         println!("Controller successfully identified");
     })
@@ -1384,10 +1322,7 @@ async fn wipe_device_blocks(is_unmap: bool) {
 
         // Make sure we were passed the same pattern string as requested.
         let s = unsafe {
-            let slice = slice::from_raw_parts(
-                ctx as *const u8,
-                MAYASTOR_CTRLR_TITLE.len(),
-            );
+            let slice = slice::from_raw_parts(ctx as *const u8, MAYASTOR_CTRLR_TITLE.len());
             str::from_utf8(slice).unwrap()
         };
 
@@ -1409,8 +1344,7 @@ async fn wipe_device_blocks(is_unmap: bool) {
                 (device.block_len(), device.alignment())
             };
 
-            let guard_buf =
-                create_io_buffer(alignment, BUF_SIZE, GUARD_PATTERN);
+            let guard_buf = create_io_buffer(alignment, BUF_SIZE, GUARD_PATTERN);
 
             // Store device name for further checking from I/O callback.
             // Note that wipe_device_blocks() is called twice by different
@@ -1467,9 +1401,7 @@ async fn wipe_device_blocks(is_unmap: bool) {
                     .unwrap();
             }
 
-            AtomicPtr::new(Box::into_raw(Box::new(DeviceIoCtx {
-                handle,
-            })))
+            AtomicPtr::new(Box::into_raw(Box::new(DeviceIoCtx { handle })))
         })
         .await;
 
@@ -1572,10 +1504,7 @@ async fn nvmf_reset_abort_io() {
 
         // Make sure we were passed the same pattern string as requested.
         let s = unsafe {
-            let slice = slice::from_raw_parts(
-                ctx as *const u8,
-                MAYASTOR_CTRLR_TITLE.len(),
-            );
+            let slice = slice::from_raw_parts(ctx as *const u8, MAYASTOR_CTRLR_TITLE.len());
             str::from_utf8(slice).unwrap()
         };
 
@@ -1604,10 +1533,7 @@ async fn nvmf_reset_abort_io() {
 
         // Make sure we were passed the same pattern string as requested.
         let s = unsafe {
-            let slice = slice::from_raw_parts(
-                ctx as *const u8,
-                MAYASTOR_CTRLR_TITLE.len(),
-            );
+            let slice = slice::from_raw_parts(ctx as *const u8, MAYASTOR_CTRLR_TITLE.len());
             str::from_utf8(slice).unwrap()
         };
 
@@ -1634,10 +1560,7 @@ async fn nvmf_reset_abort_io() {
 
         // Make sure we were passed the same pattern string as requested.
         let s = unsafe {
-            let slice = slice::from_raw_parts(
-                ctx as *const u8,
-                MAYASTOR_CTRLR_TITLE.len(),
-            );
+            let slice = slice::from_raw_parts(ctx as *const u8, MAYASTOR_CTRLR_TITLE.len());
             str::from_utf8(slice).unwrap()
         };
         assert_eq!(s, MAYASTOR_CTRLR_TITLE);
@@ -1661,18 +1584,14 @@ async fn nvmf_reset_abort_io() {
             DEVICE_NAME.set(name.clone()).unwrap();
 
             let mut io_ctx = IoCtx {
-                dma_buf: vec![create_io_buffer(
-                    alignment,
-                    BUF_SIZE,
-                    GUARD_PATTERN,
-                )],
+                dma_buf: vec![create_io_buffer(alignment, BUF_SIZE, GUARD_PATTERN)],
                 handle,
             };
 
             // Initiate a 3 read and 3 write operations into the buffer.
             // We use the same IOVs as we don't care about the I/O result and
             // care only about failures which we're gonna trigger.
-            for _ in 0 .. NUM_IOS {
+            for _ in 0..NUM_IOS {
                 io_ctx
                     .handle
                     .readv_blocks(
@@ -1791,10 +1710,7 @@ async fn nvmf_device_io_handle_cleanup() {
                 "Device still resolvable by name after removal"
             );
 
-            AtomicPtr::new(Box::into_raw(Box::new(DeviceIoCtx {
-                handle,
-                alignment,
-            })))
+            AtomicPtr::new(Box::into_raw(Box::new(DeviceIoCtx { handle, alignment })))
         })
         .await;
 
@@ -1807,9 +1723,7 @@ async fn nvmf_device_io_handle_cleanup() {
     // are supposed to be invalidated after device removal.
     ms.spawn(async move {
         let io_ctx = unsafe { Box::from_raw(op_ctx.into_inner()) };
-        println!(
-            "Identifying controller using a newly recreated I/O channels."
-        );
+        println!("Identifying controller using a newly recreated I/O channels.");
         // Make sure the same NVMe admin command now fail.
         io_ctx
             .handle
@@ -1879,9 +1793,7 @@ async fn nvmf_device_hot_remove() {
         .jsonrpc
         .json_rpc_call(JsonRpcRequest {
             method: "nvmf_subsystem_remove_ns".to_string(),
-            params: format!(
-                "{{\"nqn\": \"{NVME_NQN_PREFIX}:disk0\", \"nsid\": 1}}"
-            ),
+            params: format!("{{\"nqn\": \"{NVME_NQN_PREFIX}:disk0\", \"nsid\": 1}}"),
         })
         .await
         .unwrap();
@@ -1903,5 +1815,5 @@ async fn nvmf_device_hot_remove() {
             .await
             .expect_err("Device has been successfully created for controller without namespaces");
     })
-        .await;
+    .await;
 }

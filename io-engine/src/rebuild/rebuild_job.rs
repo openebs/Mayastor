@@ -4,13 +4,8 @@ use chrono::Utc;
 use futures::channel::oneshot;
 
 use super::{
-    HistoryRecord,
-    RebuildError,
-    RebuildJobBackendManager,
-    RebuildJobRequest,
-    RebuildState,
-    RebuildStates,
-    RebuildStats,
+    HistoryRecord, RebuildError, RebuildJobBackendManager, RebuildJobRequest, RebuildState,
+    RebuildStates, RebuildStats,
 };
 use crate::{
     core::{Reactors, ReadOptions, VerboseError},
@@ -121,10 +116,7 @@ impl RebuildJob {
 
     /// Creates a new RebuildJob taking a specific backend implementation and
     /// running the generic backend manager.
-    pub(super) fn from_manager(
-        manager: &RebuildJobManager,
-        desc: &RebuildDescriptor,
-    ) -> Self {
+    pub(super) fn from_manager(manager: &RebuildJobManager, desc: &RebuildDescriptor) -> Self {
         Self {
             src_uri: desc.src_uri.to_string(),
             dst_uri: desc.dst_uri.to_string(),
@@ -137,9 +129,7 @@ impl RebuildJob {
 
     /// Schedules the job to start in a future and returns a complete channel
     /// which can be waited on.
-    pub async fn start(
-        &self,
-    ) -> Result<oneshot::Receiver<RebuildState>, RebuildError> {
+    pub async fn start(&self) -> Result<oneshot::Receiver<RebuildState>, RebuildError> {
         self.exec_client_op(RebuildOperation::Start)?;
         self.add_completion_listener()
     }
@@ -280,19 +270,12 @@ impl RebuildJob {
     }
 
     /// Internal operations can bypass previous pending operations.
-    fn exec_internal_op(
-        &self,
-        op: RebuildOperation,
-    ) -> Result<(), RebuildError> {
+    fn exec_internal_op(&self, op: RebuildOperation) -> Result<(), RebuildError> {
         self.exec_op(op, true)
     }
 
     /// Single state machine where all operations are handled.
-    fn exec_op(
-        &self,
-        op: RebuildOperation,
-        override_pending: bool,
-    ) -> Result<(), RebuildError> {
+    fn exec_op(&self, op: RebuildOperation, override_pending: bool) -> Result<(), RebuildError> {
         let wake_up = self.states.write().exec_op(op, override_pending)?;
         if wake_up {
             self.wake_up();
@@ -314,9 +297,7 @@ impl RebuildJob {
         });
     }
 
-    fn add_completion_listener(
-        &self,
-    ) -> Result<oneshot::Receiver<RebuildState>, RebuildError> {
+    fn add_completion_listener(&self) -> Result<oneshot::Receiver<RebuildState>, RebuildError> {
         let (sender, receiver) = oneshot::channel();
         let list = match self.complete_chan.upgrade() {
             None => Err(RebuildError::BackendGone),

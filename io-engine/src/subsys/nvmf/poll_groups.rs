@@ -1,8 +1,4 @@
-use spdk_rs::libspdk::{
-    spdk_nvmf_poll_group,
-    spdk_nvmf_poll_group_create,
-    spdk_nvmf_tgt,
-};
+use spdk_rs::libspdk::{spdk_nvmf_poll_group, spdk_nvmf_poll_group_create, spdk_nvmf_tgt};
 
 use crate::core::Mthread;
 

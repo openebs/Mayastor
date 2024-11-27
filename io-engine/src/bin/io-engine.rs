@@ -9,31 +9,17 @@ use futures::future::FutureExt;
 
 use io_engine::{
     bdev::{
-        nexus::{
-            ENABLE_NEXUS_CHANNEL_DEBUG,
-            ENABLE_NEXUS_RESET,
-            ENABLE_PARTIAL_REBUILD,
-        },
+        nexus::{ENABLE_NEXUS_CHANNEL_DEBUG, ENABLE_NEXUS_RESET, ENABLE_PARTIAL_REBUILD},
         util::uring,
     },
     core::{
         device_monitor_loop,
         diagnostics::process_diagnostics_cli,
-        lock::{
-            ProtectedSubsystems,
-            ResourceLockManager,
-            ResourceLockManagerConfig,
-        },
-        reactor_monitor_loop,
-        runtime,
-        MayastorCliArgs,
-        MayastorEnvironment,
-        Mthread,
-        Reactors,
+        lock::{ProtectedSubsystems, ResourceLockManager, ResourceLockManagerConfig},
+        reactor_monitor_loop, runtime, MayastorCliArgs, MayastorEnvironment, Mthread, Reactors,
     },
     eventing::Event,
-    grpc,
-    logger,
+    grpc, logger,
     persistent_store::PersistentStoreBuilder,
     subsys::Registration,
 };
@@ -216,9 +202,8 @@ fn hugepage_get_nr(hugepage_path: &Path) -> (u32, u32) {
 fn hugepage_check() {
     let (nr_pages, free_pages) =
         hugepage_get_nr(Path::new("/sys/kernel/mm/hugepages/hugepages-2048kB"));
-    let (nr_1g_pages, free_1g_pages) = hugepage_get_nr(Path::new(
-        "/sys/kernel/mm/hugepages/hugepages-1048576kB",
-    ));
+    let (nr_1g_pages, free_1g_pages) =
+        hugepage_get_nr(Path::new("/sys/kernel/mm/hugepages/hugepages-1048576kB"));
 
     if nr_pages + nr_1g_pages * 512 < PAGES_NEEDED {
         error!(
@@ -277,25 +262,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     hugepage_check();
 
     let nvme_core_path = Path::new("/sys/module/nvme_core/parameters");
-    let nvme_mp: String =
-        match sysfs::parse_value::<String>(nvme_core_path, "multipath") {
-            Ok(s) => match s.as_str() {
-                "Y" => "yes".to_string(),
-                "N" => "disabled".to_string(),
-                u => format!("unknown value {u}"),
-            },
-            Err(e) => {
-                if e.kind() == std::io::ErrorKind::NotFound {
-                    if nvme_core_path.exists() {
-                        "not built".to_string()
-                    } else {
-                        "nvme not loaded".to_string()
-                    }
+    let nvme_mp: String = match sysfs::parse_value::<String>(nvme_core_path, "multipath") {
+        Ok(s) => match s.as_str() {
+            "Y" => "yes".to_string(),
+            "N" => "disabled".to_string(),
+            u => format!("unknown value {u}"),
+        },
+        Err(e) => {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                if nvme_core_path.exists() {
+                    "not built".to_string()
                 } else {
-                    format!("unknown error: {e}")
+                    "nvme not loaded".to_string()
                 }
+            } else {
+                format!("unknown error: {e}")
             }
-        };
+        }
+    };
 
     info!(
         "kernel io_uring support: {}",

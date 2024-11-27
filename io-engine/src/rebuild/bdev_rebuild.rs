@@ -5,9 +5,7 @@ use super::{
     rebuild_error::RebuildError,
     rebuild_job_backend::RebuildBackend,
     rebuild_task::{RebuildTasks, TaskResult},
-    RebuildJob,
-    RebuildJobOptions,
-    SEGMENT_TASKS,
+    RebuildJob, RebuildJobOptions, SEGMENT_TASKS,
 };
 
 use crate::{
@@ -64,14 +62,8 @@ impl BdevRebuildJobBuilder {
     }
     /// Builds a `BdevRebuildJob` which can be started and which will then
     /// rebuild from source to destination.
-    pub async fn build(
-        self,
-        src_uri: &str,
-        dst_uri: &str,
-    ) -> Result<BdevRebuildJob, RebuildError> {
-        let descriptor =
-            RebuildDescriptor::new(src_uri, dst_uri, self.range, self.options)
-                .await?;
+    pub async fn build(self, src_uri: &str, dst_uri: &str) -> Result<BdevRebuildJob, RebuildError> {
+        let descriptor = RebuildDescriptor::new(src_uri, dst_uri, self.range, self.options).await?;
         let task_pool = RebuildTasks::new(SEGMENT_TASKS, &descriptor)?;
         let notify_fn = self.notify_fn.unwrap_or(|_, _| {});
         match self.rebuild_map {
@@ -117,9 +109,7 @@ pub(super) struct BdevRebuildJobBackend<R: RangeRebuilder<RebuildDescriptor>> {
 }
 
 #[async_trait::async_trait(?Send)]
-impl<R: RangeRebuilder<RebuildDescriptor>> RebuildBackend
-    for BdevRebuildJobBackend<R>
-{
+impl<R: RangeRebuilder<RebuildDescriptor>> RebuildBackend for BdevRebuildJobBackend<R> {
     fn on_state_change(&mut self) {
         let desc = self.common_desc();
         (self.notify_fn)(&desc.src_uri, &desc.dst_uri);
@@ -145,11 +135,8 @@ impl<R: RangeRebuilder<RebuildDescriptor>> RebuildBackend
         self.copier
             .next()
             .map(|blk| {
-                self.task_pool.schedule_segment_rebuild(
-                    id,
-                    blk,
-                    self.copier.copier(),
-                );
+                self.task_pool
+                    .schedule_segment_rebuild(id, blk, self.copier.copier());
                 self.task_pool.active += 1;
                 true
             })
@@ -161,18 +148,14 @@ impl<R: RangeRebuilder<RebuildDescriptor>> RebuildBackend
     }
 }
 
-impl<R: RangeRebuilder<RebuildDescriptor>> std::fmt::Debug
-    for BdevRebuildJobBackend<R>
-{
+impl<R: RangeRebuilder<RebuildDescriptor>> std::fmt::Debug for BdevRebuildJobBackend<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("BdevRebuildJob")
             .field("next", &self.copier.peek_next())
             .finish()
     }
 }
-impl<R: RangeRebuilder<RebuildDescriptor>> std::fmt::Display
-    for BdevRebuildJobBackend<R>
-{
+impl<R: RangeRebuilder<RebuildDescriptor>> std::fmt::Display for BdevRebuildJobBackend<R> {
     fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Ok(())
     }

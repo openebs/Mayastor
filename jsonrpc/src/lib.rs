@@ -59,11 +59,7 @@ pub struct RpcError {
 }
 
 /// Make json-rpc request, parse reply, and return user data to caller.
-pub async fn call<A, R>(
-    sock_path: &str,
-    method: &str,
-    args: Option<A>,
-) -> Result<R, Error>
+pub async fn call<A, R>(sock_path: &str, method: &str, args: Option<A>) -> Result<R, Error>
 where
     A: serde::ser::Serialize,
     R: 'static + serde::de::DeserializeOwned + Send,
@@ -131,10 +127,8 @@ where
                 });
             }
 
-            serde_json::from_value(
-                reply.result.unwrap_or(serde_json::value::Value::Null),
-            )
-            .map_err(Error::ParseError)
+            serde_json::from_value(reply.result.unwrap_or(serde_json::value::Value::Null))
+                .map_err(Error::ParseError)
         }
         Err(error) => Err(Error::ParseError(error)),
     }

@@ -8,15 +8,8 @@ use crate::{
     bdev::{
         nexus,
         nexus::{
-            nexus_lookup_mut,
-            nexus_lookup_uuid_mut,
-            ChildStateClient,
-            FaultReason,
-            Nexus,
-            NexusChild,
-            NexusPtpl,
-            NexusStatus,
-            NvmeAnaState,
+            nexus_lookup_mut, nexus_lookup_uuid_mut, ChildStateClient, FaultReason, Nexus,
+            NexusChild, NexusPtpl, NexusStatus, NvmeAnaState,
         },
         PtplFileOps,
     },
@@ -42,9 +35,7 @@ fn map_fault_reason(r: FaultReason) -> ChildStateReason {
 
 fn map_child_state(child: &NexusChild) -> (ChildState, ChildStateReason) {
     use ChildState::{
-        ChildDegraded as Degraded,
-        ChildFaulted as Faulted,
-        ChildOnline as Online,
+        ChildDegraded as Degraded, ChildFaulted as Faulted, ChildOnline as Online,
         ChildUnknown as Unknown,
     };
     use ChildStateReason::*;
@@ -82,21 +73,11 @@ impl From<NexusStatus> for rpc::NexusState {
 impl From<NvmeAnaState> for rpc::NvmeAnaState {
     fn from(state: NvmeAnaState) -> Self {
         match state {
-            NvmeAnaState::InvalidState => {
-                rpc::NvmeAnaState::NvmeAnaInvalidState
-            }
-            NvmeAnaState::OptimizedState => {
-                rpc::NvmeAnaState::NvmeAnaOptimizedState
-            }
-            NvmeAnaState::NonOptimizedState => {
-                rpc::NvmeAnaState::NvmeAnaNonOptimizedState
-            }
-            NvmeAnaState::InaccessibleState => {
-                rpc::NvmeAnaState::NvmeAnaInaccessibleState
-            }
-            NvmeAnaState::PersistentLossState => {
-                rpc::NvmeAnaState::NvmeAnaPersistentLossState
-            }
+            NvmeAnaState::InvalidState => rpc::NvmeAnaState::NvmeAnaInvalidState,
+            NvmeAnaState::OptimizedState => rpc::NvmeAnaState::NvmeAnaOptimizedState,
+            NvmeAnaState::NonOptimizedState => rpc::NvmeAnaState::NvmeAnaNonOptimizedState,
+            NvmeAnaState::InaccessibleState => rpc::NvmeAnaState::NvmeAnaInaccessibleState,
+            NvmeAnaState::PersistentLossState => rpc::NvmeAnaState::NvmeAnaPersistentLossState,
             NvmeAnaState::ChangeState => rpc::NvmeAnaState::NvmeAnaChangeState,
         }
     }
@@ -199,9 +180,7 @@ pub fn uuid_to_name(uuid: &str) -> Result<String, nexus::Error> {
 /// Look up a nexus by name first (if created by nexus_create_v2) then by its
 /// uuid prepending "nexus-" prefix.
 /// Return error if nexus not found.
-pub fn nexus_lookup<'n>(
-    uuid: &str,
-) -> Result<Pin<&'n mut Nexus<'n>>, nexus::Error> {
+pub fn nexus_lookup<'n>(uuid: &str) -> Result<Pin<&'n mut Nexus<'n>>, nexus::Error> {
     if let Some(nexus) = nexus_lookup_mut(uuid) {
         Ok(nexus)
     } else if let Some(nexus) = nexus_lookup_uuid_mut(uuid) {
@@ -221,9 +200,7 @@ pub fn nexus_lookup<'n>(
 /// Add child to nexus. Normally this would have been part of grpc method
 /// implementation, however it is not allowed to use '?' in `locally` macro.
 /// So we implement it as a separate function.
-pub async fn nexus_add_child(
-    args: rpc::AddChildNexusRequest,
-) -> Result<rpc::Child, nexus::Error> {
+pub async fn nexus_add_child(args: rpc::AddChildNexusRequest) -> Result<rpc::Child, nexus::Error> {
     let mut n = nexus_lookup(&args.uuid)?;
     // TODO: do not add child if it already exists (idempotency)
     // For that we need api to check existence of child by name (not uri that

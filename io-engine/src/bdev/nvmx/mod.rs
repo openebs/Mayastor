@@ -40,15 +40,11 @@ pub struct NVMeCtlrList<'a> {
 }
 
 impl<'a> NVMeCtlrList<'a> {
-    fn write_lock(
-        &self,
-    ) -> RwLockWriteGuard<HashMap<String, Arc<Mutex<NvmeController<'a>>>>> {
+    fn write_lock(&self) -> RwLockWriteGuard<HashMap<String, Arc<Mutex<NvmeController<'a>>>>> {
         self.entries.write()
     }
 
-    fn read_lock(
-        &self,
-    ) -> RwLockReadGuard<HashMap<String, Arc<Mutex<NvmeController<'a>>>>> {
+    fn read_lock(&self) -> RwLockReadGuard<HashMap<String, Arc<Mutex<NvmeController<'a>>>>> {
         self.entries.read()
     }
 
@@ -63,16 +59,11 @@ impl<'a> NVMeCtlrList<'a> {
 
     /// remove a NVMe controller from the list, when the last reference to the
     /// controller is dropped, the controller will be freed.
-    pub fn remove_by_name<T: Into<String> + Display>(
-        &self,
-        name: T,
-    ) -> Result<String, CoreError> {
+    pub fn remove_by_name<T: Into<String> + Display>(&self, name: T) -> Result<String, CoreError> {
         let mut entries = self.write_lock();
 
         if !entries.contains_key(&name.to_string()) {
-            return Err(CoreError::BdevNotFound {
-                name: name.into(),
-            });
+            return Err(CoreError::BdevNotFound { name: name.into() });
         }
 
         // Remove 'controller name -> controller' mapping.
@@ -89,11 +80,7 @@ impl<'a> NVMeCtlrList<'a> {
 
     /// insert a controller into the list using the key, note that different
     /// keys may refer to the same controller
-    pub fn insert_controller(
-        &self,
-        cid: String,
-        ctl: Arc<Mutex<NvmeController<'a>>>,
-    ) {
+    pub fn insert_controller(&self, cid: String, ctl: Arc<Mutex<NvmeController<'a>>>) {
         let mut entries = self.write_lock();
         entries.insert(cid, ctl);
     }
@@ -112,15 +99,12 @@ impl<'a> NVMeCtlrList<'a> {
 impl Default for NVMeCtlrList<'_> {
     fn default() -> Self {
         Self {
-            entries: RwLock::new(
-                HashMap::<String, Arc<Mutex<NvmeController>>>::new(),
-            ),
+            entries: RwLock::new(HashMap::<String, Arc<Mutex<NvmeController>>>::new()),
         }
     }
 }
 
-pub static NVME_CONTROLLERS: Lazy<NVMeCtlrList> =
-    Lazy::new(NVMeCtlrList::default);
+pub static NVME_CONTROLLERS: Lazy<NVMeCtlrList> = Lazy::new(NVMeCtlrList::default);
 
 pub fn nvme_bdev_running_config() -> &'static NvmeBdevOpts {
     &Config::get().nvme_bdev_opts

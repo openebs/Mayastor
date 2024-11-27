@@ -1,38 +1,19 @@
 use super::{
     compose::rpc::v1::{
         nexus::{
-            AddChildNexusRequest,
-            Child,
-            ChildAction,
-            ChildOperationRequest,
-            ChildState,
-            ChildStateReason,
-            CreateNexusRequest,
-            DestroyNexusRequest,
-            ListNexusOptions,
-            Nexus,
-            NexusNvmePreemption,
-            NvmeReservation,
-            PublishNexusRequest,
-            RebuildHistoryRecord,
-            RebuildHistoryRequest,
-            RemoveChildNexusRequest,
-            ResizeNexusRequest,
+            AddChildNexusRequest, Child, ChildAction, ChildOperationRequest, ChildState,
+            ChildStateReason, CreateNexusRequest, DestroyNexusRequest, ListNexusOptions, Nexus,
+            NexusNvmePreemption, NvmeReservation, PublishNexusRequest, RebuildHistoryRecord,
+            RebuildHistoryRequest, RemoveChildNexusRequest, ResizeNexusRequest,
             ShutdownNexusRequest,
         },
         snapshot::SnapshotInfo,
-        SharedRpcHandle,
-        Status,
+        SharedRpcHandle, Status,
     },
     file_io::DataSize,
     fio::Fio,
     generate_uuid,
-    nvmf::{
-        test_fio_to_nvmf,
-        test_fio_to_nvmf_aio,
-        test_write_to_nvmf,
-        NvmfLocation,
-    },
+    nvmf::{test_fio_to_nvmf, test_fio_to_nvmf_aio, test_write_to_nvmf, NvmfLocation},
     replica::ReplicaBuilder,
 };
 use io_engine::{
@@ -44,9 +25,7 @@ use std::time::{Duration, Instant};
 use tonic::Code;
 
 use io_engine_api::v1::snapshot::{
-    ListSnapshotsRequest,
-    NexusCreateSnapshotReplicaDescriptor,
-    NexusCreateSnapshotReplicaStatus,
+    ListSnapshotsRequest, NexusCreateSnapshotReplicaDescriptor, NexusCreateSnapshotReplicaStatus,
     NexusCreateSnapshotRequest,
 };
 
@@ -222,9 +201,7 @@ impl NexusBuilder {
             .lock()
             .await
             .nexus
-            .shutdown_nexus(ShutdownNexusRequest {
-                uuid: self.uuid(),
-            })
+            .shutdown_nexus(ShutdownNexusRequest { uuid: self.uuid() })
             .await
             .map(|_| ())
     }
@@ -234,9 +211,7 @@ impl NexusBuilder {
             .lock()
             .await
             .nexus
-            .destroy_nexus(DestroyNexusRequest {
-                uuid: self.uuid(),
-            })
+            .destroy_nexus(DestroyNexusRequest { uuid: self.uuid() })
             .await
             .map(|_| ())
     }
@@ -269,11 +244,7 @@ impl NexusBuilder {
             .map(|r| r.into_inner().nexus.unwrap())
     }
 
-    pub async fn add_child(
-        &self,
-        bdev: &str,
-        norebuild: bool,
-    ) -> Result<Nexus, Status> {
+    pub async fn add_child(&self, bdev: &str, norebuild: bool) -> Result<Nexus, Status> {
         self.rpc()
             .lock()
             .await
@@ -287,11 +258,7 @@ impl NexusBuilder {
             .map(|r| r.into_inner().nexus.unwrap())
     }
 
-    pub async fn add_replica(
-        &self,
-        r: &ReplicaBuilder,
-        norebuild: bool,
-    ) -> Result<Nexus, Status> {
+    pub async fn add_replica(&self, r: &ReplicaBuilder, norebuild: bool) -> Result<Nexus, Status> {
         self.add_child(&self.replica_uri(r), norebuild).await
     }
 
@@ -344,10 +311,7 @@ impl NexusBuilder {
             .map(|r| r.into_inner().nexus.unwrap())
     }
 
-    pub async fn remove_child_replica(
-        &self,
-        r: &ReplicaBuilder,
-    ) -> Result<Nexus, Status> {
+    pub async fn remove_child_replica(&self, r: &ReplicaBuilder) -> Result<Nexus, Status> {
         self.remove_child_bdev(&self.replica_uri(r)).await
     }
 
@@ -365,10 +329,7 @@ impl NexusBuilder {
             .map(|r| r.into_inner().nexus.unwrap())
     }
 
-    pub async fn online_child_replica(
-        &self,
-        r: &ReplicaBuilder,
-    ) -> Result<Nexus, Status> {
+    pub async fn online_child_replica(&self, r: &ReplicaBuilder) -> Result<Nexus, Status> {
         self.online_child_bdev(&self.replica_uri(r)).await
     }
 
@@ -382,10 +343,7 @@ impl NexusBuilder {
             .await
     }
 
-    pub async fn offline_child_bdev(
-        &self,
-        bdev: &str,
-    ) -> Result<Nexus, Status> {
+    pub async fn offline_child_bdev(&self, bdev: &str) -> Result<Nexus, Status> {
         self.rpc()
             .lock()
             .await
@@ -399,10 +357,7 @@ impl NexusBuilder {
             .map(|r| r.into_inner().nexus.unwrap())
     }
 
-    pub async fn offline_child_replica(
-        &self,
-        r: &ReplicaBuilder,
-    ) -> Result<Nexus, Status> {
+    pub async fn offline_child_replica(&self, r: &ReplicaBuilder) -> Result<Nexus, Status> {
         self.offline_child_bdev(&self.replica_uri(r)).await
     }
 
@@ -412,13 +367,8 @@ impl NexusBuilder {
         d: Duration,
     ) -> Result<(), Status> {
         self.offline_child_replica(r).await?;
-        self.wait_replica_state(
-            r,
-            ChildState::Degraded,
-            Some(ChildStateReason::ByClient),
-            d,
-        )
-        .await
+        self.wait_replica_state(r, ChildState::Degraded, Some(ChildStateReason::ByClient), d)
+            .await
     }
 
     pub async fn add_injection_at_replica(
@@ -441,16 +391,12 @@ impl NexusBuilder {
         Ok(inj_uri)
     }
 
-    pub async fn get_rebuild_history(
-        &self,
-    ) -> Result<Vec<RebuildHistoryRecord>, Status> {
+    pub async fn get_rebuild_history(&self) -> Result<Vec<RebuildHistoryRecord>, Status> {
         self.rpc()
             .lock()
             .await
             .nexus
-            .get_rebuild_history(RebuildHistoryRequest {
-                uuid: self.uuid(),
-            })
+            .get_rebuild_history(RebuildHistoryRequest { uuid: self.uuid() })
             .await
             .map(|r| r.into_inner().records)
     }
@@ -461,15 +407,10 @@ impl NexusBuilder {
             .await?
             .into_iter()
             .find(|p| p.uuid == uuid)
-            .ok_or_else(|| {
-                Status::new(Code::NotFound, format!("Nexus '{uuid}' not found"))
-            })
+            .ok_or_else(|| Status::new(Code::NotFound, format!("Nexus '{uuid}' not found")))
     }
 
-    pub async fn get_nexus_replica_child(
-        &self,
-        r: &ReplicaBuilder,
-    ) -> Result<Child, Status> {
+    pub async fn get_nexus_replica_child(&self, r: &ReplicaBuilder) -> Result<Child, Status> {
         let child_uri = self.replica_uri(r);
         let n = find_nexus_by_uuid(self.rpc(), &self.uuid()).await?;
         n.children
@@ -486,10 +427,7 @@ impl NexusBuilder {
             })
     }
 
-    pub async fn wait_children_online(
-        &self,
-        timeout: Duration,
-    ) -> Result<(), Status> {
+    pub async fn wait_children_online(&self, timeout: Duration) -> Result<(), Status> {
         let start = Instant::now();
 
         loop {
@@ -564,17 +502,12 @@ pub async fn find_nexus(rpc: SharedRpcHandle, uuid: &str) -> Option<Nexus> {
 }
 
 /// TODO
-pub async fn find_nexus_by_uuid(
-    rpc: SharedRpcHandle,
-    uuid: &str,
-) -> Result<Nexus, Status> {
+pub async fn find_nexus_by_uuid(rpc: SharedRpcHandle, uuid: &str) -> Result<Nexus, Status> {
     list_nexuses(rpc)
         .await?
         .into_iter()
         .find(|n| n.uuid == uuid)
-        .ok_or_else(|| {
-            Status::new(Code::NotFound, format!("Nexus '{uuid}' not found"))
-        })
+        .ok_or_else(|| Status::new(Code::NotFound, format!("Nexus '{uuid}' not found")))
 }
 
 /// TODO
@@ -588,18 +521,12 @@ pub async fn test_write_to_nexus(
 }
 
 /// TODO
-pub async fn test_fio_to_nexus(
-    nex: &NexusBuilder,
-    fio: Fio,
-) -> std::io::Result<()> {
+pub async fn test_fio_to_nexus(nex: &NexusBuilder, fio: Fio) -> std::io::Result<()> {
     test_fio_to_nvmf(&nex.nvmf_location(), fio).await
 }
 
 /// TODO
-pub async fn test_fio_to_nexus_aio(
-    nex: &NexusBuilder,
-    fio: Fio,
-) -> std::io::Result<()> {
+pub async fn test_fio_to_nexus_aio(nex: &NexusBuilder, fio: Fio) -> std::io::Result<()> {
     test_fio_to_nvmf_aio(&nex.nvmf_location(), fio).await
 }
 

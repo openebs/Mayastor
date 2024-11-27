@@ -10,11 +10,8 @@ use url::Url;
 
 use crate::{
     bdev::{
-        dev::reject_unknown_parameters,
-        device::dispatch_loopback_removed,
-        util::uri,
-        CreateDestroy,
-        GetName,
+        dev::reject_unknown_parameters, device::dispatch_loopback_removed, util::uri,
+        CreateDestroy, GetName,
     },
     bdev_api::{self, BdevError},
     core::UntypedBdev,
@@ -45,14 +42,12 @@ impl TryFrom<&Url> for Loopback {
             });
         }
 
-        let mut parameters: HashMap<String, String> =
-            url.query_pairs().into_owned().collect();
+        let mut parameters: HashMap<String, String> = url.query_pairs().into_owned().collect();
 
-        let uuid = uri::uuid(parameters.remove("uuid")).context(
-            bdev_api::UuidParamParseFailed {
+        let uuid =
+            uri::uuid(parameters.remove("uuid")).context(bdev_api::UuidParamParseFailed {
                 uri: url.to_string(),
-            },
-        )?;
+            })?;
 
         reject_unknown_parameters(url, parameters)?;
 

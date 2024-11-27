@@ -13,9 +13,7 @@ use common::{
             v1,
             v1::{GrpcConnect, SharedRpcHandle},
         },
-        Binary,
-        Builder,
-        ComposeTest,
+        Binary, Builder, ComposeTest,
     },
     file_io::DataSize,
     fio::{FioBuilder, FioJobBuilder},
@@ -30,28 +28,15 @@ pub use spdk_rs::{libspdk::SPDK_NVME_SC_INTERNAL_DEVICE_ERROR, NvmeStatus};
 
 use io_engine::{
     bdev::{
-        nexus::{
-            nexus_create,
-            nexus_lookup_mut,
-            ChildState,
-            FaultReason,
-            NexusStatus,
-        },
+        nexus::{nexus_create, nexus_lookup_mut, ChildState, FaultReason, NexusStatus},
         NexusInfo,
     },
     core::{
         fault_injection::{
-            add_fault_injection,
-            FaultDomain,
-            FaultIoOperation,
-            FaultIoStage,
-            FaultMethod,
+            add_fault_injection, FaultDomain, FaultIoOperation, FaultIoStage, FaultMethod,
             InjectionBuilder,
         },
-        CoreError,
-        IoCompletionStatus,
-        MayastorCliArgs,
-        Protocol,
+        CoreError, IoCompletionStatus, MayastorCliArgs, Protocol,
     },
     lvs::Lvs,
     persistent_store::PersistentStoreBuilder,
@@ -375,7 +360,7 @@ async fn nexus_child_retire_persist_unresponsive_with_bdev_io() {
             .with_io_operation(FaultIoOperation::Write)
             .with_io_stage(FaultIoStage::Completion)
             .with_method(FaultMethod::DATA_TRANSFER_ERROR)
-            .with_block_range(0 .. 1)
+            .with_block_range(0..1)
             .build()
             .unwrap(),
     )
@@ -456,7 +441,7 @@ async fn nexus_child_retire_persist_failure_with_bdev_io() {
             .with_io_operation(FaultIoOperation::Write)
             .with_io_stage(FaultIoStage::Completion)
             .with_method(FaultMethod::DATA_TRANSFER_ERROR)
-            .with_block_range(0 .. 1)
+            .with_block_range(0..1)
             .build()
             .unwrap(),
     )
@@ -574,13 +559,7 @@ async fn init_ms_etcd_test() -> ComposeTest {
 
             // Pool #1 and replica #1.
             pool_0
-                .create_lvol(
-                    REPL_NAME_0,
-                    POOL_SIZE,
-                    Some(REPL_UUID_0),
-                    false,
-                    None,
-                )
+                .create_lvol(REPL_NAME_0, POOL_SIZE, Some(REPL_UUID_0), false, None)
                 .await
                 .unwrap();
 
@@ -593,13 +572,7 @@ async fn init_ms_etcd_test() -> ComposeTest {
             .unwrap();
 
             pool_1
-                .create_lvol(
-                    REPL_NAME_1,
-                    POOL_SIZE,
-                    Some(REPL_UUID_1),
-                    false,
-                    None,
-                )
+                .create_lvol(REPL_NAME_1, POOL_SIZE, Some(REPL_UUID_1), false, None)
                 .await
                 .unwrap();
 

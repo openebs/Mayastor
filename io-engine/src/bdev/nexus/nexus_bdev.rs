@@ -24,44 +24,25 @@ use snafu::ResultExt;
 use uuid::Uuid;
 
 use super::{
-    nexus_err,
-    nexus_lookup_name_uuid,
-    DrEvent,
-    Error,
-    NbdDisk,
-    NexusBio,
-    NexusChannel,
-    NexusChild,
-    NexusModule,
-    PersistOp,
+    nexus_err, nexus_lookup_name_uuid, DrEvent, Error, NbdDisk, NexusBio, NexusChannel, NexusChild,
+    NexusModule, PersistOp,
 };
 
 use crate::{
     bdev::{
         device_destroy,
         nexus::{
-            nexus_io_subsystem::NexusPauseState,
-            nexus_persistence::PersistentNexusInfo,
-            NexusIoSubsystem,
-            ENABLE_NEXUS_RESET,
+            nexus_io_subsystem::NexusPauseState, nexus_persistence::PersistentNexusInfo,
+            NexusIoSubsystem, ENABLE_NEXUS_RESET,
         },
         PtplFileOps,
     },
     core::{
-        partition,
-        Bdev,
-        DeviceEventSink,
-        IoType,
-        Protocol,
-        Reactor,
-        Reactors,
-        Share,
-        VerboseError,
+        partition, Bdev, DeviceEventSink, IoType, Protocol, Reactor, Reactors, Share, VerboseError,
     },
     eventing::{
         nexus_events::{state_change_event_meta, subsystem_pause_event_meta},
-        Event,
-        EventWithMeta,
+        Event, EventWithMeta,
     },
     rebuild::HistoryRecord,
     subsys::NvmfSubsystem,
@@ -70,14 +51,8 @@ use crate::{
 use crate::core::{BdevStater, BdevStats, CoreError, IoCompletionStatus};
 use events_api::event::EventAction;
 use spdk_rs::{
-    libspdk::spdk_bdev_notify_blockcnt_change,
-    BdevIo,
-    BdevOps,
-    ChannelTraverseStatus,
-    IoChannel,
-    IoDevice,
-    IoDeviceChannelTraverse,
-    JsonWriteContext,
+    libspdk::spdk_bdev_notify_blockcnt_change, BdevIo, BdevOps, ChannelTraverseStatus, IoChannel,
+    IoDevice, IoDeviceChannelTraverse, JsonWriteContext,
 };
 
 pub static NVME_MIN_CNTLID: u16 = 1;
@@ -124,9 +99,7 @@ impl NvmeAnaState {
             3 => Ok(NvmeAnaState::InaccessibleState),
             4 => Ok(NvmeAnaState::PersistentLossState),
             15 => Ok(NvmeAnaState::ChangeState),
-            _ => Err(Error::InvalidNvmeAnaState {
-                ana_value: value,
-            }),
+            _ => Err(Error::InvalidNvmeAnaState { ana_value: value }),
         }
     }
 }
@@ -154,11 +127,7 @@ impl TryFrom<u8> for NvmeReservation {
             4 => Self::ExclusiveAccessRegsOnly,
             5 => Self::WriteExclusiveAllRegs,
             6 => Self::ExclusiveAccessAllRegs,
-            reservation => {
-                return Err(Error::InvalidReservation {
-                    reservation,
-                })
-            }
+            reservation => return Err(Error::InvalidReservation { reservation }),
         })
     }
 }
@@ -218,10 +187,7 @@ impl NexusNvmeParams {
         self.resv_key = resv_key;
     }
     /// Set the preemption key.
-    pub fn set_preempt_key(
-        &mut self,
-        preempt_key: Option<std::num::NonZeroU64>,
-    ) {
+    pub fn set_preempt_key(&mut self, preempt_key: Option<std::num::NonZeroU64>) {
         self.preempt_key = preempt_key;
     }
     /// Set the reservation type.
@@ -397,9 +363,7 @@ impl<'n> Nexus<'n> {
             nvme_params,
             has_io_device: false,
             initiators: parking_lot::Mutex::new(HashSet::new()),
-            nexus_info: futures::lock::Mutex::new(PersistentNexusInfo::new(
-                nexus_info_key,
-            )),
+            nexus_info: futures::lock::Mutex::new(PersistentNexusInfo::new(nexus_info_key)),
             io_subsystem: None,
             nexus_uuid: Default::default(),
             event_sink: None,
@@ -527,8 +491,7 @@ impl<'n> Nexus<'n> {
             return;
         }
 
-        Reactors::master()
-            .send_future(Nexus::reset_all_children(self.name.clone()));
+        Reactors::master().send_future(Nexus::reset_all_children(self.name.clone()));
     }
 
     /// Sets the state of the Nexus.
@@ -591,10 +554,7 @@ impl<'n> Nexus<'n> {
     }
 
     /// TODO
-    pub(super) unsafe fn child_add_unsafe(
-        self: Pin<&mut Self>,
-        child: NexusChild<'n>,
-    ) {
+    pub(super) unsafe fn child_add_unsafe(self: Pin<&mut Self>, child: NexusChild<'n>) {
         self.unpin_mut().children.push(child)
     }
 
@@ -610,10 +570,7 @@ impl<'n> Nexus<'n> {
 
     /// TODO
     #[allow(dead_code)]
-    pub(super) unsafe fn child_at_mut(
-        self: Pin<&mut Self>,
-        idx: usize,
-    ) -> &mut NexusChild<'n> {
+    pub(super) unsafe fn child_at_mut(self: Pin<&mut Self>, idx: usize) -> &mut NexusChild<'n> {
         self.unpin_mut()
             .children
             .get_mut(idx)
@@ -638,18 +595,13 @@ impl<'n> Nexus<'n> {
     }
 
     /// Check whether nexus can perform target operation.
-    pub(crate) fn check_nexus_operation(
-        &self,
-        _op: NexusOperation,
-    ) -> Result<(), Error> {
+    pub(crate) fn check_nexus_operation(&self, _op: NexusOperation) -> Result<(), Error> {
         match *self.state.lock() {
             // When nexus under shutdown or is shutdown, no further nexus
             // operations allowed.
-            NexusState::ShuttingDown | NexusState::Shutdown => {
-                Err(Error::OperationNotAllowed {
-                    reason: "Nexus is shutdown".to_string(),
-                })
-            }
+            NexusState::ShuttingDown | NexusState::Shutdown => Err(Error::OperationNotAllowed {
+                reason: "Nexus is shutdown".to_string(),
+            }),
             _ if self.io_subsystem_state() == Some(NexusPauseState::Frozen) => {
                 Err(Error::OperationNotAllowed {
                     reason: "Nexus io subsystem is frozen".to_string(),
@@ -691,10 +643,7 @@ impl<'n> Nexus<'n> {
     }
 
     /// Configure nexus's block device to match parameters of the child devices.
-    async fn setup_nexus_bdev(
-        mut self: Pin<&mut Self>,
-        resizing: bool,
-    ) -> Result<(), Error> {
+    async fn setup_nexus_bdev(mut self: Pin<&mut Self>, resizing: bool) -> Result<(), Error> {
         let name = self.name.clone();
 
         if self.children().is_empty() {
@@ -716,10 +665,7 @@ impl<'n> Nexus<'n> {
                 Err(_) => {
                     return Err(Error::NexusIncomplete {
                         name,
-                        reason: format!(
-                            "No block device available for child {}",
-                            child.uri(),
-                        ),
+                        reason: format!("No block device available for child {}", child.uri(),),
                     })
                 }
             };
@@ -788,14 +734,9 @@ impl<'n> Nexus<'n> {
             if !resizing {
                 self.as_mut().set_num_blocks(end_blk - start_blk);
             } else {
-                let rc = spdk_bdev_notify_blockcnt_change(
-                    nbdev,
-                    end_blk - start_blk,
-                );
+                let rc = spdk_bdev_notify_blockcnt_change(nbdev, end_blk - start_blk);
                 if rc != 0 {
-                    error!(
-                        "{self:?}: failed to notify block cnt change on nexus"
-                    );
+                    error!("{self:?}: failed to notify block cnt change on nexus");
                     return Err(Error::NexusResize {
                         source: Errno::from_raw(rc),
                         name,
@@ -821,9 +762,7 @@ impl<'n> Nexus<'n> {
     /// Opens the Nexus instance for IO.
     /// Once this function is called, the device is visible and can
     /// be used for IO.
-    async fn register_instance(
-        bdev: &mut spdk_rs::Bdev<Nexus<'_>>,
-    ) -> Result<(), Error> {
+    async fn register_instance(bdev: &mut spdk_rs::Bdev<Nexus<'_>>) -> Result<(), Error> {
         let mut nex = bdev.data_mut();
         assert_eq!(*nex.state.lock(), NexusState::Init);
 
@@ -888,10 +827,7 @@ impl<'n> Nexus<'n> {
     /// # Arguments
     /// * `sigterm`: Indicates whether this is as a result of process
     ///   termination.
-    pub async fn destroy_ext(
-        mut self: Pin<&mut Self>,
-        sigterm: bool,
-    ) -> Result<(), Error> {
+    pub async fn destroy_ext(mut self: Pin<&mut Self>, sigterm: bool) -> Result<(), Error> {
         info!("{:?}: destroying nexus...", self);
 
         self.as_mut().unshare_nexus().await?;
@@ -929,13 +865,8 @@ impl<'n> Nexus<'n> {
                     Ok(())
                 }
                 Err(err) => {
-                    error!(
-                        "Nexus '{name}': failed to destroy: {e}",
-                        e = err.verbose()
-                    );
-                    Err(Error::NexusDestroy {
-                        name,
-                    })
+                    error!("Nexus '{name}': failed to destroy: {e}", e = err.verbose());
+                    Err(Error::NexusDestroy { name })
                 }
             }
         }
@@ -943,10 +874,7 @@ impl<'n> Nexus<'n> {
 
     /// Resize the nexus as part of volume resize workflow. The underlying
     /// replicas are already resized before nexus resize is called.
-    pub async fn resize(
-        mut self: Pin<&mut Self>,
-        resize_to: u64,
-    ) -> Result<(), Error> {
+    pub async fn resize(mut self: Pin<&mut Self>, resize_to: u64) -> Result<(), Error> {
         // XXX: This check is likely relevant for resize as well to
         // avoid unforeseen complications.
         self.check_nexus_operation(NexusOperation::NexusResize)?;
@@ -1047,8 +975,7 @@ impl<'n> Nexus<'n> {
                 // In case of active shutdown operation, bail out.
                 NexusState::ShuttingDown => {
                     return Err(Error::OperationNotAllowed {
-                        reason: "Shutdown operation is already in progress"
-                            .to_string(),
+                        reason: "Shutdown operation is already in progress".to_string(),
                     });
                 }
                 // Save current state and mark nexus as being under shutdown.
@@ -1106,10 +1033,7 @@ impl<'n> Nexus<'n> {
         EventWithMeta::event(
             self.deref(),
             EventAction::StateChange,
-            state_change_event_meta(
-                NexusState::ShuttingDown,
-                NexusState::Shutdown,
-            ),
+            state_change_event_meta(NexusState::ShuttingDown, NexusState::Shutdown),
         )
         .generate();
 
@@ -1180,10 +1104,7 @@ impl<'n> Nexus<'n> {
     }
 
     /// set ANA state of the NVMe subsystem
-    pub async fn set_ana_state(
-        &self,
-        ana_state: NvmeAnaState,
-    ) -> Result<(), Error> {
+    pub async fn set_ana_state(&self, ana_state: NvmeAnaState) -> Result<(), Error> {
         if let Some(Protocol::Nvmf) = self.shared() {
             if let Some(subsystem) = NvmfSubsystem::nqn_lookup(&self.name) {
                 subsystem.pause().await?;
@@ -1266,9 +1187,7 @@ impl<'n> Nexus<'n> {
     /// Returns a pinned mutable reference of the same lifetime as the Nexus
     /// itself.
     #[inline(always)]
-    pub(super) unsafe fn pinned_mut(
-        self: Pin<&mut Self>,
-    ) -> Pin<&'n mut Nexus<'n>> {
+    pub(super) unsafe fn pinned_mut(self: Pin<&mut Self>) -> Pin<&'n mut Nexus<'n>> {
         Pin::new_unchecked(self.unpin_mut())
     }
 
@@ -1282,9 +1201,7 @@ impl<'n> Nexus<'n> {
 
     /// Returns a mutable reference to Nexus's Bdev.
     #[inline(always)]
-    pub(super) unsafe fn bdev_mut(
-        self: Pin<&mut Self>,
-    ) -> &mut Bdev<Nexus<'n>> {
+    pub(super) unsafe fn bdev_mut(self: Pin<&mut Self>) -> &mut Bdev<Nexus<'n>> {
         self.get_unchecked_mut().bdev.as_mut().unwrap()
     }
 
@@ -1300,20 +1217,12 @@ impl<'n> Nexus<'n> {
     /// No checks are performed (e.g. bdev module name check), as it is assumed
     /// that the provided bdev is a nexus bdev.
     #[inline(always)]
-    pub(crate) unsafe fn unsafe_from_untyped_bdev(
-        bdev: spdk_rs::UntypedBdev,
-    ) -> &'n Nexus<'n> {
-        spdk_rs::Bdev::<Nexus<'n>>::unsafe_from_inner_ptr(
-            bdev.unsafe_inner_ptr() as *mut _,
-        )
-        .data()
+    pub(crate) unsafe fn unsafe_from_untyped_bdev(bdev: spdk_rs::UntypedBdev) -> &'n Nexus<'n> {
+        spdk_rs::Bdev::<Nexus<'n>>::unsafe_from_inner_ptr(bdev.unsafe_inner_ptr() as *mut _).data()
     }
 
     /// Sets the required alignment of the Nexus.
-    pub(crate) unsafe fn set_required_alignment(
-        self: Pin<&mut Self>,
-        new_val: u8,
-    ) {
+    pub(crate) unsafe fn set_required_alignment(self: Pin<&mut Self>, new_val: u8) {
         (*self.bdev_mut().unsafe_inner_mut_ptr()).required_alignment = new_val;
     }
 
@@ -1379,8 +1288,7 @@ impl<'n> BdevOps for Nexus<'n> {
             return;
         }
 
-        let open_children =
-            self.children.iter().filter(|c| c.is_opened()).count();
+        let open_children = self.children.iter().filter(|c| c.is_opened()).count();
         // TODO: This doesn't seem possible to happen at this stage, but seems
         // we should still try to handle this in separate future since
         // we're handling it here anyway as a block_on is not safe to
@@ -1395,14 +1303,10 @@ impl<'n> BdevOps for Nexus<'n> {
 
                 // TODO: double-check interaction with rebuild job logic
                 // TODO: cancel rebuild jobs?
-                let n =
-                    self_ref.children.iter().filter(|c| c.is_opened()).count();
+                let n = self_ref.children.iter().filter(|c| c.is_opened()).count();
 
                 if n > 0 {
-                    warn!(
-                        "{:?}: {} open children remain(s), closing...",
-                        self_ref, n
-                    );
+                    warn!("{:?}: {} open children remain(s), closing...", self_ref, n);
 
                     for child in self_ref.children.iter() {
                         if child.is_opened() {
@@ -1428,11 +1332,7 @@ impl<'n> BdevOps for Nexus<'n> {
     /// Main entry point to submit IO to the underlying children this uses
     /// callbacks rather than futures and closures for performance reasons.
     /// This function is not called when the IO is re-submitted (see below).
-    fn submit_request(
-        &self,
-        chan: IoChannel<NexusChannel<'n>>,
-        bio: BdevIo<Nexus<'n>>,
-    ) {
+    fn submit_request(&self, chan: IoChannel<NexusChannel<'n>>, bio: BdevIo<Nexus<'n>>) {
         let io = NexusBio::new(chan, bio);
         io.submit_request();
     }
@@ -1442,10 +1342,7 @@ impl<'n> BdevOps for Nexus<'n> {
             // we always assume the device supports read/write commands
             // allow NVMe Admin as it is needed for local replicas
             IoType::Read | IoType::Write | IoType::NvmeAdmin => true,
-            IoType::Flush
-            | IoType::Reset
-            | IoType::Unmap
-            | IoType::WriteZeros => {
+            IoType::Flush | IoType::Reset | IoType::Unmap | IoType::WriteZeros => {
                 let supported = self.io_is_supported(io_type);
                 if !supported {
                     if io_type == IoType::Flush {
@@ -1558,10 +1455,8 @@ pub async fn nexus_create_v2(
     match uuid::Uuid::parse_str(name) {
         Ok(name_uuid) => {
             let bdev_uuid = name_uuid.to_string();
-            let nexus_uuid = uuid::Uuid::parse_str(uuid).map_err(|_| {
-                Error::InvalidUuid {
-                    uuid: uuid.to_string(),
-                }
+            let nexus_uuid = uuid::Uuid::parse_str(uuid).map_err(|_| Error::InvalidUuid {
+                uuid: uuid.to_string(),
             })?;
             nexus_create_internal(
                 name,
@@ -1613,9 +1508,7 @@ async fn nexus_create_internal(
                 name: name.to_owned(),
             });
         }
-        if nexus.name != name
-            || (nexus_uuid.is_some() && Some(nexus.nexus_uuid) != nexus_uuid)
-        {
+        if nexus.name != name || (nexus_uuid.is_some() && Some(nexus.nexus_uuid) != nexus_uuid) {
             return Err(Error::UuidExists {
                 uuid: nexus.nexus_uuid.to_string(),
                 nexus: name.to_string(),
@@ -1661,11 +1554,7 @@ async fn nexus_create_internal(
     }
 
     match Nexus::register_instance(&mut nexus_bdev).await {
-        Err(Error::NexusIncomplete {
-            name,
-            reason,
-            ..
-        }) => {
+        Err(Error::NexusIncomplete { name, reason, .. }) => {
             // We still have code that waits for children to come online,
             // although this currently only works for config files.
             // We need to explicitly clean up child devices
@@ -1694,10 +1583,7 @@ async fn nexus_create_internal(
                 }
             }
 
-            Err(Error::NexusCreate {
-                name,
-                reason,
-            })
+            Err(Error::NexusCreate { name, reason })
         }
 
         Err(error) => {

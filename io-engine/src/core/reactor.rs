@@ -50,16 +50,9 @@ use futures::{
 };
 
 use spdk_rs::libspdk::{
-    spdk_cpuset_get_cpu,
-    spdk_env_thread_launch_pinned,
-    spdk_env_thread_wait_all,
-    spdk_thread,
-    spdk_thread_get_cpumask,
-    spdk_thread_lib_init_ext,
-    spdk_thread_op,
-    spdk_thread_send_msg,
-    SPDK_DEFAULT_MSG_MEMPOOL_SIZE,
-    SPDK_THREAD_OP_NEW,
+    spdk_cpuset_get_cpu, spdk_env_thread_launch_pinned, spdk_env_thread_wait_all, spdk_thread,
+    spdk_thread_get_cpumask, spdk_thread_lib_init_ext, spdk_thread_op, spdk_thread_send_msg,
+    SPDK_DEFAULT_MSG_MEMPOOL_SIZE, SPDK_THREAD_OP_NEW,
 };
 
 use crate::{
@@ -159,9 +152,7 @@ impl Reactors {
 
         // construct one main init thread, this thread is used to bootstrap
         // and should be used to teardown as well.
-        if let Some(t) =
-            spdk_rs::Thread::new("init_thread".into(), Cores::first())
-        {
+        if let Some(t) = spdk_rs::Thread::new("init_thread".into(), Cores::first()) {
             info!("Init thread ID {}", t.id());
         }
     }
@@ -287,8 +278,7 @@ impl Reactor {
     /// create a new ['Reactor'] instance
     fn new(core: u32, developer_delay: bool) -> Self {
         // create a channel to receive futures on
-        let (sx, rx) =
-            unbounded::<Pin<Box<dyn Future<Output = ()> + 'static>>>();
+        let (sx, rx) = unbounded::<Pin<Box<dyn Future<Output = ()> + 'static>>>();
 
         Self {
             threads: RefCell::new(VecDeque::new()),
@@ -516,7 +506,7 @@ impl Reactor {
     /// queues
     pub fn poll_times(&self, times: u32) {
         let threads = self.threads.borrow();
-        for _ in 0 .. times {
+        for _ in 0..times {
             threads.iter().for_each(|t| {
                 t.poll();
             });
@@ -568,10 +558,7 @@ impl Reactor {
     /// Spawns a future on a core the current thread is running on returning a
     /// channel which can be awaited. This decouples the SPDK runtime from the
     /// future runtimes within Rust.
-    pub fn spawn_at<F>(
-        thread: &spdk_rs::Thread,
-        f: F,
-    ) -> Result<OnceShotRecv<F::Output>, CoreError>
+    pub fn spawn_at<F>(thread: &spdk_rs::Thread, f: F) -> Result<OnceShotRecv<F::Output>, CoreError>
     where
         F: Future + 'static,
         F::Output: Send + Debug,
@@ -632,9 +619,7 @@ impl Reactor {
     }
 
     /// TODO
-    pub fn spawn_at_primary<F>(
-        f: F,
-    ) -> Result<OnceShotRecv<F::Output>, CoreError>
+    pub fn spawn_at_primary<F>(f: F) -> Result<OnceShotRecv<F::Output>, CoreError>
     where
         F: Future + 'static,
         F::Output: Send + Debug,
@@ -727,8 +712,7 @@ pub async fn reactor_monitor_loop(freeze_timeout: Option<u64>) {
     for (id, core) in Cores::count().into_iter().enumerate() {
         let reactor = Reactors::get_by_core(core)
             .unwrap_or_else(|| panic!("Can't get reactor for core {}", core));
-        let reactor_tick =
-            heartbeat_ticks.get(id).expect("Failed to get tick item");
+        let reactor_tick = heartbeat_ticks.get(id).expect("Failed to get tick item");
 
         reactor_state.push(ReactorRecord {
             frozen: false,

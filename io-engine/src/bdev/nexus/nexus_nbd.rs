@@ -17,10 +17,7 @@ use std::{
 use sysfs::parse_value;
 
 use spdk_rs::libspdk::{
-    nbd_disk_find_by_nbd_path,
-    spdk_nbd_disk,
-    spdk_nbd_get_path,
-    spdk_nbd_start,
+    nbd_disk_find_by_nbd_path, spdk_nbd_disk, spdk_nbd_get_path, spdk_nbd_start,
 };
 
 use crate::{
@@ -76,9 +73,8 @@ pub(crate) fn wait_until_ready(path: &str) {
         debug!("Timeout of NBD device {} was set to {}", tpath, timeout);
         let size: u64 = 0;
         let mut delay = 1;
-        for _i in 0i32 .. 10 {
-            if let Ok(f) = OpenOptions::new().read(true).open(Path::new(&tpath))
-            {
+        for _i in 0i32..10 {
+            if let Ok(f) = OpenOptions::new().read(true).open(Path::new(&tpath)) {
                 let res = unsafe {
                     convert_ioctl_res!(libc::ioctl(
                         f.as_raw_fd(),
@@ -120,15 +116,11 @@ pub(crate) fn wait_until_ready(path: &str) {
 /// circumstances do not block.
 pub fn find_unused() -> Result<String, NbdError> {
     let nbd_max =
-        parse_value(Path::new("/sys/class/modules/nbd/parameters"), "nbds_max")
-            .unwrap_or(16);
+        parse_value(Path::new("/sys/class/modules/nbd/parameters"), "nbds_max").unwrap_or(16);
 
-    for i in 0 .. nbd_max {
+    for i in 0..nbd_max {
         let name = format!("nbd{i}");
-        match parse_value::<u32>(
-            Path::new(&format!("/sys/class/block/{name}")),
-            "pid",
-        ) {
+        match parse_value::<u32>(Path::new(&format!("/sys/class/block/{name}")), "pid") {
             // if we find a pid file the device is in use
             Ok(_) => continue,
             Err(e) => match e.kind() {
@@ -137,11 +129,8 @@ pub fn find_unused() -> Result<String, NbdError> {
                     // The kernel needs time to construct the device
                     // so we need to make sure we are not using it internally
                     // already.
-                    let nbd_device =
-                        CString::new(format!("/dev/{name}")).unwrap();
-                    let ptr = unsafe {
-                        nbd_disk_find_by_nbd_path(nbd_device.as_ptr())
-                    };
+                    let nbd_device = CString::new(format!("/dev/{name}")).unwrap();
+                    let ptr = unsafe { nbd_disk_find_by_nbd_path(nbd_device.as_ptr()) };
 
                     if ptr.is_null() {
                         return Ok(nbd_device.into_string().unwrap());
@@ -157,15 +146,9 @@ pub fn find_unused() -> Result<String, NbdError> {
 }
 
 /// Callback for spdk_nbd_start().
-extern "C" fn start_cb(
-    sender_ptr: *mut c_void,
-    nbd_disk: *mut spdk_nbd_disk,
-    errno: i32,
-) {
+extern "C" fn start_cb(sender_ptr: *mut c_void, nbd_disk: *mut spdk_nbd_disk, errno: i32) {
     let sender = unsafe {
-        Box::from_raw(
-            sender_ptr as *mut oneshot::Sender<ErrnoResult<*mut spdk_nbd_disk>>,
-        )
+        Box::from_raw(sender_ptr as *mut oneshot::Sender<ErrnoResult<*mut spdk_nbd_disk>>)
     };
     sender
         .send(errno_result_from_i32(nbd_disk, errno))
@@ -173,14 +156,10 @@ extern "C" fn start_cb(
 }
 
 /// Start nbd disk using provided device name.
-pub async fn start(
-    bdev_name: &str,
-    device_path: &str,
-) -> Result<*mut spdk_nbd_disk, NbdError> {
+pub async fn start(bdev_name: &str, device_path: &str) -> Result<*mut spdk_nbd_disk, NbdError> {
     let c_bdev_name = CString::new(bdev_name).unwrap();
     let c_device_path = CString::new(device_path).unwrap();
-    let (sender, receiver) =
-        oneshot::channel::<ErrnoResult<*mut spdk_nbd_disk>>();
+    let (sender, receiver) = oneshot::channel::<ErrnoResult<*mut spdk_nbd_disk>>();
 
     unsafe {
         spdk_nbd_start(
@@ -223,9 +202,7 @@ impl NbdDisk {
         wait_until_ready(&device_path);
         info!("Started nbd disk {} for {}", device_path, bdev_name);
 
-        Ok(Self {
-            nbd_ptr,
-        })
+        Ok(Self { nbd_ptr })
     }
 
     /// Stop and release nbd device.
@@ -249,14 +226,9 @@ impl NbdDisk {
                 // original size and a partition scan.
                 // Set the size to 0 before disconnecting in hopes of stopping
                 // that.
-                let f =
-                    OpenOptions::new().read(true).open(Path::new(&nbd_name));
-                convert_ioctl_res!(libc::ioctl(
-                    f.unwrap().as_raw_fd(),
-                    SET_SIZE as u64,
-                    0
-                ))
-                .unwrap();
+                let f = OpenOptions::new().read(true).open(Path::new(&nbd_name));
+                convert_ioctl_res!(libc::ioctl(f.unwrap().as_raw_fd(), SET_SIZE as u64, 0))
+                    .unwrap();
                 nbd_disconnect(ptr as *mut _);
             };
             debug!("NBD device disconnected successfully");

@@ -92,8 +92,7 @@ async fn replica_stop_cont() {
                 .await
                 .expect("should publish nexus over nvmf");
             assert!(
-                UntypedBdev::lookup_by_name(&bdev_get_name(&c).unwrap())
-                    .is_some(),
+                UntypedBdev::lookup_by_name(&bdev_get_name(&c).unwrap()).is_some(),
                 "child bdev must exist"
             );
         })
@@ -101,7 +100,7 @@ async fn replica_stop_cont() {
 
     test.pause("ms1").await.unwrap();
     let mut ticker = tokio::time::interval(Duration::from_secs(1));
-    for i in 1 .. 6 {
+    for i in 1..6 {
         ticker.tick().await;
         println!("waiting for the container to be fully suspended... {i}/5");
     }
@@ -118,7 +117,7 @@ async fn replica_stop_cont() {
 
     // KATO is 5s, wait at least that long
     let n = 10;
-    for i in 1 ..= n {
+    for i in 1..=n {
         ticker.tick().await;
         println!("unfreeze delay... {i}/{n}");
     }
@@ -141,8 +140,7 @@ async fn replica_stop_cont() {
     mayastor
         .spawn(async move {
             assert!(
-                UntypedBdev::lookup_by_name(&bdev_get_name(&c).unwrap())
-                    .is_none(),
+                UntypedBdev::lookup_by_name(&bdev_get_name(&c).unwrap()).is_none(),
                 "child bdev must be destroyed"
             );
             let nx = nexus_lookup_mut(NXNAME).unwrap();

@@ -2,12 +2,7 @@ use crossbeam::atomic::AtomicCell;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 
-use io_engine::core::{
-    mayastor_env_stop,
-    MayastorCliArgs,
-    MayastorEnvironment,
-    Reactors,
-};
+use io_engine::core::{mayastor_env_stop, MayastorCliArgs, MayastorEnvironment, Reactors};
 
 use spdk_rs::{Cores, PollerBuilder};
 
@@ -93,9 +88,7 @@ fn poller() {
 
     let poller = PollerBuilder::new()
         .with_core(1)
-        .with_data(Data {
-            cnt: Mutex::new(0),
-        })
+        .with_data(Data { cnt: Mutex::new(0) })
         .with_poll_fn(|d| {
             *d.cnt.lock() += 1;
             assert_eq!(Cores::current(), 1);

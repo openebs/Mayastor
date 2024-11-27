@@ -10,80 +10,37 @@ use snafu::Snafu;
 
 pub use bdev::{Bdev, BdevIter, BdevStater, BdevStats, UntypedBdev};
 pub use block_device::{
-    BlockDevice,
-    BlockDeviceDescriptor,
-    BlockDeviceHandle,
-    BlockDeviceIoStats,
-    DeviceIoController,
-    DeviceTimeoutAction,
-    IoCompletionCallback,
-    IoCompletionCallbackArg,
-    LbaRangeController,
-    OpCompletionCallback,
-    OpCompletionCallbackArg,
-    ReadOptions,
+    BlockDevice, BlockDeviceDescriptor, BlockDeviceHandle, BlockDeviceIoStats, DeviceIoController,
+    DeviceTimeoutAction, IoCompletionCallback, IoCompletionCallbackArg, LbaRangeController,
+    OpCompletionCallback, OpCompletionCallbackArg, ReadOptions,
 };
 pub use cpu_cores::{Core, Cores};
 pub use descriptor::{DescriptorGuard, UntypedDescriptorGuard};
 pub use device_events::{
-    DeviceEventDispatcher,
-    DeviceEventListener,
-    DeviceEventSink,
-    DeviceEventType,
+    DeviceEventDispatcher, DeviceEventListener, DeviceEventSink, DeviceEventType,
 };
-pub use device_monitor::{
-    device_cmd_queue,
-    device_monitor_loop,
-    DeviceCommand,
-};
-pub use env::{
-    mayastor_env_stop,
-    MayastorCliArgs,
-    MayastorEnvironment,
-    GLOBAL_RC,
-    SIG_RECEIVED,
-};
+pub use device_monitor::{device_cmd_queue, device_monitor_loop, DeviceCommand};
+pub use env::{mayastor_env_stop, MayastorCliArgs, MayastorEnvironment, GLOBAL_RC, SIG_RECEIVED};
 pub use handle::{BdevHandle, UntypedBdevHandle};
 pub use io_device::IoDevice;
 pub use logical_volume::LogicalVolume;
-pub use reactor::{
-    reactor_monitor_loop,
-    Reactor,
-    ReactorState,
-    Reactors,
-    REACTOR_LIST,
-};
+pub use reactor::{reactor_monitor_loop, Reactor, ReactorState, Reactors, REACTOR_LIST};
 
 pub use lock::{
-    ProtectedSubsystems,
-    ResourceLockGuard,
-    ResourceLockManager,
-    ResourceLockManagerConfig,
+    ProtectedSubsystems, ResourceLockGuard, ResourceLockManager, ResourceLockManagerConfig,
     ResourceSubsystem,
 };
 
 pub use runtime::spawn;
 pub(crate) use segment_map::SegmentMap;
-pub use share::{
-    NvmfShareProps,
-    Protocol,
-    PtplProps,
-    Share,
-    ShareProps,
-    UpdateProps,
-};
+pub use share::{NvmfShareProps, Protocol, PtplProps, Share, ShareProps, UpdateProps};
 pub use spdk_rs::{cpu_cores, IoStatus, IoType, NvmeStatus};
 pub use thread::Mthread;
 
 use crate::subsys::NvmfError;
 pub use snapshot::{
-    CloneParams,
-    CloneXattrs,
-    ISnapshotDescriptor,
-    LvolSnapshotOps,
-    SnapshotDescriptor,
-    SnapshotParams,
-    SnapshotXattrs,
+    CloneParams, CloneXattrs, ISnapshotDescriptor, LvolSnapshotOps, SnapshotDescriptor,
+    SnapshotParams, SnapshotXattrs,
 };
 
 use spdk_rs::libspdk::SPDK_NVME_SC_CAPACITY_EXCEEDED;
@@ -157,31 +114,19 @@ pub enum CoreError {
     InvalidOffset {
         offset: u64,
     },
-    #[snafu(display(
-        "Failed to dispatch write at offset {} length {}",
-        offset,
-        len
-    ))]
+    #[snafu(display("Failed to dispatch write at offset {} length {}", offset, len))]
     WriteDispatch {
         source: Errno,
         offset: u64,
         len: u64,
     },
-    #[snafu(display(
-        "Failed to dispatch compare at offset {} length {}",
-        offset,
-        len
-    ))]
+    #[snafu(display("Failed to dispatch compare at offset {} length {}", offset, len))]
     CompareDispatch {
         source: Errno,
         offset: u64,
         len: u64,
     },
-    #[snafu(display(
-        "Failed to dispatch read at offset {} length {}",
-        offset,
-        len
-    ))]
+    #[snafu(display("Failed to dispatch read at offset {} length {}", offset, len))]
     ReadDispatch {
         source: Errno,
         offset: u64,
@@ -195,30 +140,18 @@ pub enum CoreError {
     FlushDispatch {
         source: Errno,
     },
-    #[snafu(display(
-        "Failed to dispatch NVMe Admin command {:x}h: {}",
-        opcode,
-        source
-    ))]
+    #[snafu(display("Failed to dispatch NVMe Admin command {:x}h: {}", opcode, source))]
     NvmeAdminDispatch {
         source: Errno,
         opcode: u16,
     },
-    #[snafu(display(
-        "Failed to dispatch unmap at offset {} length {}",
-        offset,
-        len
-    ))]
+    #[snafu(display("Failed to dispatch unmap at offset {} length {}", offset, len))]
     UnmapDispatch {
         source: Errno,
         offset: u64,
         len: u64,
     },
-    #[snafu(display(
-        "Failed to dispatch write-zeroes at offset {} length {}",
-        offset,
-        len
-    ))]
+    #[snafu(display("Failed to dispatch write-zeroes at offset {} length {}", offset, len))]
     WriteZeroesDispatch {
         source: Errno,
         offset: u64,
@@ -277,11 +210,7 @@ pub enum CoreError {
     },
     #[snafu(display("Reset failed"))]
     ResetFailed {},
-    #[snafu(display(
-        "Write zeroes failed at offset {} length {}",
-        offset,
-        len
-    ))]
+    #[snafu(display("Write zeroes failed at offset {} length {}", offset, len))]
     WriteZeroesFailed {
         offset: u64,
         len: u64,
@@ -331,10 +260,7 @@ pub enum CoreError {
         source: Errno,
         name: String,
     },
-    #[snafu(display(
-        "NVMe persistence through power-loss failure: {}",
-        reason
-    ))]
+    #[snafu(display("NVMe persistence through power-loss failure: {}", reason))]
     Ptpl {
         reason: String,
     },
@@ -358,108 +284,40 @@ pub trait ToErrno {
 impl ToErrno for CoreError {
     fn to_errno(self) -> Errno {
         match self {
-            Self::BdevNotFound {
-                ..
-            } => Errno::ENODEV,
-            Self::OpenBdev {
-                source,
-            } => source,
-            Self::InvalidDescriptor {
-                ..
-            } => Errno::ENODEV,
-            Self::GetIoChannel {
-                ..
-            } => Errno::ENXIO,
-            Self::InvalidOffset {
-                ..
-            } => Errno::EINVAL,
-            Self::WriteDispatch {
-                source, ..
-            } => source,
-            Self::ReadDispatch {
-                source, ..
-            } => source,
-            Self::CompareDispatch {
-                source, ..
-            } => source,
-            Self::ResetDispatch {
-                source, ..
-            } => source,
-            Self::FlushDispatch {
-                source, ..
-            } => source,
-            Self::NvmeAdminDispatch {
-                source, ..
-            } => source,
-            Self::UnmapDispatch {
-                source, ..
-            } => source,
-            Self::WriteZeroesDispatch {
-                source, ..
-            } => source,
-            Self::NvmeIoPassthruDispatch {
-                source, ..
-            } => source,
-            Self::WriteFailed {
-                ..
-            }
-            | Self::ReadFailed {
-                ..
-            }
-            | Self::CompareFailed {
-                ..
-            }
-            | Self::ReadingUnallocatedBlock {
-                ..
-            }
-            | Self::ResetFailed {
-                ..
-            }
-            | Self::WriteZeroesFailed {
-                ..
-            }
-            | Self::NvmeIoPassthruFailed {
-                ..
-            }
-            | Self::ShareNvmf {
-                ..
-            }
-            | Self::UnshareNvmf {
-                ..
-            } => Errno::EIO,
-            Self::NvmeAdminFailed {
-                source, ..
-            } => source,
-            Self::NotSupported {
-                source, ..
-            } => source,
-            Self::ReactorConfigureFailed {
-                source, ..
-            } => source,
-            Self::DmaAllocationFailed {
-                ..
-            } => Errno::ENOMEM,
-            Self::DeviceStatisticsFailed {
-                source, ..
-            } => source,
-            Self::NoDevicesAvailable {
-                ..
-            } => Errno::ENODEV,
-            Self::InvalidNvmeDeviceHandle {
-                ..
-            } => Errno::EINVAL,
-            Self::DeviceFlush {
-                source, ..
-            } => source,
-            Self::Ptpl {
-                ..
-            } => Errno::EIO,
-            Self::SnapshotCreate {
-                source, ..
-            } => source,
-            Self::WipeFailed {
-                ..
-            } => Errno::EIO,
+            Self::BdevNotFound { .. } => Errno::ENODEV,
+            Self::OpenBdev { source } => source,
+            Self::InvalidDescriptor { .. } => Errno::ENODEV,
+            Self::GetIoChannel { .. } => Errno::ENXIO,
+            Self::InvalidOffset { .. } => Errno::EINVAL,
+            Self::WriteDispatch { source, .. } => source,
+            Self::ReadDispatch { source, .. } => source,
+            Self::CompareDispatch { source, .. } => source,
+            Self::ResetDispatch { source, .. } => source,
+            Self::FlushDispatch { source, .. } => source,
+            Self::NvmeAdminDispatch { source, .. } => source,
+            Self::UnmapDispatch { source, .. } => source,
+            Self::WriteZeroesDispatch { source, .. } => source,
+            Self::NvmeIoPassthruDispatch { source, .. } => source,
+            Self::WriteFailed { .. }
+            | Self::ReadFailed { .. }
+            | Self::CompareFailed { .. }
+            | Self::ReadingUnallocatedBlock { .. }
+            | Self::ResetFailed { .. }
+            | Self::WriteZeroesFailed { .. }
+            | Self::NvmeIoPassthruFailed { .. }
+            | Self::ShareNvmf { .. }
+            | Self::UnshareNvmf { .. } => Errno::EIO,
+            Self::NvmeAdminFailed { source, .. } => source,
+            Self::NotSupported { source, .. } => source,
+            Self::ReactorConfigureFailed { source, .. } => source,
+            Self::DmaAllocationFailed { .. } => Errno::ENOMEM,
+            Self::DeviceStatisticsFailed { source, .. } => source,
+            Self::NoDevicesAvailable { .. } => Errno::ENODEV,
+            Self::InvalidNvmeDeviceHandle { .. } => Errno::EINVAL,
+            Self::DeviceFlush { source, .. } => source,
+            Self::Ptpl { .. } => Errno::EIO,
+            Self::SnapshotCreate { source, .. } => source,
+            Self::WipeFailed { .. } => Errno::EIO,
         }
     }
 }
@@ -509,8 +367,7 @@ impl Debug for IoCompletionStatus {
 impl From<NvmeStatus> for IoCompletionStatus {
     fn from(s: NvmeStatus) -> Self {
         match s {
-            NvmeStatus::NO_SPACE
-            | NvmeStatus::Generic(SPDK_NVME_SC_CAPACITY_EXCEEDED) => {
+            NvmeStatus::NO_SPACE | NvmeStatus::Generic(SPDK_NVME_SC_CAPACITY_EXCEEDED) => {
                 Self::LvolError(LvolFailure::NoSpace)
             }
             _ => Self::NvmeError(s),

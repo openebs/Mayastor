@@ -19,10 +19,7 @@ pub use fault_method::FaultMethod;
 pub use inject_io_ctx::{InjectIoCtx, InjectIoDevice};
 pub use injection::{Injection, InjectionBuilder, InjectionBuilderError};
 pub use injection_api::{
-    add_fault_injection,
-    inject_completion_error,
-    inject_submission_error,
-    list_fault_injections,
+    add_fault_injection, inject_completion_error, inject_submission_error, list_fault_injections,
     remove_fault_injection,
 };
 pub use injection_state::InjectionState;
@@ -95,12 +92,7 @@ pub enum FaultInjectionError {
     UnknownParameter { name: String, value: String },
     #[snafu(display("Bad injection parameter value: '{}={}'", name, value))]
     BadParameterValue { name: String, value: String },
-    #[snafu(display(
-        "Bad injection '{}' timer durations: {:?}, {:?}",
-        name,
-        begin,
-        end
-    ))]
+    #[snafu(display("Bad injection '{}' timer durations: {:?}, {:?}", name, begin, end))]
     BadDurations {
         name: String,
         begin: Duration,

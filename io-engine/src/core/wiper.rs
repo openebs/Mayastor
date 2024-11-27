@@ -13,9 +13,7 @@ pub enum Error {
     TooManyChunks {},
     #[snafu(display("The chunk_size is larger than the bdev"))]
     ChunkTooLarge {},
-    #[snafu(display(
-        "The chunk_size is not a multiple of the bdev block size"
-    ))]
+    #[snafu(display("The chunk_size is not a multiple of the bdev block size"))]
     ChunkBlockSizeInvalid {},
     #[snafu(display("The bdev seems to have no size!"))]
     ZeroBdev {},
@@ -31,9 +29,7 @@ pub enum Error {
 
 impl From<Error> for CoreError {
     fn from(source: Error) -> Self {
-        Self::WipeFailed {
-            source,
-        }
+        Self::WipeFailed { source }
     }
 }
 impl From<CoreError> for Error {
@@ -178,10 +174,7 @@ impl WipeStats {
 impl Wiper {
     /// Return a new `Self` which can wipe the given bdev using the provided
     /// wipe method.
-    pub fn new(
-        bdev: UntypedBdevHandle,
-        wipe_method: WipeMethod,
-    ) -> Result<Self, Error> {
+    pub fn new(bdev: UntypedBdevHandle, wipe_method: WipeMethod) -> Result<Self, Error> {
         Ok(Self {
             bdev,
             wipe_method: Self::supported(wipe_method)?,
@@ -192,30 +185,22 @@ impl Wiper {
         match &mut self.wipe_method {
             WipeMethod::None => Ok(()),
             WipeMethod::WriteZeroes => {
-                self.bdev.write_zeroes_at(offset, size).await.map_err(
-                    |source| Error::WipeIoFailed {
+                self.bdev
+                    .write_zeroes_at(offset, size)
+                    .await
+                    .map_err(|source| Error::WipeIoFailed {
                         source: Box::new(source),
-                    },
-                )
+                    })
             }
-            WipeMethod::Unmap | WipeMethod::WritePattern(_) => {
-                Err(Error::MethodUnimplemented {
-                    method: self.wipe_method,
-                })
-            }
-            WipeMethod::CkSum(CkSumMethod::Crc32 {
-                crc32c,
-            }) => {
+            WipeMethod::Unmap | WipeMethod::WritePattern(_) => Err(Error::MethodUnimplemented {
+                method: self.wipe_method,
+            }),
+            WipeMethod::CkSum(CkSumMethod::Crc32 { crc32c }) => {
                 let mut buffer = self.bdev.dma_malloc(size).unwrap();
                 self.bdev.read_at(offset, &mut buffer).await?;
 
-                *crc32c = unsafe {
-                    spdk_rs::libspdk::spdk_crc32c_update(
-                        buffer.as_ptr(),
-                        size,
-                        *crc32c,
-                    )
-                };
+                *crc32c =
+                    unsafe { spdk_rs::libspdk::spdk_crc32c_update(buffer.as_ptr(), size, *crc32c) };
 
                 Ok(())
             }
@@ -223,16 +208,12 @@ impl Wiper {
         Ok(())
     }
     /// Check if the given method is supported.
-    pub(crate) fn supported(
-        wipe_method: WipeMethod,
-    ) -> Result<WipeMethod, Error> {
+    pub(crate) fn supported(wipe_method: WipeMethod) -> Result<WipeMethod, Error> {
         match wipe_method {
             WipeMethod::None | WipeMethod::WriteZeroes => Ok(wipe_method),
-            WipeMethod::Unmap | WipeMethod::WritePattern(_) => {
-                Err(Error::MethodUnimplemented {
-                    method: wipe_method,
-                })
-            }
+            WipeMethod::Unmap | WipeMethod::WritePattern(_) => Err(Error::MethodUnimplemented {
+                method: wipe_method,
+            }),
             WipeMethod::CkSum(_) => Ok(wipe_method),
         }
     }
@@ -252,10 +233,7 @@ impl<S: NotifyStream> StreamedWiper<S> {
         snafu::ensure!(chunk_size_bytes <= size, ChunkTooLarge {});
         let iterator = WipeIterator::new(0, size, chunk_size_bytes, block_len)?;
 
-        snafu::ensure!(
-            iterator.total_chunks < max_chunks as u64,
-            TooManyChunks {}
-        );
+        snafu::ensure!(iterator.total_chunks < max_chunks as u64, TooManyChunks {});
 
         let stats = WipeStats {
             uuid: wiper.bdev.get_bdev().uuid(),
@@ -301,10 +279,7 @@ impl<S: NotifyStream> StreamedWiper<S> {
     /// Complete the current chunk.
     fn complete_chunk(&mut self, start: std::time::Instant, size: u64) {
         self.stats.complete_chunk(start, size);
-        if let WipeMethod::CkSum(CkSumMethod::Crc32 {
-            crc32c,
-        }) = &mut self.wiper.wipe_method
-        {
+        if let WipeMethod::CkSum(CkSumMethod::Crc32 { crc32c }) = &mut self.wiper.wipe_method {
             // Finalize CRC by inverting all bits.
             if self.stats.remaining_chunks == 0 {
                 *crc32c ^= spdk_rs::libspdk::SPDK_CRC32C_XOR;
@@ -316,17 +291,12 @@ impl<S: NotifyStream> StreamedWiper<S> {
     /// Wipe the bdev at the given byte offset and byte size.
     /// Uses the abort checker allowing us to stop early if a client disconnects
     /// or if the process is being shutdown.
-    async fn wipe_with_abort(
-        &mut self,
-        offset: u64,
-        size: u64,
-    ) -> Result<(), Error> {
+    async fn wipe_with_abort(&mut self, offset: u64, size: u64) -> Result<(), Error> {
         // todo: configurable?
         let max_io_size = 8 * 1024 * 1024;
         if size > max_io_size {
             let block_len = self.wiper.bdev.get_bdev().block_len() as u64;
-            let mut iterator =
-                WipeIterator::new(offset, size, max_io_size, block_len)?;
+            let mut iterator = WipeIterator::new(offset, size, max_io_size, block_len)?;
             while let Some((offset, size)) = iterator.next() {
                 self.wiper.wipe(offset, size).await?;
                 iterator.complete_chunk(size);
@@ -349,9 +319,7 @@ impl<S: NotifyStream> StreamedWiper<S> {
     fn notify(&self) -> Result<(), Error> {
         if let Err(error) = self.stream.notify(&self.stats) {
             self.check_abort()?;
-            return Err(Error::ChunkNotifyFailed {
-                error,
-            });
+            return Err(Error::ChunkNotifyFailed { error });
         }
         Ok(())
     }
@@ -412,10 +380,7 @@ impl WipeIterator {
         };
 
         snafu::ensure!(chunk_size_bytes <= total_bytes, ChunkTooLarge {});
-        snafu::ensure!(
-            chunk_size_bytes % block_len == 0,
-            ChunkBlockSizeInvalid {}
-        );
+        snafu::ensure!(chunk_size_bytes % block_len == 0, ChunkBlockSizeInvalid {});
 
         let mut chunks = total_bytes / chunk_size_bytes;
         let remainder = total_bytes % chunk_size_bytes;
@@ -454,15 +419,12 @@ impl Iterator for WipeIterator {
         if self.wiped_chunks >= self.total_chunks {
             None
         } else {
-            let offset =
-                self.start_offset + (self.wiped_chunks * self.chunk_size_bytes);
+            let offset = self.start_offset + (self.wiped_chunks * self.chunk_size_bytes);
             match self.extra_chunk_size_bytes {
                 // the very last chunk might have a different size is the bdev
                 // size is not an exact multiple of the chunk
                 // size.
-                Some(size) if self.remaining_chunks == 1 => {
-                    Some((offset, size))
-                }
+                Some(size) if self.remaining_chunks == 1 => Some((offset, size)),
                 None | Some(_) => Some((offset, self.chunk_size_bytes)),
             }
         }

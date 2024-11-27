@@ -75,8 +75,7 @@ async fn remove_children_from_nexus() {
 
     // lookup the nexus and share it over nvmf
     ms.spawn(async {
-        let nexus =
-            nexus_lookup_mut("remove_from_nexus").expect("nexus is not found!");
+        let nexus = nexus_lookup_mut("remove_from_nexus").expect("nexus is not found!");
         nexus.share_nvmf(None).await
     })
     .await
@@ -84,16 +83,14 @@ async fn remove_children_from_nexus() {
 
     // lookup the nexus, and remove a child
     ms.spawn(async {
-        let nexus =
-            nexus_lookup_mut("remove_from_nexus").expect("nexus is not found!");
+        let nexus = nexus_lookup_mut("remove_from_nexus").expect("nexus is not found!");
         nexus.remove_child(&format!("uring:///{DISKNAME1}")).await
     })
     .await
     .expect("failed to remove child from nexus");
 
     ms.spawn(async {
-        let nexus =
-            nexus_lookup_mut("remove_from_nexus").expect("nexus is not found!");
+        let nexus = nexus_lookup_mut("remove_from_nexus").expect("nexus is not found!");
         nexus.remove_child(&format!("uring:///{DISKNAME2}")).await
     })
     .await
@@ -101,8 +98,7 @@ async fn remove_children_from_nexus() {
 
     // add new child but don't rebuild, so it's not healthy!
     ms.spawn(async {
-        let nexus =
-            nexus_lookup_mut("remove_from_nexus").expect("nexus is not found!");
+        let nexus = nexus_lookup_mut("remove_from_nexus").expect("nexus is not found!");
         nexus
             .add_child(&format!("uring:///{DISKNAME1}"), true)
             .await
@@ -111,8 +107,7 @@ async fn remove_children_from_nexus() {
     .expect("should be able to add a child back");
 
     ms.spawn(async {
-        let nexus =
-            nexus_lookup_mut("remove_from_nexus").expect("nexus is not found!");
+        let nexus = nexus_lookup_mut("remove_from_nexus").expect("nexus is not found!");
         nexus.remove_child(&format!("uring:///{DISKNAME2}")).await
     })
     .await
@@ -120,8 +115,7 @@ async fn remove_children_from_nexus() {
 
     // destroy it
     ms.spawn(async {
-        let nexus =
-            nexus_lookup_mut("remove_from_nexus").expect("nexus is not found!");
+        let nexus = nexus_lookup_mut("remove_from_nexus").expect("nexus is not found!");
         nexus.destroy().await.unwrap();
     })
     .await;
@@ -154,8 +148,7 @@ async fn nexus_add_child() {
     .await;
 
     ms.spawn(async {
-        let nexus =
-            nexus_lookup_mut("nexus_add_child").expect("nexus is not found!");
+        let nexus = nexus_lookup_mut("nexus_add_child").expect("nexus is not found!");
         nexus
             .share_nvmf(None)
             .await
@@ -164,8 +157,7 @@ async fn nexus_add_child() {
     .await;
 
     ms.spawn(async {
-        let nexus =
-            nexus_lookup_mut("nexus_add_child").expect("nexus is not found!");
+        let nexus = nexus_lookup_mut("nexus_add_child").expect("nexus is not found!");
         nexus
             .add_child(&format!("uring:///{DISKNAME3}"), false)
             .await
@@ -174,17 +166,12 @@ async fn nexus_add_child() {
     .unwrap();
 
     ms.spawn(async {
-        let nexus =
-            nexus_lookup_mut("nexus_add_child").expect("nexus is not found!");
+        let nexus = nexus_lookup_mut("nexus_add_child").expect("nexus is not found!");
         nexus.destroy().await.unwrap();
     })
     .await;
 
-    common::delete_file(&[
-        DISKNAME1.into(),
-        DISKNAME2.into(),
-        DISKNAME3.into(),
-    ]);
+    common::delete_file(&[DISKNAME1.into(), DISKNAME2.into(), DISKNAME3.into()]);
 }
 
 /// Remove a child while I/O is running.
@@ -206,11 +193,7 @@ async fn nexus_remove_child_with_io() {
         )
         .add_container_bin(
             "ms_nex",
-            Binary::from_dbg("io-engine").with_args(vec![
-                "-l",
-                "3,4",
-                "-Fnodate,compact,color",
-            ]),
+            Binary::from_dbg("io-engine").with_args(vec!["-l", "3,4", "-Fnodate,compact,color"]),
         )
         .with_clean(true)
         .build()
@@ -327,11 +310,7 @@ async fn nexus_channel_get_handles() {
         )
         .add_container_bin(
             "qms_nex",
-            Binary::from_dbg("io-engine").with_args(vec![
-                "-l",
-                "5,6",
-                "-Fnodate,compact,color",
-            ]),
+            Binary::from_dbg("io-engine").with_args(vec!["-l", "5,6", "-Fnodate,compact,color"]),
         )
         .with_clean(true)
         .build()
@@ -405,7 +384,7 @@ async fn nexus_channel_get_handles() {
     nex_0.create().await.unwrap();
     nex_0.publish().await.unwrap();
 
-    for _ in 0 .. 20 {
+    for _ in 0..20 {
         let j_repl0 = tokio::spawn({
             let nex_0 = nex_0.clone();
             let repl_0 = repl_0.clone();

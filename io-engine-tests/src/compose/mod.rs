@@ -7,16 +7,8 @@ use tokio::sync::oneshot::channel;
 use crate::mayastor_test_init_ex;
 use io_engine::{
     core::{
-        device_monitor_loop,
-        mayastor_env_stop,
-        runtime,
-        MayastorCliArgs,
-        MayastorEnvironment,
-        ProtectedSubsystems,
-        Reactor,
-        Reactors,
-        ResourceLockManager,
-        ResourceLockManagerConfig,
+        device_monitor_loop, mayastor_env_stop, runtime, MayastorCliArgs, MayastorEnvironment,
+        ProtectedSubsystems, Reactor, Reactors, ResourceLockManager, ResourceLockManagerConfig,
         GLOBAL_RC,
     },
     grpc,
@@ -81,10 +73,7 @@ impl<'a> MayastorTest<'a> {
         Self::new_ex(args, None)
     }
 
-    pub fn new_ex(
-        args: MayastorCliArgs,
-        log_level: Option<&str>,
-    ) -> MayastorTest<'static> {
+    pub fn new_ex(args: MayastorCliArgs, log_level: Option<&str>) -> MayastorTest<'static> {
         let (tx, rx) = bounded(1);
         mayastor_test_init_ex(args.log_format.unwrap_or_default(), log_level);
         let thdl = std::thread::Builder::new()

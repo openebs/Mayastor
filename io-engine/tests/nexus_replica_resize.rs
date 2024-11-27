@@ -3,13 +3,10 @@ pub mod common;
 use common::{
     compose::{
         rpc::v1::{
-            nexus::NexusState,
-            snapshot::NexusCreateSnapshotReplicaDescriptor,
-            GrpcConnect,
+            nexus::NexusState, snapshot::NexusCreateSnapshotReplicaDescriptor, GrpcConnect,
             SharedRpcHandle,
         },
-        Binary,
-        Builder,
+        Binary, Builder,
     },
     fio::{Fio, FioBuilder, FioJobBuilder},
     nexus::NexusBuilder,
@@ -93,9 +90,7 @@ impl ResizeTestTrait for ResizeTest {
             ResizeTest::WithoutReplicaResize => {
                 do_resize_without_replica_resize(nexus, replicas).await
             }
-            ResizeTest::AfterReplicaResize => {
-                do_resize_after_replica_resize(nexus, replicas).await
-            }
+            ResizeTest::AfterReplicaResize => do_resize_after_replica_resize(nexus, replicas).await,
             ResizeTest::WithRebuildingReplica => {
                 do_resize_with_rebuilding_replica(nexus, replicas).await
             }
@@ -127,10 +122,7 @@ async fn do_resize_without_replica_resize(
         .expect_err("Resize of nexus without resizing ALL replicas must fail");
 }
 
-async fn do_resize_after_replica_resize(
-    nexus: &NexusBuilder,
-    replicas: Vec<&mut ReplicaBuilder>,
-) {
+async fn do_resize_after_replica_resize(nexus: &NexusBuilder, replicas: Vec<&mut ReplicaBuilder>) {
     for replica in replicas {
         let ret = replica.resize(EXPANDED_SIZE).await.unwrap();
         assert!(ret.size >= EXPANDED_SIZE);

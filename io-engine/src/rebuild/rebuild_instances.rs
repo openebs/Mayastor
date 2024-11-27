@@ -2,8 +2,7 @@
 macro_rules! gen_rebuild_instances {
     ($T:ty) => {
         /// List of rebuild jobs indexed by the destination's replica uri.
-        type RebuildJobInstances =
-            std::collections::HashMap<String, std::sync::Arc<$T>>;
+        type RebuildJobInstances = std::collections::HashMap<String, std::sync::Arc<$T>>;
 
         impl $T {
             /// Get the rebuild job instances container, we ensure that this can
@@ -29,9 +28,7 @@ macro_rules! gen_rebuild_instances {
             }
 
             /// Lookup a rebuild job by its name then remove and drop it.
-            pub fn remove(
-                name: &str,
-            ) -> Result<std::sync::Arc<Self>, super::RebuildError> {
+            pub fn remove(name: &str) -> Result<std::sync::Arc<Self>, super::RebuildError> {
                 match Self::get_instances().remove(name) {
                     Some(job) => Ok(job),
                     None => Err(RebuildError::JobNotFound {
@@ -50,18 +47,13 @@ macro_rules! gen_rebuild_instances {
                     })
                 } else {
                     let job = std::sync::Arc::new(self);
-                    let _ = rebuild_list.insert(
-                        job.name().to_owned(),
-                        job.clone(),
-                    );
+                    let _ = rebuild_list.insert(job.name().to_owned(), job.clone());
                     Ok(job)
                 }
             }
 
             /// Lookup a rebuild job by its name and return it.
-            pub fn lookup(
-                name: &str,
-            ) -> Result<std::sync::Arc<Self>, super::RebuildError> {
+            pub fn lookup(name: &str) -> Result<std::sync::Arc<Self>, super::RebuildError> {
                 if let Some(job) = Self::get_instances().get(name) {
                     Ok(job.clone())
                 } else {

@@ -15,8 +15,7 @@ use futures::FutureExt;
 use io_engine::{
     bdev::nexus::{nexus_create, nexus_lookup_mut},
     core::{MayastorCliArgs, MayastorEnvironment, Mthread, Reactors, Share},
-    grpc,
-    logger,
+    grpc, logger,
 };
 use version_info::version_info_str;
 
@@ -77,18 +76,20 @@ fn main() {
     let matches = Command::new("NVMeT CLI")
         .version(version_info_str!())
         .about("NVMe test utility to quickly create a nexus over existing nvme targets")
-        .arg(Arg::new("size")
-            .default_value("64")
-            .short('s')
-            .long("size")
-            .help("Size of the nexus to create in MB")
+        .arg(
+            Arg::new("size")
+                .default_value("64")
+                .short('s')
+                .long("size")
+                .help("Size of the nexus to create in MB"),
         )
         .arg(
             Arg::new("uri")
                 .short('u')
                 .required(true)
                 .long("uris")
-                .help("NVMe-OF TCP targets to connect to"))
+                .help("NVMe-OF TCP targets to connect to"),
+        )
         .get_matches();
 
     let margs = MayastorCliArgs {
@@ -101,8 +102,7 @@ fn main() {
 
     let ms = MayastorEnvironment::new(margs.clone()).init();
     start_tokio_runtime(&margs);
-    Reactors::current()
-        .send_future(async move { create_nexus(&matches).await });
+    Reactors::current().send_future(async move { create_nexus(&matches).await });
 
     Reactors::current().running();
     Reactors::current().poll_reactor();

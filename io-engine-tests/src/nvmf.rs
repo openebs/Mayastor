@@ -15,11 +15,7 @@ pub struct NvmfLocation {
 }
 
 impl NvmfLocation {
-    pub fn from_nexus_info(
-        addr: &str,
-        nexus_name: &str,
-        nexus_uuid: &str,
-    ) -> Self {
+    pub fn from_nexus_info(addr: &str, nexus_name: &str, nexus_uuid: &str) -> Self {
         Self {
             addr: addr.parse().unwrap(),
             nqn: make_nexus_nqn(nexus_name),
@@ -57,9 +53,7 @@ pub async fn test_write_to_nvmf(
 }
 
 /// Checks that all given NVMF devices contain identical copies of data.
-pub async fn test_devices_identical(
-    devices: &[NvmfLocation],
-) -> std::io::Result<()> {
+pub async fn test_devices_identical(devices: &[NvmfLocation]) -> std::io::Result<()> {
     assert!(devices.len() > 1);
 
     let (_cg0, path0) = devices[0].open()?;
@@ -73,10 +67,7 @@ pub async fn test_devices_identical(
 }
 
 /// TODO
-pub async fn test_fio_to_nvmf(
-    nvmf: &NvmfLocation,
-    mut fio: Fio,
-) -> std::io::Result<()> {
+pub async fn test_fio_to_nvmf(nvmf: &NvmfLocation, mut fio: Fio) -> std::io::Result<()> {
     let tgt = format!("'{}'", nvmf.as_args().join(" "));
 
     fio.jobs.iter_mut().for_each(|j| {
@@ -89,10 +80,7 @@ pub async fn test_fio_to_nvmf(
 }
 
 /// TODO
-pub async fn test_fio_to_nvmf_aio(
-    nvmf: &NvmfLocation,
-    mut fio: Fio,
-) -> std::io::Result<()> {
+pub async fn test_fio_to_nvmf_aio(nvmf: &NvmfLocation, mut fio: Fio) -> std::io::Result<()> {
     let _cg = NmveConnectGuard::connect_addr(&nvmf.addr, &nvmf.nqn);
     let path = find_mayastor_nvme_device_path(&nvmf.serial)?;
     let path_str = path.to_str().unwrap();

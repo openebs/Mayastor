@@ -6,8 +6,7 @@ use common::{
             nexus::{ChildState, ChildStateReason},
             GrpcConnect,
         },
-        Binary,
-        Builder,
+        Binary, Builder,
     },
     file_io::DataSize,
     nexus::{find_nexus_by_uuid, test_write_to_nexus, NexusBuilder},
@@ -63,23 +62,12 @@ async fn nexus_thin_nospc_local_single() {
     nex_0.publish().await.unwrap();
 
     // Write less than pool size.
-    test_write_to_nexus(
-        &nex_0,
-        DataSize::from_bytes(0),
-        30,
-        DataSize::from_mb(1),
-    )
-    .await
-    .unwrap();
+    test_write_to_nexus(&nex_0, DataSize::from_bytes(0), 30, DataSize::from_mb(1))
+        .await
+        .unwrap();
 
     // Write more than pool size. Must result in ENOSPC.
-    let res = test_write_to_nexus(
-        &nex_0,
-        DataSize::from_bytes(0),
-        80,
-        DataSize::from_mb(1),
-    )
-    .await;
+    let res = test_write_to_nexus(&nex_0, DataSize::from_bytes(0), 80, DataSize::from_mb(1)).await;
 
     assert_eq!(res.unwrap_err().raw_os_error().unwrap(), libc::ENOSPC);
 }
@@ -136,23 +124,12 @@ async fn nexus_thin_nospc_remote_single() {
     nex_0.publish().await.unwrap();
 
     // Write less than pool size.
-    test_write_to_nexus(
-        &nex_0,
-        DataSize::from_bytes(0),
-        30,
-        DataSize::from_mb(1),
-    )
-    .await
-    .unwrap();
+    test_write_to_nexus(&nex_0, DataSize::from_bytes(0), 30, DataSize::from_mb(1))
+        .await
+        .unwrap();
 
     // Write more than pool size. Must result in ENOSPC.
-    let res = test_write_to_nexus(
-        &nex_0,
-        DataSize::from_bytes(0),
-        80,
-        DataSize::from_mb(1),
-    )
-    .await;
+    let res = test_write_to_nexus(&nex_0, DataSize::from_bytes(0), 80, DataSize::from_mb(1)).await;
 
     assert_eq!(res.unwrap_err().raw_os_error().unwrap(), libc::ENOSPC);
 }

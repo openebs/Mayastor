@@ -12,54 +12,29 @@ use tonic::{Request, Response, Status};
 use crate::{
     bdev_api::BdevError,
     core::{
-        CoreError,
-        MayastorFeatures,
-        Reactor,
-        ResourceLockGuard,
-        ResourceSubsystem,
-        VerboseError,
+        CoreError, MayastorFeatures, Reactor, ResourceLockGuard, ResourceSubsystem, VerboseError,
     },
 };
 
 impl From<BdevError> for tonic::Status {
     fn from(e: BdevError) -> Self {
         match e {
-            BdevError::UriParseFailed {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            BdevError::UriSchemeUnsupported {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            BdevError::InvalidUri {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            BdevError::IntParamParseFailed {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            BdevError::BoolParamParseFailed {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            BdevError::UuidParamParseFailed {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            BdevError::BdevWrongUuid {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            BdevError::CreateBdevFailed {
-                source, ..
-            }
-            | BdevError::CreateBdevInvalidParams {
-                source, ..
-            } => match source {
+            BdevError::UriParseFailed { .. } => Status::invalid_argument(e.to_string()),
+            BdevError::UriSchemeUnsupported { .. } => Status::invalid_argument(e.to_string()),
+            BdevError::InvalidUri { .. } => Status::invalid_argument(e.to_string()),
+            BdevError::IntParamParseFailed { .. } => Status::invalid_argument(e.to_string()),
+            BdevError::BoolParamParseFailed { .. } => Status::invalid_argument(e.to_string()),
+            BdevError::UuidParamParseFailed { .. } => Status::invalid_argument(e.to_string()),
+            BdevError::BdevWrongUuid { .. } => Status::invalid_argument(e.to_string()),
+            BdevError::CreateBdevFailed { source, .. }
+            | BdevError::CreateBdevInvalidParams { source, .. } => match source {
                 Errno::EINVAL => Status::invalid_argument(e.verbose()),
                 Errno::ENOENT => Status::not_found(e.verbose()),
                 Errno::ENODEV => Status::not_found(e.verbose()),
                 Errno::EEXIST => Status::already_exists(e.verbose()),
                 _ => Status::invalid_argument(e.verbose()),
             },
-            BdevError::BdevNotFound {
-                ..
-            } => Status::not_found(e.to_string()),
+            BdevError::BdevNotFound { .. } => Status::not_found(e.to_string()),
             e => Status::internal(e.verbose()),
         }
     }
@@ -158,16 +133,13 @@ macro_rules! spdk_submit {
 pub type GrpcResult<T> = std::result::Result<Response<T>, Status>;
 
 /// Submit rpc code to the primary reactor.
-pub fn rpc_submit<F, R, E>(
-    future: F,
-) -> Result<Receiver<Result<R, E>>, tonic::Status>
+pub fn rpc_submit<F, R, E>(future: F) -> Result<Receiver<Result<R, E>>, tonic::Status>
 where
     E: Send + Debug + Display + 'static,
     F: Future<Output = Result<R, E>> + 'static,
     R: Send + Debug + 'static,
 {
-    Reactor::spawn_at_primary(future)
-        .map_err(|_| Status::resource_exhausted("ENOMEM"))
+    Reactor::spawn_at_primary(future).map_err(|_| Status::resource_exhausted("ENOMEM"))
 }
 /// Submit rpc code to the primary reactor.
 /// Similar to `rpc_submit` but with a more generic response abstraction.
@@ -176,22 +148,18 @@ where
     F: Future<Output = R> + 'static,
     R: Send + Debug + 'static,
 {
-    Reactor::spawn_at_primary(future)
-        .map_err(|_| Status::resource_exhausted("ENOMEM"))
+    Reactor::spawn_at_primary(future).map_err(|_| Status::resource_exhausted("ENOMEM"))
 }
 
 /// Submit rpc code to the primary reactor.
 /// Similar to `rpc_submit_ext` but specifying a result output with tonic
 /// Status as error.
-pub fn rpc_submit_ext2<F, R>(
-    future: F,
-) -> Result<Receiver<Result<R, tonic::Status>>, tonic::Status>
+pub fn rpc_submit_ext2<F, R>(future: F) -> Result<Receiver<Result<R, tonic::Status>>, tonic::Status>
 where
     F: Future<Output = Result<R, tonic::Status>> + 'static,
     R: Send + Debug + 'static,
 {
-    Reactor::spawn_at_primary(future)
-        .map_err(|_| Status::resource_exhausted("ENOMEM"))
+    Reactor::spawn_at_primary(future).map_err(|_| Status::resource_exhausted("ENOMEM"))
 }
 
 /// Manage locks across multiple grpc services.
@@ -200,7 +168,10 @@ pub async fn acquire_subsystem_lock<'a>(
     resource: Option<&str>,
 ) -> Result<ResourceLockGuard<'a>, Status> {
     if let Some(resource) = resource {
-        match subsystem.lock_resource(resource.to_string(), None, true).await {
+        match subsystem
+            .lock_resource(resource.to_string(), None, true)
+            .await
+        {
             Some(lock_guard) => Ok(lock_guard),
             None => Err(Status::aborted(format!(
                 "Failed to acquire lock for the resource: {resource}, lock already held"
@@ -232,9 +203,9 @@ pub fn endpoint_from_str(endpoint: &str, port: u16) -> std::net::SocketAddr {
 /// mismatch, for ex, in case of EKS clusters where hostname and
 /// node name differ volume wont be created, so we set it to hostname.
 pub fn node_name(node_name: &Option<String>) -> String {
-    node_name.clone().unwrap_or_else(|| {
-        std::env::var("HOSTNAME").unwrap_or_else(|_| "mayastor-node".into())
-    })
+    node_name
+        .clone()
+        .unwrap_or_else(|| std::env::var("HOSTNAME").unwrap_or_else(|_| "mayastor-node".into()))
 }
 
 const SECONDS_IN_HOUR: u64 = 60 * 60;
@@ -251,18 +222,13 @@ pub fn get_request_timeout<T>(req: &Request<T>) -> Duration {
                 Ok(timeout) => {
                     // At least one digit for the value + 1 character for unit.
                     if timeout.len() >= 2 {
-                        let (t_value, t_unit) =
-                            timeout.split_at(timeout.len() - 1);
+                        let (t_value, t_unit) = timeout.split_at(timeout.len() - 1);
                         if let Ok(tv) = t_value.parse() {
                             return match t_unit {
                                 // Hours
-                                "H" => {
-                                    Duration::from_secs(tv * SECONDS_IN_HOUR)
-                                }
+                                "H" => Duration::from_secs(tv * SECONDS_IN_HOUR),
                                 // Minutes
-                                "M" => {
-                                    Duration::from_secs(tv * SECONDS_IN_MINUTE)
-                                }
+                                "M" => Duration::from_secs(tv * SECONDS_IN_MINUTE),
                                 // Seconds
                                 "S" => Duration::from_secs(tv),
                                 // Milliseconds
@@ -276,9 +242,7 @@ pub fn get_request_timeout<T>(req: &Request<T>) -> Duration {
                                         timeout,
                                         "Unsupported time unit in gRPC timeout, applying default gRPC timeout"
                                     );
-                                    Duration::from_secs(
-                                        DEFAULT_GRPC_TIMEOUT_SEC,
-                                    )
+                                    Duration::from_secs(DEFAULT_GRPC_TIMEOUT_SEC)
                                 }
                             };
                         }

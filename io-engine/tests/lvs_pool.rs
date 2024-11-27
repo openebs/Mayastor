@@ -1,13 +1,7 @@
 use common::MayastorTest;
 use io_engine::{
     bdev_api::bdev_create,
-    core::{
-        logical_volume::LogicalVolume,
-        MayastorCliArgs,
-        Protocol,
-        Share,
-        UntypedBdev,
-    },
+    core::{logical_volume::LogicalVolume, MayastorCliArgs, Protocol, Share, UntypedBdev},
     lvs::{Lvs, LvsLvol, PropName, PropValue},
     pool_backend::{PoolArgs, PoolBackend},
     subsys::NvmfSubsystem,
@@ -31,11 +25,7 @@ async fn lvs_pool_test() {
         .output()
         .expect("failed to execute mkdir");
 
-    common::delete_file(&[
-        DISKNAME1.into(),
-        DISKNAME2.into(),
-        DISKNAME3.into(),
-    ]);
+    common::delete_file(&[DISKNAME1.into(), DISKNAME2.into(), DISKNAME3.into()]);
     common::truncate_file(DISKNAME1, 128 * 1024);
     common::truncate_file(DISKNAME2, 128 * 1024);
     common::truncate_file(DISKNAME3, 128 * 1024);
@@ -79,10 +69,8 @@ async fn lvs_pool_test() {
     // create directly here to ensure that if we
     // have an idempotent snafu, we dont crash and
     // burn
-    ms.spawn(async {
-        assert!(Lvs::create_from_args_inner(pool_args).await.is_err())
-    })
-    .await;
+    ms.spawn(async { assert!(Lvs::create_from_args_inner(pool_args).await.is_err()) })
+        .await;
 
     // should fail to import the pool that is already imported
     // similar to above, we use the import directly
@@ -164,16 +152,10 @@ async fn lvs_pool_test() {
     // create 10 lvol on this pool
     ms.spawn(async {
         let pool = Lvs::lookup("tpool").unwrap();
-        for i in 0 .. 10 {
-            pool.create_lvol(
-                &format!("vol-{i}"),
-                8 * 1024 * 1024,
-                None,
-                true,
-                None,
-            )
-            .await
-            .unwrap();
+        for i in 0..10 {
+            pool.create_lvol(&format!("vol-{i}"), 8 * 1024 * 1024, None, true, None)
+                .await
+                .unwrap();
         }
 
         assert_eq!(pool.lvols().unwrap().count(), 10);
@@ -193,7 +175,7 @@ async fn lvs_pool_test() {
         .await
         .unwrap();
 
-        for i in 0 .. 5 {
+        for i in 0..5 {
             pool2
                 .create_lvol(
                     &format!("pool2-vol-{i}"),
@@ -311,16 +293,10 @@ async fn lvs_pool_test() {
     ms.spawn(async {
         let pool = Lvs::lookup("tpool").unwrap();
 
-        for i in 0 .. 10 {
-            pool.create_lvol(
-                &format!("vol-{i}"),
-                8 * 1024 * 1024,
-                None,
-                true,
-                None,
-            )
-            .await
-            .unwrap();
+        for i in 0..10 {
+            pool.create_lvol(&format!("vol-{i}"), 8 * 1024 * 1024, None, true, None)
+                .await
+                .unwrap();
         }
 
         for mut l in pool.lvols().unwrap() {

@@ -40,10 +40,7 @@ pub(super) struct RebuildTask {
 }
 
 impl RebuildTask {
-    pub(super) fn new(
-        buffer: DmaBuf,
-        sender: mpsc::Sender<TaskResult>,
-    ) -> Self {
+    pub(super) fn new(buffer: DmaBuf, sender: mpsc::Sender<TaskResult>) -> Self {
         Self {
             buffer,
             sender,
@@ -114,14 +111,11 @@ impl RebuildTasks {
     /// Create a rebuild tasks pool for the given rebuild descriptor.
     /// Each task can be schedule to run concurrently, and each task
     /// gets its own `DmaBuf` from where it reads and writes from.
-    pub(super) fn new(
-        task_count: usize,
-        desc: &RebuildDescriptor,
-    ) -> Result<Self, RebuildError> {
+    pub(super) fn new(task_count: usize, desc: &RebuildDescriptor) -> Result<Self, RebuildError> {
         // only sending one message per channel at a time so we don't need
         // the extra buffer
         let channel = mpsc::channel(0);
-        let tasks = (0 .. task_count).map(|_| {
+        let tasks = (0..task_count).map(|_| {
             let buffer = desc.dma_malloc(SEGMENT_SIZE)?;
             let task = RebuildTask::new(buffer, channel.0.clone());
             Ok(Arc::new(Mutex::new(task)))
@@ -204,11 +198,7 @@ pub(super) trait RebuildTaskCopier {
     fn descriptor(&self) -> &RebuildDescriptor;
     /// Copies an entire segment at the given block address, from source to
     /// target using a `DmaBuf`.
-    async fn copy_segment(
-        &self,
-        blk: u64,
-        task: &mut RebuildTask,
-    ) -> Result<bool, RebuildError>;
+    async fn copy_segment(&self, blk: u64, task: &mut RebuildTask) -> Result<bool, RebuildError>;
 }
 
 #[async_trait::async_trait(?Send)]
@@ -218,11 +208,7 @@ impl RebuildTaskCopier for RebuildDescriptor {
     }
 
     /// Copies one segment worth of data from source into destination.
-    async fn copy_segment(
-        &self,
-        blk: u64,
-        task: &mut RebuildTask,
-    ) -> Result<bool, RebuildError> {
+    async fn copy_segment(&self, blk: u64, task: &mut RebuildTask) -> Result<bool, RebuildError> {
         task.copy_one(blk, self).await
     }
 }

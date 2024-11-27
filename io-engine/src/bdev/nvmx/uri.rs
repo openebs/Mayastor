@@ -24,27 +24,19 @@ use controller::options::NvmeControllerOpts;
 
 use spdk_rs::{
     libspdk::{
-        spdk_nvme_connect_async,
-        spdk_nvme_ctrlr,
-        spdk_nvme_ctrlr_opts,
-        spdk_nvme_probe_poll_async,
+        spdk_nvme_connect_async, spdk_nvme_ctrlr, spdk_nvme_ctrlr_opts, spdk_nvme_probe_poll_async,
         spdk_nvme_transport_id,
     },
-    Poller,
-    PollerBuilder,
+    Poller, PollerBuilder,
 };
 
 use crate::{
     bdev::{
         nvmx::{
-            controller,
-            controller_inner::SpdkNvmeController,
-            NvmeControllerState,
-            NVME_CONTROLLERS,
+            controller, controller_inner::SpdkNvmeController, NvmeControllerState, NVME_CONTROLLERS,
         },
         util::uri,
-        CreateDestroy,
-        GetName,
+        CreateDestroy, GetName,
     },
     bdev_api::{self, BdevError},
     constants::NVME_NQN_PREFIX,
@@ -63,8 +55,7 @@ extern "C" fn connect_attach_cb(
     ctrlr: *mut spdk_nvme_ctrlr,
     _opts: *const spdk_nvme_ctrlr_opts,
 ) {
-    let context =
-        unsafe { &mut *(_cb_ctx as *const _ as *mut NvmeControllerContext) };
+    let context = unsafe { &mut *(_cb_ctx as *const _ as *mut NvmeControllerContext) };
 
     // Normally, the attach handler is called by the poller after
     // the controller is connected. In such a case 'spdk_nvme_probe_poll_async'
@@ -87,8 +78,7 @@ extern "C" fn connect_attach_cb(
         // Instantiate the controller in case attach succeeded.
         controller::connected_attached_cb(
             context,
-            SpdkNvmeController::from_ptr(ctrlr)
-                .expect("probe callback with NULL ptr"),
+            SpdkNvmeController::from_ptr(ctrlr).expect("probe callback with NULL ptr"),
         );
     }
 }
@@ -140,47 +130,39 @@ impl TryFrom<&Url> for NvmfDeviceTemplate {
             });
         }
 
-        let mut parameters: HashMap<String, String> =
-            url.query_pairs().into_owned().collect();
+        let mut parameters: HashMap<String, String> = url.query_pairs().into_owned().collect();
 
         let mut prchk_flags: u32 = 0;
 
         if let Some(value) = parameters.remove("reftag") {
-            if uri::boolean(&value, true).context(
-                bdev_api::BoolParamParseFailed {
-                    uri: url.to_string(),
-                    parameter: String::from("reftag"),
-                    value: value.to_string(),
-                },
-            )? {
-                prchk_flags |=
-                    spdk_rs::libspdk::SPDK_NVME_IO_FLAGS_PRCHK_REFTAG;
+            if uri::boolean(&value, true).context(bdev_api::BoolParamParseFailed {
+                uri: url.to_string(),
+                parameter: String::from("reftag"),
+                value: value.to_string(),
+            })? {
+                prchk_flags |= spdk_rs::libspdk::SPDK_NVME_IO_FLAGS_PRCHK_REFTAG;
             }
         }
 
         if let Some(value) = parameters.remove("guard") {
-            if uri::boolean(&value, true).context(
-                bdev_api::BoolParamParseFailed {
-                    uri: url.to_string(),
-                    parameter: String::from("guard"),
-                    value: value.to_string(),
-                },
-            )? {
+            if uri::boolean(&value, true).context(bdev_api::BoolParamParseFailed {
+                uri: url.to_string(),
+                parameter: String::from("guard"),
+                value: value.to_string(),
+            })? {
                 prchk_flags |= spdk_rs::libspdk::SPDK_NVME_IO_FLAGS_PRCHK_GUARD;
             }
         }
 
-        let uuid = uri::uuid(parameters.remove("uuid")).context(
-            bdev_api::UuidParamParseFailed {
+        let uuid =
+            uri::uuid(parameters.remove("uuid")).context(bdev_api::UuidParamParseFailed {
                 uri: url.to_string(),
-            },
-        )?;
+            })?;
 
         let hostnqn = parameters.remove("hostnqn");
 
         Ok(NvmfDeviceTemplate {
-            name: url[url::Position::BeforeHost .. url::Position::AfterPath]
-                .to_string(),
+            name: url[url::Position::BeforeHost..url::Position::AfterPath].to_string(),
             alias: url.to_string(),
             host: host.to_string(),
             port: url.port().unwrap_or(DEFAULT_NVMF_PORT),
@@ -222,29 +204,23 @@ impl NvmeControllerContext<'_> {
         // HOSTNQN is provided.
 
         let mut opts = controller::options::Builder::new()
-            .with_keep_alive_timeout_ms(
-                Config::get().nvme_bdev_opts.keep_alive_timeout_ms,
-            )
-            .with_transport_retry_count(
-                Config::get().nvme_bdev_opts.transport_retry_count as u8,
-            )
-            .with_fabrics_connect_timeout_us(
-                crate::subsys::config::opts::try_from_env(
-                    "NVMF_FABRICS_CONNECT_TIMEOUT",
-                    1_000_000,
-                ),
-            );
+            .with_keep_alive_timeout_ms(Config::get().nvme_bdev_opts.keep_alive_timeout_ms)
+            .with_transport_retry_count(Config::get().nvme_bdev_opts.transport_retry_count as u8)
+            .with_fabrics_connect_timeout_us(crate::subsys::config::opts::try_from_env(
+                "NVMF_FABRICS_CONNECT_TIMEOUT",
+                1_000_000,
+            ));
 
-        let hostnqn = template.hostnqn.clone().or_else(|| {
-            MayastorEnvironment::global_or_default().make_hostnqn()
-        });
+        let hostnqn = template
+            .hostnqn
+            .clone()
+            .or_else(|| MayastorEnvironment::global_or_default().make_hostnqn());
 
         if let Ok(ext_host_id) = std::env::var("MAYASTOR_NVMF_HOSTID") {
             if let Ok(uuid) = Uuid::parse_str(&ext_host_id) {
                 opts = opts.with_ext_host_id(*uuid.as_bytes());
                 if hostnqn.is_none() {
-                    opts = opts
-                        .with_hostnqn(format!("{NVME_NQN_PREFIX}:uuid:{uuid}"));
+                    opts = opts.with_hostnqn(format!("{NVME_NQN_PREFIX}:uuid:{uuid}"));
                 }
             }
         }
@@ -288,9 +264,7 @@ impl CreateDestroy for NvmfDeviceTemplate {
         info!("::create() {}", self.get_name());
         let cname = self.get_name();
         if NVME_CONTROLLERS.lookup_by_name(&cname).is_some() {
-            return Err(BdevError::BdevExists {
-                name: cname,
-            });
+            return Err(BdevError::BdevExists { name: cname });
         }
 
         // Insert a new controller instance (uninitialized) as a guard, and

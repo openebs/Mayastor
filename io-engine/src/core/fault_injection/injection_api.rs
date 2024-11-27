@@ -7,12 +7,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use crate::core::{CoreError, IoCompletionStatus};
 
 use super::{
-    add_bdev_io_injection,
-    FaultDomain,
-    FaultInjectionError,
-    FaultIoStage,
-    InjectIoCtx,
-    Injection,
+    add_bdev_io_injection, FaultDomain, FaultInjectionError, FaultIoStage, InjectIoCtx, Injection,
 };
 
 /// A list of fault injections.
@@ -24,9 +19,7 @@ static INJECTIONS: OnceCell<parking_lot::Mutex<Injections>> = OnceCell::new();
 
 impl Injections {
     fn new() -> Self {
-        Self {
-            items: Vec::new(),
-        }
+        Self { items: Vec::new() }
     }
 
     #[inline(always)]
@@ -62,11 +55,7 @@ impl Injections {
 
     /// TODO
     #[inline(always)]
-    fn inject(
-        &self,
-        stage: FaultIoStage,
-        op: &InjectIoCtx,
-    ) -> Option<IoCompletionStatus> {
+    fn inject(&self, stage: FaultIoStage, op: &InjectIoCtx) -> Option<IoCompletionStatus> {
         self.items.iter().find_map(|inj| inj.inject(stage, op))
     }
 }
@@ -138,10 +127,7 @@ pub fn inject_completion_error(
     ctx: &InjectIoCtx,
     status: IoCompletionStatus,
 ) -> IoCompletionStatus {
-    if !injections_enabled()
-        || !ctx.is_valid()
-        || status != IoCompletionStatus::Success
-    {
+    if !injections_enabled() || !ctx.is_valid() || status != IoCompletionStatus::Success {
         return status;
     }
 

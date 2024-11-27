@@ -42,12 +42,7 @@ async fn nexus_fio_single_remote() {
         )
         .add_container_bin(
             "ms_nex",
-            Binary::from_dbg("io-engine").with_args(vec![
-                "-l",
-                "3,4",
-                "-F",
-                "compact,color",
-            ]),
+            Binary::from_dbg("io-engine").with_args(vec!["-l", "3,4", "-F", "compact,color"]),
         )
         .with_clean(true)
         .build()
@@ -153,12 +148,7 @@ async fn nexus_fio_mixed() {
         )
         .add_container_bin(
             "ms_nex",
-            Binary::from_dbg("io-engine").with_args(vec![
-                "-l",
-                "3,4",
-                "-F",
-                "compact,color",
-            ]),
+            Binary::from_dbg("io-engine").with_args(vec!["-l", "3,4", "-F", "compact,color"]),
         )
         .with_clean(true)
         .build()

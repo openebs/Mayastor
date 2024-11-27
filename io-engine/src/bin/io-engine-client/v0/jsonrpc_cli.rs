@@ -1,7 +1,6 @@
 use crate::{
     context::{Context, OutputFormat},
-    ClientError,
-    GrpcStatus,
+    ClientError, GrpcStatus,
 };
 use clap::{Arg, ArgMatches, Command};
 use colored_json::ToColoredJson;
@@ -27,10 +26,7 @@ pub fn subcommands() -> Command {
         )
 }
 
-pub async fn json_rpc_call(
-    mut ctx: Context,
-    matches: &ArgMatches,
-) -> crate::Result<()> {
+pub async fn json_rpc_call(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     let method = matches
         .get_one::<String>("method")
         .ok_or_else(|| ClientError::MissingValue {
@@ -46,10 +42,7 @@ pub async fn json_rpc_call(
 
     let response = ctx
         .json
-        .json_rpc_call(rpc::JsonRpcRequest {
-            method,
-            params,
-        })
+        .json_rpc_call(rpc::JsonRpcRequest { method, params })
         .await
         .context(GrpcStatus)?;
 

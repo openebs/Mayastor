@@ -1,8 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use io_engine::{
-    bdev::nexus::nexus_create,
-    constants::NVME_NQN_PREFIX,
-    core::MayastorCliArgs,
+    bdev::nexus::nexus_create, constants::NVME_NQN_PREFIX, core::MayastorCliArgs,
     grpc::v1::nexus::nexus_destroy,
 };
 use std::sync::Arc;
@@ -15,10 +13,7 @@ use common::compose::{
         mayastor::{BdevShareRequest, BdevUri, CreateNexusRequest, Null},
         GrpcConnect,
     },
-    Binary,
-    Builder,
-    ComposeTest,
-    MayastorTest,
+    Binary, Builder, ComposeTest, MayastorTest,
 };
 
 /// Infer the build type from the `OUT_DIR` and `SRCDIR`.
@@ -60,8 +55,7 @@ fn new_environment<'a>() -> Arc<MayastorTest<'a>> {
 
 /// Get remote nvmf targets to use as nexus children.
 async fn get_children(compose: Arc<ComposeTest>) -> &'static Vec<String> {
-    static STATIC_TARGETS: tokio::sync::OnceCell<Vec<String>> =
-        tokio::sync::OnceCell::const_new();
+    static STATIC_TARGETS: tokio::sync::OnceCell<Vec<String>> = tokio::sync::OnceCell::const_new();
 
     STATIC_TARGETS
         .get_or_init(|| async move {
@@ -171,9 +165,7 @@ impl Drop for GrpcNexus {
                     let nexus_hdl = &mut hdls.last_mut().unwrap();
                     nexus_hdl
                         .mayastor
-                        .destroy_nexus(mayastor::DestroyNexusRequest {
-                            uuid,
-                        })
+                        .destroy_nexus(mayastor::DestroyNexusRequest { uuid })
                         .await
                         .unwrap();
                 });
@@ -183,10 +175,7 @@ impl Drop for GrpcNexus {
     }
 }
 /// Create a new nexus via grpc and return it as droppable to be destroyed.
-async fn nexus_create_grpc(
-    compose: &Arc<ComposeTest>,
-    nr_children: usize,
-) -> GrpcNexus {
+async fn nexus_create_grpc(compose: &Arc<ComposeTest>, nr_children: usize) -> GrpcNexus {
     let children = get_children(compose.clone())
         .await
         .iter()
@@ -219,9 +208,8 @@ fn criterion_benchmark(c: &mut Criterion) {
     group
         // Benchmark nexus create in-binary
         .bench_function("direct", |b| {
-            b.to_async(&runtime).iter_with_large_drop(|| {
-                nexus_create_direct(&ms_environment, &compose, 3)
-            })
+            b.to_async(&runtime)
+                .iter_with_large_drop(|| nexus_create_direct(&ms_environment, &compose, 3))
         })
         // Benchmark nexus create via gRPC
         .bench_function("grpc", |b| {

@@ -2,15 +2,8 @@ use crate::{
     bdev::{nexus, NvmeControllerState},
     core::{BlockDeviceIoStats, CoreError, MayastorBugFixes, MayastorFeatures},
     grpc::{
-        controller_grpc::{
-            controller_stats,
-            list_controllers,
-            NvmeControllerInfo,
-        },
-        rpc_submit,
-        GrpcClientContext,
-        GrpcResult,
-        Serializer,
+        controller_grpc::{controller_stats, list_controllers, NvmeControllerInfo},
+        rpc_submit, GrpcClientContext, GrpcResult, Serializer,
     },
     host::{blk_device, resource},
     subsys::{registration::registration_grpc::ApiVersion, Registration},
@@ -201,21 +194,11 @@ impl From<NvmeControllerState> for host_rpc::NvmeControllerState {
     fn from(state: NvmeControllerState) -> Self {
         match state {
             NvmeControllerState::New => host_rpc::NvmeControllerState::New,
-            NvmeControllerState::Initializing => {
-                host_rpc::NvmeControllerState::Initializing
-            }
-            NvmeControllerState::Running => {
-                host_rpc::NvmeControllerState::Running
-            }
-            NvmeControllerState::Faulted(_) => {
-                host_rpc::NvmeControllerState::Faulted
-            }
-            NvmeControllerState::Unconfiguring => {
-                host_rpc::NvmeControllerState::Unconfiguring
-            }
-            NvmeControllerState::Unconfigured => {
-                host_rpc::NvmeControllerState::Unconfigured
-            }
+            NvmeControllerState::Initializing => host_rpc::NvmeControllerState::Initializing,
+            NvmeControllerState::Running => host_rpc::NvmeControllerState::Running,
+            NvmeControllerState::Faulted(_) => host_rpc::NvmeControllerState::Faulted,
+            NvmeControllerState::Unconfiguring => host_rpc::NvmeControllerState::Unconfiguring,
+            NvmeControllerState::Unconfigured => host_rpc::NvmeControllerState::Unconfigured,
         }
     }
 }
@@ -251,8 +234,7 @@ impl host_rpc::HostRpc for HostService {
             registration_info: Some(RegisterRequest {
                 id: self.node_name.clone(),
                 grpc_endpoint: self.grpc_socket.to_string(),
-                instance_uuid: Registration::get()
-                    .map(|r| r.instance_uuid().to_string()),
+                instance_uuid: Registration::get().map(|r| r.instance_uuid().to_string()),
                 api_version: api_versions,
                 hostnqn: self.node_nqn.clone(),
                 features: Some(MayastorFeatures::get().into()),
@@ -307,9 +289,7 @@ impl host_rpc::HostRpc for HostService {
                         .into_iter()
                         .map(host_rpc::NvmeController::from)
                         .collect();
-                    Ok(host_rpc::ListNvmeControllersResponse {
-                        controllers,
-                    })
+                    Ok(host_rpc::ListNvmeControllersResponse { controllers })
                 })?;
 
                 rx.await
@@ -333,14 +313,8 @@ impl host_rpc::HostRpc for HostService {
                 let rx = rpc_submit::<_, _, CoreError>(async move {
                     controller_stats(&args.name)
                         .await
-                        .map(|blk_stat| {
-                            Some(host_rpc::NvmeControllerIoStats::from(
-                                blk_stat,
-                            ))
-                        })
-                        .map(|ctrl_stat| host_rpc::StatNvmeControllerResponse {
-                            stats: ctrl_stat,
-                        })
+                        .map(|blk_stat| Some(host_rpc::NvmeControllerIoStats::from(blk_stat)))
+                        .map(|ctrl_stat| host_rpc::StatNvmeControllerResponse { stats: ctrl_stat })
                 })?;
                 rx.await
                     .map_err(|_| Status::cancelled("cancelled"))?

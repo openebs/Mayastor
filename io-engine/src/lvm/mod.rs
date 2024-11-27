@@ -48,52 +48,28 @@ pub(crate) use lv_replica::{LogicalVolume, QueryArgs};
 use crate::{
     bdev::PtplFileOps,
     core::{
-        snapshot::SnapshotDescriptor,
-        BdevStater,
-        BdevStats,
-        CloneParams,
-        CoreError,
-        NvmfShareProps,
-        Protocol,
-        PtplProps,
-        SnapshotParams,
-        UntypedBdev,
-        UpdateProps,
+        snapshot::SnapshotDescriptor, BdevStater, BdevStats, CloneParams, CoreError,
+        NvmfShareProps, Protocol, PtplProps, SnapshotParams, UntypedBdev, UpdateProps,
     },
     lvm::property::Property,
     pool_backend::{
-        FindPoolArgs,
-        IPoolFactory,
-        IPoolProps,
-        ListPoolArgs,
-        PoolArgs,
-        PoolBackend,
-        PoolMetadataInfo,
-        PoolOps,
-        ReplicaArgs,
+        FindPoolArgs, IPoolFactory, IPoolProps, ListPoolArgs, PoolArgs, PoolBackend,
+        PoolMetadataInfo, PoolOps, ReplicaArgs,
     },
     replica_backend::{
-        FindReplicaArgs,
-        FindSnapshotArgs,
-        IReplicaFactory,
-        ListCloneArgs,
-        ListReplicaArgs,
-        ListSnapshotArgs,
-        ReplicaBdevStats,
-        ReplicaOps,
-        SnapshotOps,
+        FindReplicaArgs, FindSnapshotArgs, IReplicaFactory, ListCloneArgs, ListReplicaArgs,
+        ListSnapshotArgs, ReplicaBdevStats, ReplicaOps, SnapshotOps,
     },
 };
 use futures::channel::oneshot::Receiver;
 
 pub(super) fn is_alphanumeric(name: &str, value: &str) -> Result<(), Error> {
-    if value.chars().any(|c| {
-        !(c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.' | '+'))
-    }) {
+    if value
+        .chars()
+        .any(|c| !(c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.' | '+')))
+    {
         return Err(Error::NotFound {
-            query: format!(
-                "{name}('{value}') invalid: must be [a-zA-Z0-9.-_+]"
-            ),
+            query: format!("{name}('{value}') invalid: must be [a-zA-Z0-9.-_+]"),
         });
     }
     Ok(())
@@ -152,16 +128,12 @@ impl PoolOps for VolumeGroup {
         Ok(Box::new(replica))
     }
 
-    async fn destroy(
-        self: Box<Self>,
-    ) -> Result<(), crate::pool_backend::Error> {
+    async fn destroy(self: Box<Self>) -> Result<(), crate::pool_backend::Error> {
         (*self).destroy().await?;
         Ok(())
     }
 
-    async fn export(
-        mut self: Box<Self>,
-    ) -> Result<(), crate::pool_backend::Error> {
+    async fn export(mut self: Box<Self>) -> Result<(), crate::pool_backend::Error> {
         VolumeGroup::export(&mut self).await?;
         Ok(())
     }
@@ -207,24 +179,16 @@ impl ReplicaOps for LogicalVolume {
         Ok(())
     }
 
-    async fn set_entity_id(
-        &mut self,
-        id: String,
-    ) -> Result<(), crate::pool_backend::Error> {
+    async fn set_entity_id(&mut self, id: String) -> Result<(), crate::pool_backend::Error> {
         self.set_property(Property::LvEntityId(id)).await?;
         Ok(())
     }
 
-    async fn resize(
-        &mut self,
-        size: u64,
-    ) -> Result<(), crate::pool_backend::Error> {
+    async fn resize(&mut self, size: u64) -> Result<(), crate::pool_backend::Error> {
         self.resize(size).await.map_err(Into::into)
     }
 
-    async fn destroy(
-        self: Box<Self>,
-    ) -> Result<(), crate::pool_backend::Error> {
+    async fn destroy(self: Box<Self>) -> Result<(), crate::pool_backend::Error> {
         (*self).destroy().await.map_err(Into::into)
     }
 
@@ -232,9 +196,7 @@ impl ReplicaOps for LogicalVolume {
         self.share_proto()
     }
 
-    fn create_ptpl(
-        &self,
-    ) -> Result<Option<PtplProps>, crate::pool_backend::Error> {
+    fn create_ptpl(&self) -> Result<Option<PtplProps>, crate::pool_backend::Error> {
         self.ptpl()
             .create()
             .map_err(|source| crate::pool_backend::Error::Lvm {
@@ -288,9 +250,7 @@ impl BdevStater for LogicalVolume {
 
 #[async_trait::async_trait(?Send)]
 impl SnapshotOps for LogicalVolume {
-    async fn destroy_snapshot(
-        self: Box<Self>,
-    ) -> Result<(), crate::pool_backend::Error> {
+    async fn destroy_snapshot(self: Box<Self>) -> Result<(), crate::pool_backend::Error> {
         Err(Error::SnapshotNotSup {}.into())
     }
 
@@ -368,18 +328,12 @@ impl IPoolProps for VolumeGroup {
 pub struct PoolLvmFactory {}
 #[async_trait::async_trait(?Send)]
 impl IPoolFactory for PoolLvmFactory {
-    async fn create(
-        &self,
-        args: PoolArgs,
-    ) -> Result<Box<dyn PoolOps>, crate::pool_backend::Error> {
+    async fn create(&self, args: PoolArgs) -> Result<Box<dyn PoolOps>, crate::pool_backend::Error> {
         let pool = VolumeGroup::create(args).await?;
         Ok(Box::new(pool))
     }
 
-    async fn import(
-        &self,
-        args: PoolArgs,
-    ) -> Result<Box<dyn PoolOps>, crate::pool_backend::Error> {
+    async fn import(&self, args: PoolArgs) -> Result<Box<dyn PoolOps>, crate::pool_backend::Error> {
         let pool = VolumeGroup::import(args).await?;
         Ok(Box::new(pool))
     }
@@ -396,16 +350,13 @@ impl IPoolFactory for PoolLvmFactory {
         let query = match args {
             FindPoolArgs::Uuid(uuid) => CmnQueryArgs::ours().uuid(uuid),
             FindPoolArgs::UuidOrName(uuid) => CmnQueryArgs::ours().uuid(uuid),
-            FindPoolArgs::NameUuid {
-                name,
-                uuid,
-            } => CmnQueryArgs::ours().named(name).uuid_opt(uuid),
+            FindPoolArgs::NameUuid { name, uuid } => {
+                CmnQueryArgs::ours().named(name).uuid_opt(uuid)
+            }
         };
         match VolumeGroup::lookup(query).await {
             Ok(vg) => Ok(Some(Box::new(vg))),
-            Err(Error::NotFound {
-                ..
-            }) => Ok(None),
+            Err(Error::NotFound { .. }) => Ok(None),
             Err(error) => Err(error.into()),
         }
     }
@@ -443,25 +394,19 @@ impl IPoolFactory for PoolLvmFactory {
 pub struct ReplLvmFactory {}
 #[async_trait::async_trait(?Send)]
 impl IReplicaFactory for ReplLvmFactory {
-    fn bdev_as_replica(
-        &self,
-        _bdev: crate::core::UntypedBdev,
-    ) -> Option<Box<dyn ReplicaOps>> {
+    fn bdev_as_replica(&self, _bdev: crate::core::UntypedBdev) -> Option<Box<dyn ReplicaOps>> {
         None
     }
     async fn find(
         &self,
         args: &FindReplicaArgs,
     ) -> Result<Option<Box<dyn ReplicaOps>>, crate::pool_backend::Error> {
-        let lookup = LogicalVolume::lookup(
-            &QueryArgs::new().with_lv(CmnQueryArgs::ours().uuid(&args.uuid)),
-        )
-        .await;
+        let lookup =
+            LogicalVolume::lookup(&QueryArgs::new().with_lv(CmnQueryArgs::ours().uuid(&args.uuid)))
+                .await;
         match lookup {
             Ok(repl) => Ok(Some(Box::new(repl) as _)),
-            Err(Error::NotFound {
-                ..
-            }) => Ok(None),
+            Err(Error::NotFound { .. }) => Ok(None),
             Err(error) => Err(error.into()),
         }
     }

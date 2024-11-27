@@ -8,10 +8,7 @@ use crate::core::MayastorEnvironment;
 use http::Uri;
 use registration_grpc::Registration;
 use spdk_rs::libspdk::{
-    spdk_add_subsystem,
-    spdk_subsystem,
-    spdk_subsystem_fini_next,
-    spdk_subsystem_init_next,
+    spdk_add_subsystem, spdk_subsystem, spdk_subsystem_fini_next, spdk_subsystem_init_next,
 };
 use std::{convert::TryFrom, mem::zeroed};
 
@@ -71,8 +68,7 @@ impl RegistrationSubsystem {
     fn new() -> Self {
         info!("creating Mayastor registration subsystem...");
         let ss = spdk_subsystem {
-            name: b"mayastor_grpc_registration\x00" as *const u8
-                as *const libc::c_char,
+            name: b"mayastor_grpc_registration\x00" as *const u8 as *const libc::c_char,
             init: Some(Self::init),
             fini: Some(Self::fini),
             write_config_json: None,

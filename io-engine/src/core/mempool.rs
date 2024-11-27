@@ -7,13 +7,8 @@
 use std::{marker::PhantomData, mem::size_of, os::raw::c_void, ptr::NonNull};
 
 use spdk_rs::libspdk::{
-    spdk_mempool,
-    spdk_mempool_count,
-    spdk_mempool_create,
-    spdk_mempool_free,
-    spdk_mempool_get,
-    spdk_mempool_put,
-    SPDK_MEMPOOL_DEFAULT_CACHE_SIZE,
+    spdk_mempool, spdk_mempool_count, spdk_mempool_create, spdk_mempool_free, spdk_mempool_get,
+    spdk_mempool_put, SPDK_MEMPOOL_DEFAULT_CACHE_SIZE,
 };
 
 use crate::ffihelper::IntoCString;
@@ -52,7 +47,9 @@ impl<T: Sized> MemoryPool<T> {
 
         info!(
             "Memory pool '{}' with {} elements ({} bytes size) successfully created",
-            name, size, size_of::<T>()
+            name,
+            size,
+            size_of::<T>()
         );
         Some(Self {
             pool: NonNull::new(pool).unwrap(),
@@ -65,8 +62,7 @@ impl<T: Sized> MemoryPool<T> {
     /// Get free element from memory pool and initialize memory with target
     /// object.
     pub fn get(&self, val: T) -> Option<*mut T> {
-        let ptr: *mut T =
-            unsafe { spdk_mempool_get(self.pool.as_ptr()) } as *mut T;
+        let ptr: *mut T = unsafe { spdk_mempool_get(self.pool.as_ptr()) } as *mut T;
 
         if ptr.is_null() {
             return None;

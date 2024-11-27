@@ -4,10 +4,7 @@ use crate::core::{MayastorBugFixes, MayastorFeatures};
 use futures::{select, FutureExt, StreamExt};
 use http::Uri;
 use io_engine_api::v1::registration::{
-    registration_client,
-    ApiVersion as ApiVersionGrpc,
-    DeregisterRequest,
-    RegisterRequest,
+    registration_client, ApiVersion as ApiVersionGrpc, DeregisterRequest, RegisterRequest,
 };
 use once_cell::sync::OnceCell;
 use std::{env, str::FromStr, time::Duration};
@@ -110,15 +107,11 @@ impl Registration {
             node: node.to_owned(),
             node_nqn: node_nqn.to_owned(),
             grpc_endpoint: grpc_endpoint.to_owned(),
-            hb_interval_sec: match env::var("MAYASTOR_HB_INTERVAL_SEC")
-                .map(|v| v.parse::<u64>())
-            {
+            hb_interval_sec: match env::var("MAYASTOR_HB_INTERVAL_SEC").map(|v| v.parse::<u64>()) {
                 Ok(Ok(num)) => Duration::from_secs(num),
                 _ => HB_INTERVAL_SEC,
             },
-            hb_timeout_sec: match env::var("MAYASTOR_HB_TIMEOUT_SEC")
-                .map(|v| v.parse::<u64>())
-            {
+            hb_timeout_sec: match env::var("MAYASTOR_HB_TIMEOUT_SEC").map(|v| v.parse::<u64>()) {
                 Ok(Ok(num)) => Duration::from_secs(num),
                 _ => HB_TIMEOUT_SEC,
             },
@@ -156,8 +149,7 @@ impl Registration {
     /// Register a new node over rpc
     pub async fn register(&mut self) -> Result<(), tonic::Status> {
         let api_versions = self.config.api_versions.iter();
-        let api_versions =
-            api_versions.map(|v| ApiVersionGrpc::from(*v) as i32);
+        let api_versions = api_versions.map(|v| ApiVersionGrpc::from(*v) as i32);
         let register = RegisterRequest {
             id: self.config.node.to_string(),
             grpc_endpoint: self.config.grpc_endpoint.clone(),

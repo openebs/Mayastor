@@ -62,10 +62,7 @@ impl SinkInner {
     /// TODO
     fn new(p: &dyn DeviceEventListener) -> Self {
         let p = unsafe {
-            std::mem::transmute::<
-                &dyn DeviceEventListener,
-                &'static dyn DeviceEventListener,
-            >(p)
+            std::mem::transmute::<&dyn DeviceEventListener, &'static dyn DeviceEventListener>(p)
         };
 
         Self {
@@ -140,11 +137,7 @@ impl DeviceEventDispatcher {
 
     /// Dispatches an event to all registered listeners.
     /// Returns the number of listeners notified about target event.
-    pub fn dispatch_event(
-        &self,
-        evt: DeviceEventType,
-        dev_name: &str,
-    ) -> usize {
+    pub fn dispatch_event(&self, evt: DeviceEventType, dev_name: &str) -> usize {
         let mut listeners = Vec::new();
 
         // To avoid potential deadlocks we never call the listeners with the
@@ -169,13 +162,16 @@ impl DeviceEventDispatcher {
 
     /// Returns the number of registered listeners.
     pub fn count(&self) -> usize {
-        self.listeners.lock().iter().fold(0, |acc, x| {
-            if x.strong_count() > 0 {
-                acc + 1
-            } else {
-                acc
-            }
-        })
+        self.listeners.lock().iter().fold(
+            0,
+            |acc, x| {
+                if x.strong_count() > 0 {
+                    acc + 1
+                } else {
+                    acc
+                }
+            },
+        )
     }
 
     /// Removes all dropped listeners.

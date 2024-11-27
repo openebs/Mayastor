@@ -97,10 +97,9 @@ async fn malloc_to_replica() {
         let src_uri = format!("malloc:///d?size_mb={SIZE_MB}");
 
         let pool = PoolBuilderLocal::malloc("md", POOL_SZ_MB).await.unwrap();
-        let replica =
-            create_replica(&pool, "3be1219f-682b-4672-b88b-8b9d07e8104a")
-                .await
-                .unwrap();
+        let replica = create_replica(&pool, "3be1219f-682b-4672-b88b-8b9d07e8104a")
+            .await
+            .unwrap();
 
         let job = SnapshotRebuildJob::builder()
             .with_replica_uuid(&replica.uuid())
@@ -133,19 +132,15 @@ async fn replica_to_rebuild_full() {
 
     ms.spawn(async move {
         let pool = PoolBuilderLocal::malloc("md", POOL_SZ_MB).await.unwrap();
-        let replica_src =
-            create_replica(&pool, "2be1219f-682b-4672-b88b-8b9d07e8104a")
-                .await
-                .unwrap();
-        let replica_dst =
-            create_replica(&pool, "3be1219f-682b-4672-b88b-8b9d07e8104a")
-                .await
-                .unwrap();
+        let replica_src = create_replica(&pool, "2be1219f-682b-4672-b88b-8b9d07e8104a")
+            .await
+            .unwrap();
+        let replica_dst = create_replica(&pool, "3be1219f-682b-4672-b88b-8b9d07e8104a")
+            .await
+            .unwrap();
 
         let job = SnapshotRebuildJob::builder()
-            .with_option(
-                RebuildJobOptions::default().with_read_opts(ReadOptions::None),
-            )
+            .with_option(RebuildJobOptions::default().with_read_opts(ReadOptions::None))
             .with_replica_uuid(&replica_dst.uuid())
             .with_snapshot_uri(replica_src.bdev_share_uri().unwrap())
             .build()
@@ -177,14 +172,12 @@ async fn replica_to_rebuild_partial() {
 
     ms.spawn(async move {
         let pool = PoolBuilderLocal::malloc("md", POOL_SZ_MB).await.unwrap();
-        let replica_src =
-            create_replica(&pool, "2be1219f-682b-4672-b88b-8b9d07e8104a")
-                .await
-                .unwrap();
-        let replica_dst =
-            create_replica(&pool, "3be1219f-682b-4672-b88b-8b9d07e8104a")
-                .await
-                .unwrap();
+        let replica_src = create_replica(&pool, "2be1219f-682b-4672-b88b-8b9d07e8104a")
+            .await
+            .unwrap();
+        let replica_dst = create_replica(&pool, "3be1219f-682b-4672-b88b-8b9d07e8104a")
+            .await
+            .unwrap();
 
         let job = SnapshotRebuildJob::builder()
             .with_replica_uuid(&replica_dst.uuid())

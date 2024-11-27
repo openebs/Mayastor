@@ -77,8 +77,7 @@ pub(crate) fn nvme_cpl_succeeded(cpl: *const spdk_nvme_cpl) -> bool {
         sc = cplr.__bindgen_anon_1.status.sc();
     }
 
-    sct == NvmeStatusCodeType::Generic as u16
-        && sc == NvmeGenericCommandStatusCode::Success as u16
+    sct == NvmeStatusCodeType::Generic as u16 && sc == NvmeGenericCommandStatusCode::Success as u16
 }
 
 /* Bit set of attributes for DATASET MANAGEMENT commands. */

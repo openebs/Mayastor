@@ -23,11 +23,7 @@ pub enum Error {
     NexusInitialising { name: String },
     #[snafu(display("Invalid nexus uuid \"{}\"", uuid))]
     InvalidUuid { uuid: String },
-    #[snafu(display(
-        "Nexus uuid \"{}\" already exists for nexus \"{}\"",
-        uuid,
-        nexus
-    ))]
+    #[snafu(display("Nexus uuid \"{}\" already exists for nexus \"{}\"", uuid, nexus))]
     UuidExists { uuid: String, nexus: String },
     #[snafu(display("Nexus with name \"{}\" already exists", name))]
     NameExists { name: String },
@@ -37,10 +33,7 @@ pub enum Error {
     CreateCryptoBdev { source: Errno, name: String },
     #[snafu(display("Failed to destroy crypto bdev for nexus {}", name))]
     DestroyCryptoBdev { source: Errno, name: String },
-    #[snafu(display(
-        "The nexus {} has been already shared with a different protocol",
-        name
-    ))]
+    #[snafu(display("The nexus {} has been already shared with a different protocol", name))]
     AlreadyShared { name: String },
     #[snafu(display("The nexus {} has not been shared", name))]
     NotShared { name: String },
@@ -52,11 +45,7 @@ pub enum Error {
     ShareNvmfNexus { source: CoreError, name: String },
     #[snafu(display("Failed to unshare nexus {}", name))]
     UnshareNexus { source: CoreError, name: String },
-    #[snafu(display(
-        "Failed to register IO device nexus {}: {}",
-        name,
-        source
-    ))]
+    #[snafu(display("Failed to register IO device nexus {}: {}", name, source))]
     RegisterNexus { source: Errno, name: String },
     #[snafu(display("Failed to create child of nexus {}: {}", name, source))]
     CreateChild { source: BdevError, name: String },
@@ -122,17 +111,9 @@ pub enum Error {
         child: String,
         name: String,
     },
-    #[snafu(display(
-        "Cannot delete the last child {} of nexus {}",
-        child,
-        name
-    ))]
+    #[snafu(display("Cannot delete the last child {} of nexus {}", child, name))]
     RemoveLastChild { child: String, name: String },
-    #[snafu(display(
-        "Cannot remove or offline the last child {} of nexus {}",
-        child,
-        name
-    ))]
+    #[snafu(display("Cannot remove or offline the last child {} of nexus {}", child, name))]
     RemoveLastHealthyChild { child: String, name: String },
     #[snafu(display("Child {} of nexus {} not found", child, name))]
     ChildNotFound { child: String, name: String },
@@ -144,33 +125,17 @@ pub enum Error {
     PauseChild { child: String, name: String },
     #[snafu(display("Suitable rebuild source for nexus {} not found", name))]
     NoRebuildSource { name: String },
-    #[snafu(display(
-        "Failed to create rebuild job for child {} of nexus {}",
-        child,
-        name,
-    ))]
+    #[snafu(display("Failed to create rebuild job for child {} of nexus {}", child, name,))]
     CreateRebuild {
         source: RebuildError,
         child: String,
         name: String,
     },
-    #[snafu(display(
-        "Rebuild job not found for child {} of nexus {}",
-        child,
-        name,
-    ))]
+    #[snafu(display("Rebuild job not found for child {} of nexus {}", child, name,))]
     RebuildJobNotFound { child: String, name: String },
-    #[snafu(display(
-        "Rebuild job already exists for child {} of nexus {}",
-        child,
-        name,
-    ))]
+    #[snafu(display("Rebuild job already exists for child {} of nexus {}", child, name,))]
     RebuildJobAlreadyExists { child: String, name: String },
-    #[snafu(display(
-        "Failed to execute rebuild operation on job {} of nexus {}",
-        job,
-        name,
-    ))]
+    #[snafu(display("Failed to execute rebuild operation on job {} of nexus {}", job, name,))]
     RebuildOperation {
         job: String,
         name: String,
@@ -188,12 +153,7 @@ pub enum Error {
     NexusDestroy { name: String },
     #[snafu(display("Failed to resize nexus {}", name))]
     NexusResize { source: Errno, name: String },
-    #[snafu(display(
-        "Child {} of nexus {} is not degraded but {}",
-        child,
-        name,
-        state
-    ))]
+    #[snafu(display("Child {} of nexus {} is not degraded but {}", child, name, state))]
     ChildNotDegraded {
         child: String,
         name: String,
@@ -201,11 +161,7 @@ pub enum Error {
     },
     #[snafu(display("Failed to get BdevHandle for snapshot operation"))]
     FailedGetHandle,
-    #[snafu(display(
-        "Failed to create snapshot on nexus {}: {}",
-        name,
-        reason
-    ))]
+    #[snafu(display("Failed to create snapshot on nexus {}: {}", name, reason))]
     FailedCreateSnapshot { name: String, reason: String },
     #[snafu(display("NVMf subsystem error: {}", e))]
     SubsysNvmf { e: String },
@@ -235,75 +191,29 @@ impl From<NvmfError> for Error {
 impl From<Error> for tonic::Status {
     fn from(e: Error) -> Self {
         match e {
-            Error::InvalidUuid {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            Error::InvalidKey {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            Error::InvalidShareProtocol {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            Error::InvalidReservation {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            Error::AlreadyShared {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            Error::NotShared {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            Error::NotSharedNvmf {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            Error::CreateChild {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            Error::MixedBlockSizes {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            Error::ChildGeometry {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            Error::ChildTooSmall {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            Error::OpenChild {
-                ..
-            } => Status::invalid_argument(e.to_string()),
-            Error::OperationNotAllowed {
-                ..
-            } => Status::failed_precondition(e.to_string()),
-            Error::RemoveLastChild {
-                ..
-            } => Status::failed_precondition(e.to_string()),
-            Error::RemoveLastHealthyChild {
-                ..
-            } => Status::failed_precondition(e.to_string()),
-            Error::ChildNotFound {
-                ..
-            } => Status::not_found(e.to_string()),
-            Error::RebuildJobNotFound {
-                ..
-            } => Status::not_found(e.to_string()),
-            Error::NexusIncomplete {
-                ..
-            } => Status::failed_precondition(e.verbose()),
-            Error::NexusResize {
-                ..
-            } => Status::failed_precondition(e.to_string()),
-            Error::NexusNotFound {
-                ..
-            } => Status::not_found(e.to_string()),
-            Error::ChildAlreadyExists {
-                ..
-            } => Status::already_exists(e.to_string()),
-            Error::NameExists {
-                ..
-            } => Status::already_exists(e.to_string()),
-            Error::InvalidArguments {
-                ..
-            } => Status::invalid_argument(e.to_string()),
+            Error::InvalidUuid { .. } => Status::invalid_argument(e.to_string()),
+            Error::InvalidKey { .. } => Status::invalid_argument(e.to_string()),
+            Error::InvalidShareProtocol { .. } => Status::invalid_argument(e.to_string()),
+            Error::InvalidReservation { .. } => Status::invalid_argument(e.to_string()),
+            Error::AlreadyShared { .. } => Status::invalid_argument(e.to_string()),
+            Error::NotShared { .. } => Status::invalid_argument(e.to_string()),
+            Error::NotSharedNvmf { .. } => Status::invalid_argument(e.to_string()),
+            Error::CreateChild { .. } => Status::invalid_argument(e.to_string()),
+            Error::MixedBlockSizes { .. } => Status::invalid_argument(e.to_string()),
+            Error::ChildGeometry { .. } => Status::invalid_argument(e.to_string()),
+            Error::ChildTooSmall { .. } => Status::invalid_argument(e.to_string()),
+            Error::OpenChild { .. } => Status::invalid_argument(e.to_string()),
+            Error::OperationNotAllowed { .. } => Status::failed_precondition(e.to_string()),
+            Error::RemoveLastChild { .. } => Status::failed_precondition(e.to_string()),
+            Error::RemoveLastHealthyChild { .. } => Status::failed_precondition(e.to_string()),
+            Error::ChildNotFound { .. } => Status::not_found(e.to_string()),
+            Error::RebuildJobNotFound { .. } => Status::not_found(e.to_string()),
+            Error::NexusIncomplete { .. } => Status::failed_precondition(e.verbose()),
+            Error::NexusResize { .. } => Status::failed_precondition(e.to_string()),
+            Error::NexusNotFound { .. } => Status::not_found(e.to_string()),
+            Error::ChildAlreadyExists { .. } => Status::already_exists(e.to_string()),
+            Error::NameExists { .. } => Status::already_exists(e.to_string()),
+            Error::InvalidArguments { .. } => Status::invalid_argument(e.to_string()),
             e => Status::new(Code::Internal, e.verbose()),
         }
     }

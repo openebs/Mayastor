@@ -28,42 +28,22 @@ use crate::{
 };
 pub(crate) use nexus_bdev::NEXUS_PRODUCT_ID;
 pub use nexus_bdev::{
-    nexus_create,
-    nexus_create_v2,
-    Nexus,
-    NexusNvmeParams,
-    NexusNvmePreemption,
-    NexusOperation,
-    NexusState,
-    NexusStatus,
-    NexusTarget,
-    NvmeAnaState,
-    NvmeReservation,
+    nexus_create, nexus_create_v2, Nexus, NexusNvmeParams, NexusNvmePreemption, NexusOperation,
+    NexusState, NexusStatus, NexusTarget, NvmeAnaState, NvmeReservation,
 };
 pub(crate) use nexus_bdev_error::nexus_err;
 pub use nexus_bdev_error::Error;
 pub(crate) use nexus_channel::{DrEvent, IoMode, NexusChannel};
 pub use nexus_child::{
-    ChildError,
-    ChildState,
-    ChildStateClient,
-    ChildSyncState,
-    FaultReason,
-    NexusChild,
+    ChildError, ChildState, ChildStateClient, ChildSyncState, FaultReason, NexusChild,
 };
 use nexus_io::{NexusBio, NioCtx};
 use nexus_io_log::{IOLog, IOLogChannel};
 use nexus_io_subsystem::NexusIoSubsystem;
 pub use nexus_io_subsystem::NexusPauseState;
 pub use nexus_iter::{
-    nexus_iter,
-    nexus_iter_mut,
-    nexus_lookup,
-    nexus_lookup_mut,
-    nexus_lookup_name_uuid,
-    nexus_lookup_nqn,
-    nexus_lookup_nqn_mut,
-    nexus_lookup_uuid_mut,
+    nexus_iter, nexus_iter_mut, nexus_lookup, nexus_lookup_mut, nexus_lookup_name_uuid,
+    nexus_lookup_nqn, nexus_lookup_nqn_mut, nexus_lookup_uuid_mut,
 };
 pub(crate) use nexus_module::{NexusModule, NEXUS_MODULE_NAME};
 pub(crate) use nexus_nbd::{NbdDisk, NbdError};
@@ -72,9 +52,7 @@ pub use nexus_persistence::{ChildInfo, NexusInfo};
 pub(crate) use nexus_share::NexusPtpl;
 
 pub use nexus_bdev_snapshot::{
-    NexusReplicaSnapshotDescriptor,
-    NexusReplicaSnapshotStatus,
-    NexusSnapshotStatus,
+    NexusReplicaSnapshotDescriptor, NexusReplicaSnapshotStatus, NexusSnapshotStatus,
 };
 
 /// TODO
@@ -126,21 +104,20 @@ pub fn register_module(register_json: bool) {
                     let mut bdev = Pin::new(&mut bdev);
                     match proto.as_str() {
                         "nvmf" => {
-                            let share = NvmfShareProps::new().with_range(Some((args.cntlid_min, args.cntlid_max))).with_ana(true);
-                            bdev.as_mut().share_nvmf(Some(share))
+                            let share = NvmfShareProps::new()
+                                .with_range(Some((args.cntlid_min, args.cntlid_max)))
+                                .with_ana(true);
+                            bdev.as_mut()
+                                .share_nvmf(Some(share))
                                 .await
-                                .map_err(|e| {
-                                    JsonRpcError {
-                                        code: Code::InternalError,
-                                        message: e.to_string(),
-                                    }
+                                .map_err(|e| JsonRpcError {
+                                    code: Code::InternalError,
+                                    message: e.to_string(),
                                 })
-                                .map(|share| {
-                                    NexusShareReply {
-                                        uri: bdev.share_uri().unwrap_or(share),
-                                }
-                            })
-                        },
+                                .map(|share| NexusShareReply {
+                                    uri: bdev.share_uri().unwrap_or(share),
+                                })
+                        }
                         _ => unreachable!(),
                     }
                 } else {
@@ -172,8 +149,7 @@ pub async fn shutdown_nexuses() {
     // internally, so it may become invalid if another Bdev is destroyed
     // in parallel.
     // Clippy's complains about that, so it is disabled for this function.
-    let nexuses: Vec<<NexusIterMut<'_> as Iterator>::Item> =
-        nexus_iter_mut().collect();
+    let nexuses: Vec<<NexusIterMut<'_> as Iterator>::Item> = nexus_iter_mut().collect();
 
     for mut nexus in nexuses.into_iter() {
         // Destroy nexus and persist its state in the ETCd.
@@ -187,12 +163,7 @@ pub async fn shutdown_nexuses() {
                     error = error.verbose(),
                     "Failed to destroy nexus"
                 );
-                EventWithMeta::event(
-                    &(*nexus),
-                    EventAction::Shutdown,
-                    error.meta(),
-                )
-                .generate();
+                EventWithMeta::event(&(*nexus), EventAction::Shutdown, error.meta()).generate();
             }
         }
     }

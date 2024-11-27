@@ -84,9 +84,7 @@ async fn replica_thin_used_space() {
     let u_0_after = repl_0.get_replica().await.unwrap().usage.unwrap();
 
     // We've copied some data, so number of used clusters must increase.
-    assert!(
-        u_0_before.num_allocated_clusters < u_0_after.num_allocated_clusters
-    );
+    assert!(u_0_before.num_allocated_clusters < u_0_after.num_allocated_clusters);
     assert!(p_before.used < p_after.used);
 
     // The replica isn't full, so number of used clusters must be less than

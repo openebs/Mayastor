@@ -1,27 +1,15 @@
 use super::{
-    v0::{
-        bdev_grpc::BdevSvc,
-        json_grpc::JsonRpcSvc,
-        mayastor_grpc::MayastorSvc,
-    },
+    v0::{bdev_grpc::BdevSvc, json_grpc::JsonRpcSvc, mayastor_grpc::MayastorSvc},
     v1::{
-        bdev::BdevService,
-        host::HostService,
-        json::JsonService,
-        nexus::NexusService,
-        pool::PoolService,
-        replica::ReplicaService,
-        snapshot::SnapshotService,
-        snapshot_rebuild::SnapshotRebuildService,
-        stats::StatsService,
-        test::TestService,
+        bdev::BdevService, host::HostService, json::JsonService, nexus::NexusService,
+        pool::PoolService, replica::ReplicaService, snapshot::SnapshotService,
+        snapshot_rebuild::SnapshotRebuildService, stats::StatsService, test::TestService,
     },
 };
 
 use io_engine_api::{
     v0::{
-        bdev_rpc_server::BdevRpcServer,
-        json_rpc_server::JsonRpcServer,
+        bdev_rpc_server::BdevRpcServer, json_rpc_server::JsonRpcServer,
         mayastor_server::MayastorServer as MayastorRpcServer,
     },
     v1,
@@ -82,33 +70,26 @@ impl MayastorGrpcServer {
         );
         let svc = Server::builder()
             .add_optional_service(
-                enable_v1
-                    .map(|_| v1::bdev::BdevRpcServer::new(BdevService::new())),
+                enable_v1.map(|_| v1::bdev::BdevRpcServer::new(BdevService::new())),
             )
-            .add_optional_service(enable_v1.map(|_| {
-                v1::json::JsonRpcServer::new(JsonService::new(address.clone()))
-            }))
+            .add_optional_service(
+                enable_v1.map(|_| v1::json::JsonRpcServer::new(JsonService::new(address.clone()))),
+            )
+            .add_optional_service(enable_v1.map(|_| v1::pool::PoolRpcServer::new(pool_v1.clone())))
+            .add_optional_service(
+                enable_v1.map(|_| v1::replica::ReplicaRpcServer::new(replica_v1.clone())),
+            )
             .add_optional_service(
                 enable_v1
-                    .map(|_| v1::pool::PoolRpcServer::new(pool_v1.clone())),
+                    .map(|_| v1::test::TestRpcServer::new(TestService::new(replica_v1.clone()))),
             )
             .add_optional_service(enable_v1.map(|_| {
-                v1::replica::ReplicaRpcServer::new(replica_v1.clone())
+                v1::snapshot::SnapshotRpcServer::new(SnapshotService::new(replica_v1.clone()))
             }))
             .add_optional_service(enable_v1.map(|_| {
-                v1::test::TestRpcServer::new(TestService::new(
+                v1::snapshot_rebuild::SnapshotRebuildRpcServer::new(SnapshotRebuildService::new(
                     replica_v1.clone(),
                 ))
-            }))
-            .add_optional_service(enable_v1.map(|_| {
-                v1::snapshot::SnapshotRpcServer::new(SnapshotService::new(
-                    replica_v1.clone(),
-                ))
-            }))
-            .add_optional_service(enable_v1.map(|_| {
-                v1::snapshot_rebuild::SnapshotRebuildRpcServer::new(
-                    SnapshotRebuildService::new(replica_v1.clone()),
-                )
             }))
             .add_optional_service(enable_v1.map(|_| {
                 v1::host::HostRpcServer::new(HostService::new(
@@ -119,28 +100,21 @@ impl MayastorGrpcServer {
                 ))
             }))
             .add_optional_service(
+                enable_v1.map(|_| v1::nexus::NexusRpcServer::new(NexusService::new())),
+            )
+            .add_optional_service(
                 enable_v1.map(|_| {
-                    v1::nexus::NexusRpcServer::new(NexusService::new())
-                }),
-            )
-            .add_optional_service(enable_v1.map(|_| {
-                v1::stats::StatsRpcServer::new(StatsService::new(
-                    pool_v1, replica_v1,
-                ))
-            }))
-            .add_optional_service(enable_v0.map(|_| {
-                MayastorRpcServer::new(MayastorSvc::new(Duration::from_millis(
-                    4,
-                )))
-            }))
-            .add_optional_service(
-                enable_v0.map(|_| {
-                    JsonRpcServer::new(JsonRpcSvc::new(address.clone()))
+                    v1::stats::StatsRpcServer::new(StatsService::new(pool_v1, replica_v1))
                 }),
             )
             .add_optional_service(
-                enable_v0.map(|_| BdevRpcServer::new(BdevSvc::new())),
+                enable_v0
+                    .map(|_| MayastorRpcServer::new(MayastorSvc::new(Duration::from_millis(4)))),
             )
+            .add_optional_service(
+                enable_v0.map(|_| JsonRpcServer::new(JsonRpcSvc::new(address.clone()))),
+            )
+            .add_optional_service(enable_v0.map(|_| BdevRpcServer::new(BdevSvc::new())))
             .serve(endpoint);
 
         select! {

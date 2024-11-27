@@ -1,9 +1,4 @@
-use std::{
-    collections::HashMap,
-    convert::TryFrom,
-    ffi::CString,
-    os::unix::fs::FileTypeExt,
-};
+use std::{collections::HashMap, convert::TryFrom, ffi::CString, os::unix::fs::FileTypeExt};
 
 use async_trait::async_trait;
 use futures::channel::oneshot;
@@ -45,17 +40,14 @@ impl TryFrom<&Url> for Uring {
             .ok()
             .map_or(false, |meta| meta.file_type().is_block_device());
 
-        let mut parameters: HashMap<String, String> =
-            url.query_pairs().into_owned().collect();
+        let mut parameters: HashMap<String, String> = url.query_pairs().into_owned().collect();
 
         let blk_size: u32 = match parameters.remove("blk_size") {
-            Some(value) => {
-                value.parse().context(bdev_api::IntParamParseFailed {
-                    uri: url.to_string(),
-                    parameter: String::from("blk_size"),
-                    value: value.clone(),
-                })?
-            }
+            Some(value) => value.parse().context(bdev_api::IntParamParseFailed {
+                uri: url.to_string(),
+                parameter: String::from("blk_size"),
+                value: value.clone(),
+            })?,
             None => {
                 if path_is_blockdev {
                     0
@@ -65,11 +57,10 @@ impl TryFrom<&Url> for Uring {
             }
         };
 
-        let uuid = uri::uuid(parameters.remove("uuid")).context(
-            bdev_api::UuidParamParseFailed {
+        let uuid =
+            uri::uuid(parameters.remove("uuid")).context(bdev_api::UuidParamParseFailed {
                 uri: url.to_string(),
-            },
-        )?;
+            })?;
 
         reject_unknown_parameters(url, parameters)?;
 
@@ -108,9 +99,7 @@ impl CreateDestroy for Uring {
             uuid: spdk_rs::Uuid::generate().into_raw(),
         };
 
-        if let Some(mut bdev) =
-            UntypedBdev::checked_from_ptr(unsafe { create_uring_bdev(&opts) })
-        {
+        if let Some(mut bdev) = UntypedBdev::checked_from_ptr(unsafe { create_uring_bdev(&opts) }) {
             if let Some(uuid) = self.uuid {
                 unsafe { bdev.set_raw_uuid(uuid.into()) };
             }

@@ -10,15 +10,15 @@ use snafu::ResultExt;
 use tonic::Status;
 
 pub fn subcommands() -> Command {
-    let list =
-        Command::new("list").about("List available block devices")
-            .arg(
-                Arg::new("all")
-                    .short('a')
-                    .long("all")
-                    .action(clap::ArgAction::SetTrue)
-                    .help("List all block devices (ie. also include devices currently in use)"),
-            );
+    let list = Command::new("list")
+        .about("List available block devices")
+        .arg(
+            Arg::new("all")
+                .short('a')
+                .long("all")
+                .action(clap::ArgAction::SetTrue)
+                .help("List all block devices (ie. also include devices currently in use)"),
+        );
 
     Command::new("device")
         .subcommand_required(true)
@@ -31,8 +31,7 @@ pub async fn handler(ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     match matches.subcommand().unwrap() {
         ("list", args) => list_block_devices(ctx, args).await,
         (cmd, _) => {
-            Err(Status::not_found(format!("command {cmd} does not exist")))
-                .context(GrpcStatus)
+            Err(Status::not_found(format!("command {cmd} does not exist"))).context(GrpcStatus)
         }
     }
 }
@@ -45,17 +44,12 @@ fn get_partition_type(device: &v1rpc::host::BlockDevice) -> String {
     }
 }
 
-async fn list_block_devices(
-    mut ctx: Context,
-    matches: &ArgMatches,
-) -> crate::Result<()> {
+async fn list_block_devices(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     let all = matches.get_flag("all");
     let response = ctx
         .v1
         .host
-        .list_block_devices(v1rpc::host::ListBlockDevicesRequest {
-            all,
-        })
+        .list_block_devices(v1rpc::host::ListBlockDevicesRequest { all })
         .await
         .context(GrpcStatus)?;
 
@@ -101,11 +95,7 @@ async fn list_block_devices(
                         device.devmajor.to_string(),
                         device.devminor.to_string(),
                         device.size.to_string(),
-                        String::from(if device.available {
-                            "yes"
-                        } else {
-                            "no"
-                        }),
+                        String::from(if device.available { "yes" } else { "no" }),
                         device.model,
                         part_type,
                         fstype,

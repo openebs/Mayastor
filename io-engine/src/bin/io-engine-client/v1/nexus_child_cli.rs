@@ -3,8 +3,7 @@
 
 use crate::{
     context::{Context, OutputFormat},
-    ClientError,
-    GrpcStatus,
+    ClientError, GrpcStatus,
 };
 use clap::{Arg, ArgMatches, Command};
 use colored_json::ToColoredJson;
@@ -19,8 +18,7 @@ pub async fn handler(ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
         ("online", args) => child_operation(ctx, args, 1).await,
         ("retire", args) => child_operation(ctx, args, 2).await,
         (cmd, _) => {
-            Err(Status::not_found(format!("command {cmd} does not exist")))
-                .context(GrpcStatus)
+            Err(Status::not_found(format!("command {cmd} does not exist"))).context(GrpcStatus)
         }
     }
 }
@@ -138,11 +136,7 @@ async fn fault(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     Ok(())
 }
 
-async fn child_operation(
-    mut ctx: Context,
-    matches: &ArgMatches,
-    action: i32,
-) -> crate::Result<()> {
+async fn child_operation(mut ctx: Context, matches: &ArgMatches, action: i32) -> crate::Result<()> {
     let uuid = matches
         .get_one::<String>("uuid")
         .ok_or_else(|| ClientError::MissingValue {

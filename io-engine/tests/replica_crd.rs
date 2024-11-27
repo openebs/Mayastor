@@ -14,11 +14,7 @@ use common::{
 };
 
 use io_engine::core::fault_injection::{
-    FaultDomain,
-    FaultIoOperation,
-    FaultIoStage,
-    FaultMethod,
-    InjectionBuilder,
+    FaultDomain, FaultIoOperation, FaultIoStage, FaultMethod, InjectionBuilder,
 };
 
 // Test that the third CRD value is used for a replica target.

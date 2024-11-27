@@ -27,7 +27,7 @@ async fn nvmf_connect_async() {
 
     let uri = init_nvmf_share().await;
 
-    for _ in 0 .. 20 {
+    for _ in 0..20 {
         let name = spawn_device_create(&uri).await;
 
         let f0 = spawn_get_io_handle_nonblock(&name);
@@ -53,7 +53,7 @@ async fn nvmf_connect_async_drop() {
 
     let uri = init_nvmf_share().await;
 
-    for _ in 0 .. 20 {
+    for _ in 0..20 {
         let name = spawn_device_create(&uri).await;
 
         let f0 = spawn_get_io_handle_nonblock(&name);

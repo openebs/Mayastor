@@ -3,10 +3,7 @@ use crate::{
     grpc::{
         rpc_submit,
         v1::{pool::PoolService, replica::ReplicaService},
-        GrpcClientContext,
-        GrpcResult,
-        RWLock,
-        Serializer,
+        GrpcClientContext, GrpcResult, RWLock, Serializer,
     },
 };
 use futures::{future::join_all, FutureExt};
@@ -28,8 +25,7 @@ use ::function_name::named;
 #[allow(dead_code)]
 pub struct StatsService {
     name: String,
-    client_context:
-        std::sync::Arc<tokio::sync::RwLock<Option<GrpcClientContext>>>,
+    client_context: std::sync::Arc<tokio::sync::RwLock<Option<GrpcClientContext>>>,
     pool_svc: PoolService,
     replica_svc: ReplicaService,
 }
@@ -50,13 +46,14 @@ where
 
         let lock_manager = ResourceLockManager::get_instance();
         // For nexus global lock.
-        let _global_guard =
-            match lock_manager.lock(Some(ctx.timeout), false).await {
-                Some(g) => Some(g),
-                None => return Err(Status::deadline_exceeded(
+        let _global_guard = match lock_manager.lock(Some(ctx.timeout), false).await {
+            Some(g) => Some(g),
+            None => {
+                return Err(Status::deadline_exceeded(
                     "Failed to acquire access to object within given timeout",
-                )),
-            };
+                ))
+            }
+        };
         let fut = AssertUnwindSafe(f).catch_unwind();
         let r = fut.await;
         r.unwrap_or_else(|_| {
@@ -96,13 +93,14 @@ impl StatsService {
         let _stat_svc = self.client_context.read().await;
         let lock_manager = ResourceLockManager::get_instance();
         // For nexus global lock.
-        let _global_guard =
-            match lock_manager.lock(Some(ctx.timeout), false).await {
-                Some(g) => Some(g),
-                None => return Err(Status::deadline_exceeded(
+        let _global_guard = match lock_manager.lock(Some(ctx.timeout), false).await {
+            Some(g) => Some(g),
+            None => {
+                return Err(Status::deadline_exceeded(
                     "Failed to acquire access to object within given timeout",
-                )),
-            };
+                ))
+            }
+        };
         let fut = AssertUnwindSafe(f).catch_unwind();
         let r = fut.await;
         r.unwrap_or_else(|_| {
@@ -136,20 +134,15 @@ impl StatsRpc for StatsService {
                 let mut pools = vec![];
                 let args = ListPoolArgs::new_named(args.name);
                 for factory in GrpcPoolFactory::factories() {
-                    pools.extend(
-                        factory.list_ops(&args).await.unwrap_or_default(),
-                    );
+                    pools.extend(factory.list_ops(&args).await.unwrap_or_default());
                 }
                 let pools_stats_future = pools.iter().map(|r| r.stats());
-                let pools_stats =
-                    join_all(pools_stats_future).await.into_iter();
+                let pools_stats = join_all(pools_stats_future).await.into_iter();
                 let stats = pools_stats
                     .map(|d| d.map(Into::into))
                     .collect::<Result<Vec<_>, _>>()?;
 
-                Ok(PoolIoStatsResponse {
-                    stats,
-                })
+                Ok(PoolIoStatsResponse { stats })
             })
         })
         .await
@@ -177,9 +170,7 @@ impl StatsRpc for StatsService {
                         .into_iter()
                         .map(|d| d.map(Into::into));
                     let stats = nexus_stats.collect::<Result<Vec<_>, _>>()?;
-                    Ok(NexusIoStatsResponse {
-                        stats,
-                    })
+                    Ok(NexusIoStatsResponse { stats })
                 })
             },
         )
@@ -195,19 +186,14 @@ impl StatsRpc for StatsService {
                 let mut replicas = vec![];
                 let args = ListReplicaArgs::new_named(args.name);
                 for factory in GrpcReplicaFactory::factories() {
-                    replicas.extend(
-                        factory.list_ops(&args).await.unwrap_or_default(),
-                    );
+                    replicas.extend(factory.list_ops(&args).await.unwrap_or_default());
                 }
                 let replica_stats_future = replicas.iter().map(|r| r.stats());
-                let replica_stats =
-                    join_all(replica_stats_future).await.into_iter();
+                let replica_stats = join_all(replica_stats_future).await.into_iter();
                 let stats = replica_stats
                     .map(|d| d.map(Into::into))
                     .collect::<Result<Vec<_>, _>>()?;
-                Ok(ReplicaIoStatsResponse {
-                    stats,
-                })
+                Ok(ReplicaIoStatsResponse { stats })
             })
         })
         .await

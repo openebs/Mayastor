@@ -43,7 +43,7 @@ impl InjectIoCtx {
         Self {
             domain,
             dev: InjectIoDevice::None,
-            range: 0 .. 0,
+            range: 0..0,
             io_type: IoType::Invalid,
             iovs: std::ptr::null_mut(),
             iovs_len: 0,
@@ -63,7 +63,7 @@ impl InjectIoCtx {
         Self {
             domain,
             dev: dev.into(),
-            range: offset .. offset + num_blocks,
+            range: offset..offset + num_blocks,
             io_type,
             iovs: iovs.as_ptr() as *mut _,
             iovs_len: iovs.len(),
@@ -88,9 +88,7 @@ impl InjectIoCtx {
         unsafe {
             match self.dev {
                 InjectIoDevice::None => false,
-                InjectIoDevice::BlockDevice(dev) => {
-                    (*dev).device_name() == name
-                }
+                InjectIoDevice::BlockDevice(dev) => (*dev).device_name() == name,
                 InjectIoDevice::DeviceName(pname) => &*pname == name,
             }
         }

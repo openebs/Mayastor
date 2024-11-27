@@ -1,15 +1,7 @@
 use super::pool_backend::{Error, GenericError, PoolBackend};
 use crate::core::{
-    snapshot::SnapshotDescriptor,
-    BdevStater,
-    BdevStats,
-    CloneParams,
-    LogicalVolume,
-    Protocol,
-    PtplProps,
-    SnapshotParams,
-    UntypedBdev,
-    UpdateProps,
+    snapshot::SnapshotDescriptor, BdevStater, BdevStats, CloneParams, LogicalVolume, Protocol,
+    PtplProps, SnapshotParams, UntypedBdev, UpdateProps,
 };
 use std::{fmt::Debug, ops::Deref};
 
@@ -19,13 +11,9 @@ use std::{fmt::Debug, ops::Deref};
 /// specific options to be passed as parameters.
 /// A `Replica` is also a `LogicalVolume` and also has `Share` traits.
 #[async_trait::async_trait(?Send)]
-pub trait ReplicaOps:
-    LogicalVolume + BdevStater<Stats = ReplicaBdevStats>
-{
+pub trait ReplicaOps: LogicalVolume + BdevStater<Stats = ReplicaBdevStats> {
     fn shared(&self) -> Option<Protocol>;
-    fn create_ptpl(
-        &self,
-    ) -> Result<Option<PtplProps>, crate::pool_backend::Error>;
+    fn create_ptpl(&self) -> Result<Option<PtplProps>, crate::pool_backend::Error>;
 
     /// Shares the replica via nvmf.
     async fn share_nvmf(
@@ -41,22 +29,15 @@ pub trait ReplicaOps:
     ) -> Result<(), crate::pool_backend::Error>;
 
     /// Resize the replica to the given new size.
-    async fn resize(
-        &mut self,
-        size: u64,
-    ) -> Result<(), crate::pool_backend::Error>;
+    async fn resize(&mut self, size: u64) -> Result<(), crate::pool_backend::Error>;
     /// Set the replica's entity id.
-    async fn set_entity_id(
-        &mut self,
-        id: String,
-    ) -> Result<(), crate::pool_backend::Error>;
+    async fn set_entity_id(&mut self, id: String) -> Result<(), crate::pool_backend::Error>;
     /// Destroy the replica from its parent pool.
     /// # Warning
     /// Destroying implies unsharing, which might fail for some reason, example
     /// if the target is in a bad state, or if IOs are stuck.
     /// todo: return back `Self` in case of an error.
-    async fn destroy(self: Box<Self>)
-        -> Result<(), crate::pool_backend::Error>;
+    async fn destroy(self: Box<Self>) -> Result<(), crate::pool_backend::Error>;
 
     /// Snapshot Operations
     ///
@@ -68,13 +49,7 @@ pub trait ReplicaOps:
         txn_id: &str,
         snap_uuid: &str,
     ) -> Option<SnapshotParams> {
-        SnapshotParams::prepare(
-            snap_name,
-            entity_id,
-            txn_id,
-            snap_uuid,
-            self.uuid(),
-        )
+        SnapshotParams::prepare(snap_name, entity_id, txn_id, snap_uuid, self.uuid())
     }
     /// Create a snapshot using the given parameters and yields an object which
     /// implements `SnapshotOps`. In turn this can be  used to create clones,
@@ -92,9 +67,7 @@ pub trait ReplicaOps:
 #[async_trait::async_trait(?Send)]
 pub trait SnapshotOps: LogicalVolume + Debug {
     /// Destroys the snapshot itself.
-    async fn destroy_snapshot(
-        self: Box<Self>,
-    ) -> Result<(), crate::pool_backend::Error>;
+    async fn destroy_snapshot(self: Box<Self>) -> Result<(), crate::pool_backend::Error>;
 
     /// Prepares a clone config for creating a clone from a snapshot.
     fn prepare_clone_config(
@@ -178,10 +151,7 @@ impl FindReplicaArgs {
 #[async_trait::async_trait(?Send)]
 pub trait IReplicaFactory {
     /// If the bdev is a `ReplicaOps`, move and retrieve it as a `ReplicaOps`.
-    fn bdev_as_replica(
-        &self,
-        bdev: crate::core::UntypedBdev,
-    ) -> Option<Box<dyn ReplicaOps>>;
+    fn bdev_as_replica(&self, bdev: crate::core::UntypedBdev) -> Option<Box<dyn ReplicaOps>>;
     /// Finds the replica specified by the arguments, returning None if it
     /// cannot be found.
     async fn find(
@@ -222,10 +192,7 @@ pub struct ReplicaBdevStats {
 impl ReplicaBdevStats {
     /// Create a new `Self` from the given parts.
     pub fn new(stats: BdevStats, entity_id: Option<String>) -> Self {
-        Self {
-            stats,
-            entity_id,
-        }
+        Self { stats, entity_id }
     }
 }
 
@@ -247,9 +214,7 @@ pub struct FindSnapshotArgs {
 impl FindSnapshotArgs {
     /// Create new `Self`.
     pub fn new(uuid: String) -> Self {
-        Self {
-            uuid,
-        }
+        Self { uuid }
     }
 }
 
@@ -271,18 +236,12 @@ impl ReplicaFactory {
     /// Returns the factory for the given backend kind.
     pub fn new(backend: PoolBackend) -> Self {
         Self(match backend {
-            PoolBackend::Lvs => {
-                Box::<crate::lvs::ReplLvsFactory>::default() as _
-            }
-            PoolBackend::Lvm => {
-                Box::<crate::lvm::ReplLvmFactory>::default() as _
-            }
+            PoolBackend::Lvs => Box::<crate::lvs::ReplLvsFactory>::default() as _,
+            PoolBackend::Lvm => Box::<crate::lvm::ReplLvmFactory>::default() as _,
         })
     }
     /// Get the given bdev as a `ReplicaOps`.
-    pub(crate) fn bdev_as_replica(
-        bdev: crate::core::UntypedBdev,
-    ) -> Option<Box<dyn ReplicaOps>> {
+    pub(crate) fn bdev_as_replica(bdev: crate::core::UntypedBdev) -> Option<Box<dyn ReplicaOps>> {
         for factory in Self::factories() {
             if let Some(replica) = factory.as_factory().bdev_as_replica(bdev) {
                 return Some(replica);
@@ -291,9 +250,7 @@ impl ReplicaFactory {
         None
     }
     /// Probe backends for the given name and/or uuid and return the right one.
-    pub async fn find(
-        args: &FindReplicaArgs,
-    ) -> Result<Box<dyn ReplicaOps>, Error> {
+    pub async fn find(args: &FindReplicaArgs) -> Result<Box<dyn ReplicaOps>, Error> {
         let mut error = None;
 
         for factory in Self::factories() {

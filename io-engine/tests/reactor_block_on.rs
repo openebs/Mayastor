@@ -1,13 +1,7 @@
 use crossbeam::atomic::AtomicCell;
 use once_cell::sync::Lazy;
 
-use io_engine::core::{
-    mayastor_env_stop,
-    MayastorCliArgs,
-    MayastorEnvironment,
-    Reactor,
-    Reactors,
-};
+use io_engine::core::{mayastor_env_stop, MayastorCliArgs, MayastorEnvironment, Reactor, Reactors};
 
 pub mod common;
 

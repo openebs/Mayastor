@@ -8,9 +8,7 @@ use crate::{
     core::{Bdev, LogicalVolume, Reactors, ReadOptions, SegmentMap},
     gen_rebuild_instances,
     rebuild::{
-        bdev_rebuild::BdevRebuildJobBuilder,
-        rebuild_error::SnapshotRebuildError,
-        BdevRebuildJob,
+        bdev_rebuild::BdevRebuildJobBuilder, rebuild_error::SnapshotRebuildError, BdevRebuildJob,
     },
 };
 
@@ -170,8 +168,7 @@ impl SnapshotRebuildJobBuilder {
         let lvol = Bdev::lookup_by_uuid_str(uri)
             .ok_or(SnapshotRebuildError::LocalBdevNotFound {})
             .and_then(|bdev| {
-                crate::lvs::Lvol::try_from(bdev)
-                    .map_err(|_| SnapshotRebuildError::NotAReplica {})
+                crate::lvs::Lvol::try_from(bdev).map_err(|_| SnapshotRebuildError::NotAReplica {})
             })?;
         Ok(lvol)
     }
@@ -247,8 +244,7 @@ impl SnapshotRebuildJob {
     /// Helps create a `Self` using a builder: `SnapshotRebuildJobBuilder`.
     pub fn builder() -> SnapshotRebuildJobBuilder {
         SnapshotRebuildJobBuilder::builder().with_option(
-            RebuildJobOptions::default()
-                .with_read_opts(ReadOptions::CurrentUnwrittenFail),
+            RebuildJobOptions::default().with_read_opts(ReadOptions::CurrentUnwrittenFail),
         )
     }
     /// Get a list of all snapshot rebuild jobs.

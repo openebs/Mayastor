@@ -3,9 +3,7 @@ pub mod common;
 use io_engine_tests::{
     compose::{
         rpc::v1::{GrpcConnect, SharedRpcHandle},
-        Binary,
-        Builder,
-        ComposeTest,
+        Binary, Builder, ComposeTest,
     },
     file_io::DataSize,
     fio::{spawn_fio_task, FioBuilder, FioJobBuilder},
@@ -183,10 +181,7 @@ impl TestCluster {
             repl.create().await.unwrap();
             repl.share().await.unwrap();
 
-            nodes.push(StorageNode {
-                pool,
-                repl,
-            });
+            nodes.push(StorageNode { pool, repl });
         }
 
         Arc::new(Mutex::new(Self {

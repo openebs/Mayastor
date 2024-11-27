@@ -1,18 +1,8 @@
 //! Implementation of an etcd key-value store.
 
 use crate::store::store_defs::{
-    Connect,
-    Delete,
-    DeserialiseValue,
-    Get,
-    Put,
-    SerialiseValue,
-    Store,
-    StoreError,
-    StoreError::MissingEntry,
-    StoreKey,
-    StoreValue,
-    ValueString,
+    Connect, Delete, DeserialiseValue, Get, Put, SerialiseValue, Store, StoreError,
+    StoreError::MissingEntry, StoreKey, StoreValue, ValueString,
 };
 use async_trait::async_trait;
 use etcd_client::Client;
@@ -60,19 +50,16 @@ impl Store for Etcd {
     }
 
     /// 'Get' the value for the given key from etcd.
-    async fn get_kv<K: StoreKey>(
-        &mut self,
-        key: &K,
-    ) -> Result<Value, StoreError> {
+    async fn get_kv<K: StoreKey>(&mut self, key: &K) -> Result<Value, StoreError> {
         let resp = self.0.get(key.to_string(), None).await.context(Get {
             key: key.to_string(),
         })?;
         match resp.kvs().first() {
-            Some(kv) => Ok(serde_json::from_slice(kv.value()).context(
-                DeserialiseValue {
+            Some(kv) => Ok(
+                serde_json::from_slice(kv.value()).context(DeserialiseValue {
                     value: kv.value_str().context(ValueString {})?,
-                },
-            )?),
+                })?,
+            ),
             None => Err(MissingEntry {
                 key: key.to_string(),
             }),
@@ -80,10 +67,7 @@ impl Store for Etcd {
     }
 
     /// 'Delete' the entry with the given key from etcd.
-    async fn delete_kv<K: StoreKey>(
-        &mut self,
-        key: &K,
-    ) -> Result<(), StoreError> {
+    async fn delete_kv<K: StoreKey>(&mut self, key: &K) -> Result<(), StoreError> {
         self.0.delete(key.to_string(), None).await.context(Delete {
             key: key.to_string(),
         })?;

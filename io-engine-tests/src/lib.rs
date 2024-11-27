@@ -84,7 +84,7 @@ macro_rules! reactor_poll {
         }
     };
     ($n:expr) => {
-        for _ in 0 .. $n {
+        for _ in 0..$n {
             io_engine::core::Reactors::current().poll_once();
         }
         io_engine::core::Reactors::current();
@@ -346,10 +346,10 @@ pub fn fio_run_verify(device: &str) -> Result<String, String> {
         --runtime=5 --bs=4k --verify=crc32 --group_reporting=1 --output-format=terse \
         --verify_fatal=1 --verify_async=2 --filename=$1
     ",
-    &vec![device.into()],
-    &run_script::ScriptOptions::new(),
+        &vec![device.into()],
+        &run_script::ScriptOptions::new(),
     )
-        .unwrap();
+    .unwrap();
     if exit == 0 {
         Ok(stdout)
     } else {
@@ -379,11 +379,7 @@ pub fn dd_urandom_blkdev_test(device: &str) -> i32 {
         &run_script::ScriptOptions::new(),
     )
     .unwrap();
-    tracing::debug!(
-        "dd_urandom_blkdev:\nstdout: {}\nstderr: {}",
-        stdout,
-        stderr
-    );
+    tracing::debug!("dd_urandom_blkdev:\nstdout: {}\nstderr: {}", stdout, stderr);
     exit
 }
 pub fn dd_urandom_blkdev(device: &str) -> i32 {
@@ -406,16 +402,12 @@ pub fn dd_urandom_file_size(device: &str, size: u64) -> String {
         &vec![device.into(), size.to_string()],
         &run_script::ScriptOptions::new(),
     )
-        .unwrap();
+    .unwrap();
     assert_eq!(exit, 0);
     stdout
 }
 
-pub fn compare_nexus_device(
-    nexus_device: &str,
-    device: &str,
-    expected_pass: bool,
-) -> String {
+pub fn compare_nexus_device(nexus_device: &str, device: &str, expected_pass: bool) -> String {
     let (exit, stdout, _stderr) = run_script::run(
         r#"
         cmp -n `blockdev --getsize64 $1` $1 $2 0 5M
@@ -433,12 +425,7 @@ pub fn compare_nexus_device(
     stdout
 }
 
-pub fn compare_devices(
-    first_device: &str,
-    second_device: &str,
-    size: u64,
-    expected_pass: bool,
-) {
+pub fn compare_devices(first_device: &str, second_device: &str, size: u64, expected_pass: bool) {
     let (exit, stdout, stderr) = run_script::run(
         r#"
         cmp -b $1 $2 -n $3
@@ -480,11 +467,7 @@ pub fn get_device_size(nexus_device: &str) -> u64 {
 }
 
 /// Waits for the rebuild to reach `state`, up to `timeout`
-pub async fn wait_for_rebuild(
-    dst_uri: String,
-    state: RebuildState,
-    timeout: Duration,
-) {
+pub async fn wait_for_rebuild(dst_uri: String, state: RebuildState, timeout: Duration) {
     let (s, r) = unbounded::<()>();
     let job = match NexusRebuildJob::lookup(&dst_uri) {
         Ok(job) => job,

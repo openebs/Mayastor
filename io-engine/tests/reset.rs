@@ -61,8 +61,7 @@ async fn nexus_reset_mirror() {
                 .await
                 .unwrap();
 
-            let bdev =
-                UntypedBdevHandle::open("reset_test", true, true).unwrap();
+            let bdev = UntypedBdevHandle::open("reset_test", true, true).unwrap();
             bdev.reset().await.unwrap();
         })
         .await

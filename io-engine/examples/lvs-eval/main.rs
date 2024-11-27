@@ -82,7 +82,7 @@ async fn main() {
 
         // Create replicas.
         println!("Creating {n} replicas ...", n = args.replicas);
-        for idx in 0 .. args.replicas {
+        for idx in 0..args.replicas {
             if args.fillers {
                 match create_filler_replica(&lvs, idx, 1).await {
                     Ok(lvol) => fillers.push(lvol),
@@ -142,12 +142,7 @@ async fn create_lvs(args: &CliArgs) -> Lvs {
 }
 
 /// TODO
-async fn create_replica(
-    lvs: &Lvs,
-    serial: u32,
-    n: u64,
-    thin: bool,
-) -> Result<Lvol, LvsError> {
+async fn create_replica(lvs: &Lvs, serial: u32, n: u64, thin: bool) -> Result<Lvol, LvsError> {
     let name = format!("replica_{serial}");
     let uuid = format!("45c23e54-dc86-45f6-b55b-e44d05f1{serial:04}");
 
@@ -155,11 +150,7 @@ async fn create_replica(
 }
 
 /// TODO
-async fn create_filler_replica(
-    lvs: &Lvs,
-    serial: u32,
-    n: u64,
-) -> Result<Lvol, LvsError> {
+async fn create_filler_replica(lvs: &Lvs, serial: u32, n: u64) -> Result<Lvol, LvsError> {
     let name = format!("filler_{serial}");
     let uuid = format!("56723e54-dc86-45f6-b55b-e44d05f1{serial:04}");
 
@@ -176,9 +167,7 @@ async fn create_lvol(
 ) -> Result<Lvol, LvsError> {
     let et = unsafe { G_USE_EXTENT_TABLE };
 
-    println!(
-        "Creating lvol '{name}': size = {n} cluster(s), thin: {thin}, et: {et}",
-    );
+    println!("Creating lvol '{name}': size = {n} cluster(s), thin: {thin}, et: {et}",);
 
     let opts = ReplicaArgs {
         name: name.to_owned(),

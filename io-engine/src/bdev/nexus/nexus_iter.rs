@@ -14,16 +14,12 @@ pub fn nexus_iter_mut<'n>() -> NexusIterMut<'n> {
 }
 
 /// Looks up a Nexus by its name, and returns a reference to it.
-pub fn nexus_lookup<'n>(
-    name: &str,
-) -> Option<<NexusIter<'n> as Iterator>::Item> {
+pub fn nexus_lookup<'n>(name: &str) -> Option<<NexusIter<'n> as Iterator>::Item> {
     NexusIter::new().find(|n| n.name == name)
 }
 
 /// Looks up a Nexus by its name, and returns a mutable reference to it.
-pub fn nexus_lookup_mut<'n>(
-    name: &str,
-) -> Option<<NexusIterMut<'n> as Iterator>::Item> {
+pub fn nexus_lookup_mut<'n>(name: &str) -> Option<<NexusIterMut<'n> as Iterator>::Item> {
     NexusIterMut::new().find(|n| n.name == name)
 }
 
@@ -32,15 +28,12 @@ pub fn nexus_lookup_name_uuid<'n>(
     name: &str,
     nexus_uuid: Option<uuid::Uuid>,
 ) -> Option<<NexusIter<'n> as Iterator>::Item> {
-    NexusIter::new().find(|n| {
-        n.name == name || (nexus_uuid.is_some() && Some(n.uuid()) == nexus_uuid)
-    })
+    NexusIter::new()
+        .find(|n| n.name == name || (nexus_uuid.is_some() && Some(n.uuid()) == nexus_uuid))
 }
 
 /// Looks up a Nexus by its uuid, and returns a mutable reference to it.
-pub fn nexus_lookup_uuid_mut<'n>(
-    uuid: &str,
-) -> Option<<NexusIterMut<'n> as Iterator>::Item> {
+pub fn nexus_lookup_uuid_mut<'n>(uuid: &str) -> Option<<NexusIterMut<'n> as Iterator>::Item> {
     NexusIterMut::new().find(|n| n.uuid().to_string() == uuid)
 }
 
@@ -51,17 +44,13 @@ fn try_nqn_to_nexus_name(nqn: &str) -> Option<String> {
 }
 
 /// Looks up a Nexus by its subsystem NQN, and returns a reference to it.
-pub fn nexus_lookup_nqn<'n>(
-    nqn: &str,
-) -> Option<<NexusIter<'n> as Iterator>::Item> {
+pub fn nexus_lookup_nqn<'n>(nqn: &str) -> Option<<NexusIter<'n> as Iterator>::Item> {
     try_nqn_to_nexus_name(nqn).and_then(|n| nexus_lookup(&n))
 }
 
 /// Looks up a Nexus by its subsystem NQN, and returns a mutable reference to
 /// it.
-pub fn nexus_lookup_nqn_mut<'n>(
-    nqn: &str,
-) -> Option<<NexusIterMut<'n> as Iterator>::Item> {
+pub fn nexus_lookup_nqn_mut<'n>(nqn: &str) -> Option<<NexusIterMut<'n> as Iterator>::Item> {
     try_nqn_to_nexus_name(nqn).and_then(|n| nexus_lookup_mut(&n))
 }
 

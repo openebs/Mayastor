@@ -10,9 +10,7 @@ pub struct NvmeSnapshotMessageV1 {
 impl NvmeSnapshotMessageV1 {
     /// Create a V1 snapshot creation message.
     pub fn new(params: SnapshotParams) -> Self {
-        Self {
-            params,
-        }
+        Self { params }
     }
 
     /// Get snapshot params payload.

@@ -10,14 +10,8 @@ use crate::{
         rebuild_error::{RangeLockFailed, RangeUnlockFailed},
         rebuild_job_backend::RebuildJobManager,
         rebuild_task::{RebuildTask, RebuildTaskCopier},
-        rebuilders::{
-            FullRebuild,
-            PartialSeqCopier,
-            PartialSeqRebuild,
-            RangeRebuilder,
-        },
-        RebuildMap,
-        RebuildState,
+        rebuilders::{FullRebuild, PartialSeqCopier, PartialSeqRebuild, RangeRebuilder},
+        RebuildMap, RebuildState,
     },
 };
 
@@ -27,8 +21,7 @@ use super::{
     rebuild_job::RebuildJob,
     rebuild_job_backend::RebuildBackend,
     rebuild_task::{RebuildTasks, TaskResult},
-    RebuildJobOptions,
-    SEGMENT_TASKS,
+    RebuildJobOptions, SEGMENT_TASKS,
 };
 
 /// A Nexus rebuild job is responsible for managing a rebuild (copy) which reads
@@ -89,15 +82,11 @@ impl NexusRebuildJob {
         options: RebuildJobOptions,
         notify_fn: fn(String, String) -> (),
     ) -> Result<NexusRebuildJobStarter, RebuildError> {
-        let descriptor =
-            RebuildDescriptor::new(src_uri, dst_uri, Some(range), options)
-                .await?;
+        let descriptor = RebuildDescriptor::new(src_uri, dst_uri, Some(range), options).await?;
         let tasks = RebuildTasks::new(SEGMENT_TASKS, &descriptor)?;
 
-        let backend = NexusRebuildJobBackendStarter::new(
-            nexus_name, tasks, notify_fn, descriptor,
-        )
-        .await?;
+        let backend =
+            NexusRebuildJobBackendStarter::new(nexus_name, tasks, notify_fn, descriptor).await?;
 
         let manager = RebuildJobManager::new();
 
@@ -168,10 +157,7 @@ impl Deref for NexusRebuildDescriptor {
 /// as a means of locking the range which is being rebuilt ensuring
 /// there are no concurrent writes to the same range between the
 /// user IO (through the nexus) and the rebuild itself.
-pub(super) struct NexusRebuildJobBackend<
-    T: RebuildTaskCopier,
-    R: RangeRebuilder<T>,
-> {
+pub(super) struct NexusRebuildJobBackend<T: RebuildTaskCopier, R: RangeRebuilder<T>> {
     /// A pool of tasks which perform the actual data rebuild.
     task_pool: RebuildTasks,
     /// The range rebuilder which walks and copies the segments.
@@ -205,8 +191,8 @@ impl NexusRebuildJobBackendStarter {
         notify_fn: fn(String, String) -> (),
         descriptor: RebuildDescriptor,
     ) -> Result<Self, RebuildError> {
-        let nexus_descriptor = UntypedBdev::open_by_name(nexus_name, false)
-            .context(BdevNotFound {
+        let nexus_descriptor =
+            UntypedBdev::open_by_name(nexus_name, false).context(BdevNotFound {
                 bdev: nexus_name.to_string(),
             })?;
 
@@ -239,10 +225,7 @@ impl NexusRebuildJobBackendStarter {
     }
     fn into_full(
         self,
-    ) -> NexusRebuildJobBackend<
-        NexusRebuildDescriptor,
-        FullRebuild<NexusRebuildDescriptor>,
-    > {
+    ) -> NexusRebuildJobBackend<NexusRebuildDescriptor, FullRebuild<NexusRebuildDescriptor>> {
         NexusRebuildJobBackend {
             task_pool: self.task_pool,
             notify_fn: self.notify_fn,
@@ -258,10 +241,7 @@ impl<T: RebuildTaskCopier + 'static, R: RangeRebuilder<T>> RebuildBackend
     for NexusRebuildJobBackend<T, R>
 {
     fn on_state_change(&mut self) {
-        (self.notify_fn)(
-            self.nexus_name.clone(),
-            self.common_desc().dst_uri.clone(),
-        );
+        (self.notify_fn)(self.nexus_name.clone(), self.common_desc().dst_uri.clone());
     }
 
     fn common_desc(&self) -> &RebuildDescriptor {
@@ -283,11 +263,8 @@ impl<T: RebuildTaskCopier + 'static, R: RangeRebuilder<T>> RebuildBackend
         self.copier
             .next()
             .map(|blk| {
-                self.task_pool.schedule_segment_rebuild(
-                    id,
-                    blk,
-                    self.copier.copier(),
-                );
+                self.task_pool
+                    .schedule_segment_rebuild(id, blk, self.copier.copier());
                 self.task_pool.active += 1;
                 true
             })
@@ -336,11 +313,7 @@ impl RebuildTaskCopier for NexusRebuildDescriptor {
     /// The use of RangeContext here is safe because it is stored on the stack
     /// for the duration of the calls to lock and unlock.
     #[inline]
-    async fn copy_segment(
-        &self,
-        blk: u64,
-        task: &mut RebuildTask,
-    ) -> Result<bool, RebuildError> {
+    async fn copy_segment(&self, blk: u64, task: &mut RebuildTask) -> Result<bool, RebuildError> {
         let len = self.get_segment_size_blks(blk);
         // The nexus children have metadata and data partitions, whereas the
         // nexus has a data partition only. Because we are locking the range on
@@ -351,14 +324,11 @@ impl RebuildTaskCopier for NexusRebuildDescriptor {
         // Wait for LBA range to be locked.
         // This prevents other I/Os being issued to this LBA range whilst it is
         // being rebuilt.
-        let lock =
-            self.nexus
-                .lock_lba_range(r)
-                .await
-                .context(RangeLockFailed {
-                    blk,
-                    len,
-                })?;
+        let lock = self
+            .nexus
+            .lock_lba_range(r)
+            .await
+            .context(RangeLockFailed { blk, len })?;
 
         // Perform the copy.
         let result = task.copy_one(blk, self).await;
@@ -368,10 +338,7 @@ impl RebuildTaskCopier for NexusRebuildDescriptor {
         self.nexus
             .unlock_lba_range(lock)
             .await
-            .context(RangeUnlockFailed {
-                blk,
-                len,
-            })?;
+            .context(RangeUnlockFailed { blk, len })?;
 
         result
     }

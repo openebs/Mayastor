@@ -1,18 +1,11 @@
 use crate::{
     bdev::{
         nexus,
-        nexus::{
-            nexus_lookup_uuid_mut,
-            ChildStateClient,
-            FaultReason,
-            NexusChild,
-            NexusStatus,
-        },
+        nexus::{nexus_lookup_uuid_mut, ChildStateClient, FaultReason, NexusChild, NexusStatus},
     },
     core::{
         lock::{ProtectedSubsystems, ResourceLockManager},
-        Protocol,
-        Share,
+        Protocol, Share,
     },
     grpc::{rpc_submit, GrpcClientContext, GrpcResult},
     rebuild::{HistoryRecord, RebuildState, RebuildStats},
@@ -80,10 +73,11 @@ impl NexusService {
             let _global_guard = if global_operation {
                 match lock_manager.lock(Some(ctx.timeout), false).await {
                     Some(g) => Some(g),
-                    None => return Err(Status::deadline_exceeded(
-                        "Failed to acquire access to object within given timeout"
-                        .to_string()
-                    )),
+                    None => {
+                        return Err(Status::deadline_exceeded(
+                            "Failed to acquire access to object within given timeout".to_string(),
+                        ))
+                    }
                 }
             } else {
                 None
@@ -93,13 +87,15 @@ impl NexusService {
             let _resource_guard = match lock_manager
                 .get_subsystem(ProtectedSubsystems::NEXUS)
                 .lock_resource(nexus_uuid, Some(ctx.timeout), false)
-                .await {
-                    Some(g) => g,
-                    None => return Err(Status::deadline_exceeded(
-                        "Failed to acquire access to object within given timeout"
-                        .to_string()
-                    )),
-                };
+                .await
+            {
+                Some(g) => g,
+                None => {
+                    return Err(Status::deadline_exceeded(
+                        "Failed to acquire access to object within given timeout".to_string(),
+                    ))
+                }
+            };
             let r = fut.await;
 
             match r {
@@ -113,9 +109,10 @@ impl NexusService {
                 }
             }
         })
-        .await {
+        .await
+        {
             Ok(r) => r,
-            Err(_) => Err(Status::cancelled("gRPC call cancelled"))
+            Err(_) => Err(Status::cancelled("gRPC call cancelled")),
         }
     }
 }
@@ -234,18 +231,10 @@ impl From<NvmeReservation> for nexus::NvmeReservation {
             NvmeReservation::Reserved => Self::Reserved,
             NvmeReservation::WriteExclusive => Self::WriteExclusive,
             NvmeReservation::ExclusiveAccess => Self::ExclusiveAccess,
-            NvmeReservation::WriteExclusiveRegsOnly => {
-                Self::WriteExclusiveRegsOnly
-            }
-            NvmeReservation::ExclusiveAccessRegsOnly => {
-                Self::ExclusiveAccessRegsOnly
-            }
-            NvmeReservation::WriteExclusiveAllRegs => {
-                Self::WriteExclusiveAllRegs
-            }
-            NvmeReservation::ExclusiveAccessAllRegs => {
-                Self::ExclusiveAccessAllRegs
-            }
+            NvmeReservation::WriteExclusiveRegsOnly => Self::WriteExclusiveRegsOnly,
+            NvmeReservation::ExclusiveAccessRegsOnly => Self::ExclusiveAccessRegsOnly,
+            NvmeReservation::WriteExclusiveAllRegs => Self::WriteExclusiveAllRegs,
+            NvmeReservation::ExclusiveAccessAllRegs => Self::ExclusiveAccessAllRegs,
         }
     }
 }
@@ -269,12 +258,8 @@ impl TryFrom<NvmePreemptionConv> for nexus::NexusNvmePreemption {
     type Error = tonic::Status;
     fn try_from(value: NvmePreemptionConv) -> Result<Self, Self::Error> {
         match NexusNvmePreemption::try_from(value.0) {
-            Ok(NexusNvmePreemption::ArgKey) => {
-                Ok(nexus::NexusNvmePreemption::ArgKey)
-            }
-            Ok(NexusNvmePreemption::Holder) => {
-                Ok(nexus::NexusNvmePreemption::Holder)
-            }
+            Ok(NexusNvmePreemption::ArgKey) => Ok(nexus::NexusNvmePreemption::ArgKey),
+            Ok(NexusNvmePreemption::Holder) => Ok(nexus::NexusNvmePreemption::Holder),
             Err(_) => Err(tonic::Status::invalid_argument(format!(
                 "Invalid reservation preempt policy {}",
                 value.0
@@ -284,9 +269,7 @@ impl TryFrom<NvmePreemptionConv> for nexus::NexusNvmePreemption {
 }
 
 /// Look up a nexus by uuid
-pub fn nexus_lookup<'n>(
-    uuid: &str,
-) -> Result<Pin<&'n mut nexus::Nexus<'n>>, nexus::Error> {
+pub fn nexus_lookup<'n>(uuid: &str) -> Result<Pin<&'n mut nexus::Nexus<'n>>, nexus::Error> {
     if let Some(nexus) = nexus_lookup_uuid_mut(uuid) {
         Ok(nexus)
     } else {
@@ -344,8 +327,7 @@ impl<'n> nexus::Nexus<'n> {
             state: NexusState::from(self.status()) as i32,
             device_uri: self.get_share_uri().unwrap_or_default(),
             children: {
-                let mut children =
-                    Vec::with_capacity(self.children_iter().count());
+                let mut children = Vec::with_capacity(self.children_iter().count());
                 for child in self.children_iter() {
                     children.push(child.to_grpc_v1().await);
                 }
@@ -361,9 +343,7 @@ impl<'n> nexus::Nexus<'n> {
 /// Add child to nexus. Normally this would have been part of grpc method
 /// implementation, however it is not allowed to use '?' in `locally` macro.
 /// So we implement it as a separate function.
-async fn nexus_add_child(
-    args: &AddChildNexusRequest,
-) -> Result<Nexus, nexus::Error> {
+async fn nexus_add_child(args: &AddChildNexusRequest) -> Result<Nexus, nexus::Error> {
     let mut n = nexus_lookup(&args.uuid)?;
     if n.contains_child_uri(&args.uri) || {
         match device_name(&args.uri) {
@@ -396,8 +376,7 @@ impl NexusRpc for NexusService {
         self.serialized(ctx, args.uuid.clone(), true, async move {
             trace!("{:?}", args);
             let resv_type = NvmeReservationConv(args.resv_type).try_into()?;
-            let preempt_policy =
-                NvmePreemptionConv(args.preempt_policy).try_into()?;
+            let preempt_policy = NvmePreemptionConv(args.preempt_policy).try_into()?;
             let rx = rpc_submit::<_, _, nexus::Error>(async move {
                 // check for nexus exists, uuid & name
                 if let Some(_n) = nexus::nexus_lookup(&args.name) {
@@ -447,20 +426,13 @@ impl NexusRpc for NexusService {
             rx.await
                 .map_err(|_| Status::cancelled("cancelled"))?
                 .map_err(Status::from)
-                .map(|nexus| {
-                    Response::new(CreateNexusResponse {
-                        nexus: Some(nexus),
-                    })
-                })
+                .map(|nexus| Response::new(CreateNexusResponse { nexus: Some(nexus) }))
         })
         .await
     }
 
     #[named]
-    async fn destroy_nexus(
-        &self,
-        request: Request<DestroyNexusRequest>,
-    ) -> GrpcResult<()> {
+    async fn destroy_nexus(&self, request: Request<DestroyNexusRequest>) -> GrpcResult<()> {
         let ctx = GrpcClientContext::new(&request, function_name!());
         let args = request.into_inner();
 
@@ -555,14 +527,9 @@ impl NexusRpc for NexusService {
                 }
             }
 
-            return Ok(ListNexusResponse {
-                nexus_list,
-            });
+            return Ok(ListNexusResponse { nexus_list });
 
-            async fn add_nexus(
-                nexus_list: &mut Vec<Nexus>,
-                nexus: &nexus::Nexus<'_>,
-            ) {
+            async fn add_nexus(nexus_list: &mut Vec<Nexus>, nexus: &nexus::Nexus<'_>) {
                 if nexus.state.lock().deref() != &nexus::NexusState::Init {
                     nexus_list.push(nexus.into_grpc().await);
                 }
@@ -597,11 +564,7 @@ impl NexusRpc for NexusService {
             rx.await
                 .map_err(|_| Status::cancelled("cancelled"))?
                 .map_err(Status::from)
-                .map(|nexus| {
-                    Response::new(AddChildNexusResponse {
-                        nexus: Some(nexus),
-                    })
-                })
+                .map(|nexus| Response::new(AddChildNexusResponse { nexus: Some(nexus) }))
         })
         .await
     }
@@ -620,15 +583,9 @@ impl NexusRpc for NexusService {
             let rx = rpc_submit::<_, _, nexus::Error>(async move {
                 trace!("{:?}", args);
                 if nexus_lookup(&args.uuid)?.contains_child_uri(&args.uri) {
-                    debug!(
-                        "Removing child {} from nexus {} ...",
-                        args.uri, args.uuid
-                    );
+                    debug!("Removing child {} from nexus {} ...", args.uri, args.uuid);
                     nexus_lookup(&args.uuid)?.remove_child(&args.uri).await?;
-                    info!(
-                        "Removed child {} from nexus {}",
-                        args.uri, args.uuid
-                    );
+                    info!("Removed child {} from nexus {}", args.uri, args.uuid);
                     event.generate();
                 }
                 Ok(nexus_lookup(&args.uuid)?.into_grpc().await)
@@ -637,11 +594,7 @@ impl NexusRpc for NexusService {
             rx.await
                 .map_err(|_| Status::cancelled("cancelled"))?
                 .map_err(Status::from)
-                .map(|nexus| {
-                    Response::new(RemoveChildNexusResponse {
-                        nexus: Some(nexus),
-                    })
-                })
+                .map(|nexus| Response::new(RemoveChildNexusResponse { nexus: Some(nexus) }))
         })
         .await
     }
@@ -725,9 +678,7 @@ impl NexusRpc for NexusService {
 
                 let nexus = nexus_lookup(&args.uuid)?.into_grpc().await;
 
-                Ok(PublishNexusResponse {
-                    nexus: Some(nexus),
-                })
+                Ok(PublishNexusResponse { nexus: Some(nexus) })
             })?;
             rx.await
                 .map_err(|_| Status::cancelled("cancelled"))?
@@ -758,11 +709,7 @@ impl NexusRpc for NexusService {
             rx.await
                 .map_err(|_| Status::cancelled("cancelled"))?
                 .map_err(Status::from)
-                .map(|nexus| {
-                    Response::new(UnpublishNexusResponse {
-                        nexus: Some(nexus),
-                    })
-                })
+                .map(|nexus| Response::new(UnpublishNexusResponse { nexus: Some(nexus) }))
         })
         .await
     }
@@ -780,8 +727,7 @@ impl NexusRpc for NexusService {
             debug!("Getting NVMe ANA state for nexus {} ...", uuid);
 
             let rx = rpc_submit::<_, _, nexus::Error>(async move {
-                let ana_state =
-                    nexus_lookup(&args.uuid)?.get_ana_state().await?;
+                let ana_state = nexus_lookup(&args.uuid)?.get_ana_state().await?;
                 info!("Got nexus {} NVMe ANA state {:?}", uuid, ana_state);
                 Ok(GetNvmeAnaStateResponse {
                     ana_state: ana_state as i32,
@@ -811,8 +757,7 @@ impl NexusRpc for NexusService {
             let rx = rpc_submit::<_, _, nexus::Error>(async move {
                 let ana_state = nexus::NvmeAnaState::from_i32(args.ana_state)?;
 
-                let ana_state =
-                    nexus_lookup(&args.uuid)?.set_ana_state(ana_state).await?;
+                let ana_state = nexus_lookup(&args.uuid)?.set_ana_state(ana_state).await?;
                 info!("Set nexus {} NVMe ANA state {:?}", uuid, ana_state);
                 Ok(nexus_lookup(&args.uuid)?.into_grpc().await)
             })?;
@@ -820,11 +765,7 @@ impl NexusRpc for NexusService {
             rx.await
                 .map_err(|_| Status::cancelled("cancelled"))?
                 .map_err(Status::from)
-                .map(|nexus| {
-                    Response::new(SetNvmeAnaStateResponse {
-                        nexus: Some(nexus),
-                    })
-                })
+                .map(|nexus| Response::new(SetNvmeAnaStateResponse { nexus: Some(nexus) }))
         })
         .await
     }
@@ -859,10 +800,7 @@ impl NexusRpc for NexusService {
                     3 => {
                         nexus
                             .as_mut()
-                            .fault_child(
-                                &args.uri,
-                                FaultReason::OfflinePermanent,
-                            )
+                            .fault_child(&args.uri, FaultReason::OfflinePermanent)
                             .await
                     }
                     _ => Err(nexus::Error::InvalidKey {}),
@@ -874,11 +812,7 @@ impl NexusRpc for NexusService {
             rx.await
                 .map_err(|_| Status::cancelled("cancelled"))?
                 .map_err(Status::from)
-                .map(|n| {
-                    Response::new(ChildOperationResponse {
-                        nexus: Some(n),
-                    })
-                })
+                .map(|n| Response::new(ChildOperationResponse { nexus: Some(n) }))
         })
         .await
     }
@@ -905,11 +839,7 @@ impl NexusRpc for NexusService {
             rx.await
                 .map_err(|_| Status::cancelled("cancelled"))?
                 .map_err(Status::from)
-                .map(|n| {
-                    Response::new(StartRebuildResponse {
-                        nexus: Some(n),
-                    })
-                })
+                .map(|n| Response::new(StartRebuildResponse { nexus: Some(n) }))
         })
         .await
     }
@@ -935,11 +865,7 @@ impl NexusRpc for NexusService {
             rx.await
                 .map_err(|_| Status::cancelled("cancelled"))?
                 .map_err(Status::from)
-                .map(|n| {
-                    Response::new(StopRebuildResponse {
-                        nexus: Some(n),
-                    })
-                })
+                .map(|n| Response::new(StopRebuildResponse { nexus: Some(n) }))
         })
         .await
     }
@@ -965,11 +891,7 @@ impl NexusRpc for NexusService {
             rx.await
                 .map_err(|_| Status::cancelled("cancelled"))?
                 .map_err(Status::from)
-                .map(|n| {
-                    Response::new(PauseRebuildResponse {
-                        nexus: Some(n),
-                    })
-                })
+                .map(|n| Response::new(PauseRebuildResponse { nexus: Some(n) }))
         })
         .await
     }
@@ -994,11 +916,7 @@ impl NexusRpc for NexusService {
             rx.await
                 .map_err(|_| Status::cancelled("cancelled"))?
                 .map_err(Status::from)
-                .map(|n| {
-                    Response::new(ResumeRebuildResponse {
-                        nexus: Some(n),
-                    })
-                })
+                .map(|n| Response::new(ResumeRebuildResponse { nexus: Some(n) }))
         })
         .await
     }
@@ -1111,11 +1029,7 @@ impl NexusRpc for NexusService {
                                 newest_end_time = Some(record.end_time);
                             }
                         })
-                        .filter(|record| {
-                            end_time
-                                .map(|t| record.end_time > t)
-                                .unwrap_or(true)
-                        })
+                        .filter(|record| end_time.map(|t| record.end_time > t).unwrap_or(true))
                         .rev()
                         .take(count)
                         .cloned()
@@ -1134,9 +1048,7 @@ impl NexusRpc for NexusService {
 
             Ok(ListRebuildHistoryResponse {
                 histories,
-                end_time: Some(
-                    newest_end_time.map_or(default_end_time.into(), Into::into),
-                ),
+                end_time: Some(newest_end_time.map_or(default_end_time.into(), Into::into)),
             })
         })?;
 
