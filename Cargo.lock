@@ -1592,6 +1592,7 @@ dependencies = [
  "crossbeam",
  "derive_builder",
  "devinfo",
+ "either",
  "env_logger",
  "etcd-client",
  "event-publisher",

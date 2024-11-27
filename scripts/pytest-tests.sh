@@ -36,6 +36,15 @@ function clean_all()
   echo "Done"
 }
 
+function is_test()
+{
+  file="${1:-}"
+  if [ -d "$file" ] || [ -f "$file" ] || [ -f "${file%::*}" ]; then
+    return 0
+  fi
+  return 1
+}
+
 function run_tests()
 {
   while read name extra
@@ -95,10 +104,13 @@ while [ "$#" -gt 0 ]; do
     *)
       set +e
       real_1="$(realpath $1 2>/dev/null)"
+      real_2="$(realpath $SRCDIR/test/python/$1 2>/dev/null)"
       set -e
       param="$1"
-      if [ -d "$real_1" ] || [ -f "$real_1" ] || [ -f "${real_1%::*}" ]; then
+      if is_test "$real_1"; then
         param="$real_1"
+      elif is_test "$real_2"; then
+        param="$real_2"
       else
         TEST_ARGS="${TEST_ARGS:-}$1"
       fi

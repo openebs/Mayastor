@@ -16,7 +16,12 @@ from retrying import retry
 from common.command import run_cmd
 from common.fio import Fio
 from common.mayastor import container_mod, mayastor_mod
-from common.nvme import nvme_connect, nvme_disconnect, nvme_disconnect_controller
+from common.nvme import (
+    nvme_connect,
+    nvme_disconnect,
+    nvme_disconnect_controller,
+    nvme_find_ctrl,
+)
 
 import nexus_pb2 as pb
 
@@ -119,13 +124,12 @@ def _(recreate_pool, republish_nexus_ana):
 
 
 @when("the initiator swaps the nexuses")
-def _(recreate_pool, republish_nexus_ana):
+def _(publish_nexus, recreate_pool, republish_nexus_ana):
     """the initiator swaps the nexuses."""
     print(republish_nexus_ana)
-    device = nvme_connect(republish_nexus_ana)
-    # disconnect previous nexus: /dev/nvme*n*
-    split_dev = device.split("n")
-    nvme_disconnect_controller(f"{split_dev[0]}n{split_dev[1]}")
+    prev_ctrl = nvme_find_ctrl(publish_nexus)
+    nvme_connect(republish_nexus_ana)
+    nvme_disconnect_controller(f"/dev/{prev_ctrl}")
 
 
 @then("the fio workload should complete gracefully")
