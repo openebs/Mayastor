@@ -891,8 +891,7 @@ pub(crate) async fn destroy_device(name: String) -> Result<(), BdevError> {
 
     // 1. Initiate controller shutdown, which shuts down all I/O resources
     // of the controller.
-    let (s, r) = oneshot::channel::<bool>();
-    {
+    let rcv = {
         let mut controller = carc.lock();
 
         // Skip not-fully initialized controllers.
@@ -901,23 +900,27 @@ pub(crate) async fn destroy_device(name: String) -> Result<(), BdevError> {
                 done_cb(ctx, success);
             }
 
-            controller.shutdown(_shutdown_callback, cb_arg(s)).map_err(
-                |_| BdevError::DestroyBdevFailed {
+            let (s, r) = oneshot::channel::<bool>();
+
+            controller
+                .shutdown(_shutdown_callback, cb_arg(s))
+                .map_err(|_| BdevError::DestroyBdevFailed {
                     name: String::from(&name),
                     source: Errno::EAGAIN,
-                },
-            )?;
+                })?;
 
-            // Release the lock before waiting for controller shutdown.
-            drop(controller);
-
-            if !r.await.expect("Failed awaiting at shutdown()") {
-                error!(?name, "failed to shutdown controller");
-                return Err(BdevError::DestroyBdevFailed {
-                    name: String::from(&name),
-                    source: Errno::EAGAIN,
-                });
-            }
+            Some(r)
+        } else {
+            None
+        }
+    };
+    if let Some(rcv) = rcv {
+        if !rcv.await.expect("Failed awaiting at shutdown()") {
+            error!(?name, "failed to shutdown controller");
+            return Err(BdevError::DestroyBdevFailed {
+                name: String::from(&name),
+                source: Errno::EAGAIN,
+            });
         }
     }
 

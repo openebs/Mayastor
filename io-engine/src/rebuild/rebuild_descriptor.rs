@@ -307,16 +307,10 @@ impl RebuildDescriptor {
         {
             Ok(_) => Ok(()),
             Err(CoreError::CompareFailed {
-                status, ..
-            }) if matches!(
-                status,
-                IoCompletionStatus::NvmeError(NvmeStatus::Media(
-                    SPDK_NVME_SC_COMPARE_FAILURE
-                ))
-            ) =>
-            {
-                self.verify_failure(offset_blk)
-            }
+                status:
+                IoCompletionStatus::NvmeError(NvmeStatus::Media(SPDK_NVME_SC_COMPARE_FAILURE)),
+                ..
+            }) => self.verify_failure(offset_blk),
             Err(err) => Err(RebuildError::VerifyIoFailed {
                 source: err,
                 bdev: self.dst_uri.clone(),

@@ -95,7 +95,7 @@ pub(super) fn add_bdev_io_injection(
     if inj.io_stage != FaultIoStage::Submission {
         return Err(FaultInjectionError::InvalidInjection {
             name: inj.device_name.clone(),
-            msg: format!("bdev I/O supports only submission injections"),
+            msg: "bdev I/O supports only submission injections".to_string(),
         });
     }
 
@@ -105,7 +105,7 @@ pub(super) fn add_bdev_io_injection(
     ) {
         return Err(FaultInjectionError::InvalidInjection {
             name: inj.device_name.clone(),
-            msg: format!("bdev I/O supports only NVME error injection"),
+            msg: "bdev I/O supports only NVME error injection".to_string(),
         });
     }
 
@@ -121,9 +121,7 @@ pub(super) fn add_bdev_io_injection(
     if g.iter().any(|(_, v)| v.inj.device_name == inj.device_name) {
         return Err(FaultInjectionError::InvalidInjection {
             name: inj.device_name.clone(),
-            msg: format!(
-                "bdev I/O does not support multiple injections per bdev"
-            ),
+            msg: "bdev I/O does not support multiple injections per bdev".to_string(),
         });
     }
 

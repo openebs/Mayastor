@@ -453,7 +453,7 @@ impl<'n> NexusChannel<'n> {
         fn dbg_devs(
             prefix: &str,
             name: &str,
-            devs: &Vec<Box<dyn BlockDeviceHandle>>,
+            devs: &[Box<dyn BlockDeviceHandle>],
         ) {
             if devs.is_empty() {
                 debug!("{prefix}: no {name}");

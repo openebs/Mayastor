@@ -165,22 +165,26 @@ impl RebuildTasks {
     ) {
         let task = self.tasks[id].clone();
 
+        // No other thread/task will acquire the mutex at the same time.
+        #[allow(clippy::await_holding_lock)]
         Reactors::current().send_future(async move {
-            // No other thread/task will acquire the mutex at the same time.
-            let mut task = task.lock();
+            let (mut sender, error) = {
+                let mut task = task.lock();
 
-            // Could we make this the option, rather than the descriptor itself?
-            let result = copier.copy_segment(blk, &mut task).await;
+                // Could we make this the option, rather than the descriptor itself?
+                let result = copier.copy_segment(blk, &mut task).await;
 
-            let is_transferred = *result.as_ref().unwrap_or(&false);
-            let error = TaskResult {
-                id,
-                blk,
-                error: result.err(),
-                is_transferred,
+                let is_transferred = *result.as_ref().unwrap_or(&false);
+                let error = TaskResult {
+                    id,
+                    blk,
+                    error: result.err(),
+                    is_transferred,
+                };
+                task.error = Some(error.clone());
+                (task.sender.clone(), error)
             };
-            task.error = Some(error.clone());
-            if let Err(e) = task.sender.send(error).await {
+            if let Err(e) = sender.send(error).await {
                 error!(
                     "Failed to notify job of segment id: {id} blk: {blk} \
                     completion, err: {err}",

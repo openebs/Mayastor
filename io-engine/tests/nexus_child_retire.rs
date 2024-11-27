@@ -82,7 +82,7 @@ struct TestCluster {
 
 impl TestCluster {
     async fn create() -> Self {
-        let etcd_endpoint = format!("http://10.1.0.2:2379");
+        let etcd_endpoint = "http://10.1.0.2:2379".to_string();
 
         let test = Box::new(
             Builder::new()
