@@ -138,13 +138,13 @@ pipeline {
       steps {
         cleanWs()
         unstash 'source'
-        sh 'nix-shell --run "FMT_OPTS=--check ./scripts/rust-style.sh" ci.nix'
-        sh 'nix-shell --run "./scripts/rust-linter.sh" ci.nix'
-        sh 'nix-shell --run "./scripts/js-check.sh" ci.nix'
-        sh 'nix-shell --run "nixpkgs-fmt --check ." ci.nix'
+        sh 'nix-shell --run "FMT_OPTS=--check ./scripts/rust-style.sh"'
+        sh 'nix-shell --run "./scripts/rust-linter.sh"'
+        sh 'nix-shell --run "./scripts/js-check.sh"'
+        sh 'nix-shell --run "nixpkgs-fmt --check ."'
         script {
           if (env.BRANCH_NAME != "trying") {
-            sh 'nix-shell --run "./scripts/check-submodule-branches.sh" ci.nix'
+            sh 'nix-shell --run "./scripts/check-submodule-branches.sh"'
           }
         }
       }
@@ -173,12 +173,12 @@ pipeline {
             cleanWs()
             unstash 'source'
             sh 'printenv'
-            sh 'nix-shell --run "cargo build --bins --features=io-engine-testing" ci.nix'
-            sh 'nix-shell --run "./scripts/cargo-test.sh" ci.nix'
+            sh 'nix-shell --run "cargo build --bins --features=io-engine-testing"'
+            sh 'nix-shell --run "./scripts/cargo-test.sh"'
           }
           post {
             always {
-              sh 'nix-shell --run "./scripts/clean-cargo-tests.sh" ci.nix'
+              sh 'nix-shell --run "./scripts/clean-cargo-tests.sh"'
               sh 'sudo ./scripts/check-coredumps.sh --since "${START_DATE}"'
             }
           }
@@ -208,12 +208,12 @@ pipeline {
             cleanWs()
             unstash 'source'
             sh 'printenv'
-            sh 'nix-shell --run "cargo build --bins --features=io-engine-testing" ci.nix'
-            sh 'nix-shell --run "./scripts/grpc-test.sh" ci.nix'
+            sh 'nix-shell --run "cargo build --bins --features=io-engine-testing"'
+            sh 'nix-shell --run "./scripts/grpc-test.sh"'
           }
           post {
             always {
-              sh 'nix-shell --run "./scripts/clean-cargo-tests.sh" ci.nix'
+              sh 'nix-shell --run "./scripts/clean-cargo-tests.sh"'
               junit '*-xunit-report.xml'
               sh 'sudo ./scripts/check-coredumps.sh --since "${START_DATE}"'
             }
@@ -254,12 +254,12 @@ pipeline {
             stage('build') {
               steps {
                 sh 'printenv'
-                sh 'nix-shell --run "cargo build --bins --features=io-engine-testing" ci.nix'
+                sh 'nix-shell --run "cargo build --bins --features=io-engine-testing"'
               }
             }
             stage('python setup') {
               steps {
-                sh 'nix-shell --run "./test/python/setup.sh" ci.nix'
+                sh 'nix-shell --run "./test/python/setup.sh"'
               }
             }
             stage('run tests') {
@@ -268,12 +268,12 @@ pipeline {
                 // Cleanup any existing containers.
                 // They could be lingering if there were previous test failures.
                 sh 'docker system prune -f'
-                sh 'nix-shell --run "./scripts/pytest-tests.sh" ci.nix'
+                sh 'nix-shell --run "./scripts/pytest-tests.sh"'
               }
               post {
                 always {
                   junit 'test/python/reports/**/*xunit-report.xml'
-                  sh 'nix-shell --run "./scripts/pytest-tests.sh --clean-all-exit" ci.nix'
+                  sh 'nix-shell --run "./scripts/pytest-tests.sh --clean-all-exit"'
                 }
               }
             }
