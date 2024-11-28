@@ -103,7 +103,7 @@ gettid = "0.1.3"
 async-process = { version = "2.3.0" }
 rstack = { version = "0.3.3" }
 tokio-stream = "0.1.16"
-rustls = { version = "0.23.16", default-features = false, features = ["ring"] }
+rustls = { version = "0.23.19", default-features = false, features = ["ring"] }
 either = "1.13.0"
 
 devinfo = { path = "../utils/dependencies/devinfo" }
