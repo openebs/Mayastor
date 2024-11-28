@@ -127,7 +127,7 @@ cargo build --release
 ```
 
 **Want to run or hack on Mayastor?** _You need more configuration!_ See
-[running][doc-running], then [testing][doc-testing].
+[running][doc-run], then [testing][doc-test].
 
 Whilst the nix develop will allow you to build mayastor exactly as the image build, it might not have all the necessary
 components required for testing.

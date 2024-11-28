@@ -1856,6 +1856,7 @@ dependencies = [
  "nix",
  "once_cell",
  "parking_lot",
+ "percent-encoding",
  "pin-utils",
  "prettytable-rs",
  "prost",
