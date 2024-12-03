@@ -4,29 +4,16 @@
 pub use config::{
     opts::{NexusOpts, NvmeBdevOpts},
     pool::PoolConfig,
-    Config,
-    ConfigSubsystem,
+    Config, ConfigSubsystem,
 };
 pub use nvmf::{
-    set_snapshot_time,
-    Error as NvmfError,
-    NvmeCpl,
-    NvmfReq,
-    NvmfSubsystem,
-    SubType,
+    set_snapshot_time, Error as NvmfError, NvmeCpl, NvmfReq, NvmfSubsystem, SubType,
     Target as NvmfTarget,
 };
-use spdk_rs::libspdk::{
-    spdk_add_subsystem,
-    spdk_add_subsystem_depend,
-    spdk_subsystem_depend,
-};
+use spdk_rs::libspdk::{spdk_add_subsystem, spdk_add_subsystem_depend, spdk_subsystem_depend};
 use std::mem::zeroed;
 
-pub use registration::{
-    registration_grpc::Registration,
-    RegistrationSubsystem,
-};
+pub use registration::{registration_grpc::Registration, RegistrationSubsystem};
 
 use crate::subsys::nvmf::Nvmf;
 

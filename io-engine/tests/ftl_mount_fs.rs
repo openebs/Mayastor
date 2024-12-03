@@ -81,7 +81,7 @@ async fn ftl_mount_fs_multiple() {
     //prepare_storage!();
     let (target, nvmf_dev) = create_connected_nvmf_nexus(ms).await;
 
-    for _i in 0 .. 10 {
+    for _i in 0..10 {
         common::mount_umount(&nvmf_dev).unwrap();
     }
 
@@ -103,7 +103,8 @@ pub fn csal_fio_run_verify(device: &str) -> Result<String, String> {
         "#,
         &vec![device.into()],
         &run_script::ScriptOptions::new(),
-    ).unwrap();
+    )
+    .unwrap();
     if exit == 0 {
         Ok(stdout)
     } else {
@@ -130,9 +131,7 @@ async fn ftl_mount_fs_fio() {
 }
 
 async fn create_nexus() {
-    let bdev_uri: String = format!(
-        "{FTL_URI_PREFIX}{FTL_BDEV}?bbdev={BASE_DEV}&cbdev={CACHE_DEV}"
-    );
+    let bdev_uri: String = format!("{FTL_URI_PREFIX}{FTL_BDEV}?bbdev={BASE_DEV}&cbdev={CACHE_DEV}");
     let ch = vec![bdev_uri];
     nexus_create("nexus", 8 * 1024 * 1024 * 1024, None, &ch)
         .await

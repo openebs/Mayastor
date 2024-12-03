@@ -1,8 +1,6 @@
 use crate::{
     context::{Context, OutputFormat},
-    parse_size,
-    ClientError,
-    GrpcStatus,
+    parse_size, ClientError, GrpcStatus,
 };
 use byte_unit::Byte;
 use clap::{Arg, ArgMatches, Command};
@@ -19,42 +17,42 @@ pub fn subcommands() -> Command {
             Arg::new("pool")
                 .required(true)
                 .index(1)
-                .help("Storage pool name"))
+                .help("Storage pool name"),
+        )
         .arg(
             Arg::new("name")
-                .required(true).index(2)
-                .help("Replica name"))
-
+                .required(true)
+                .index(2)
+                .help("Replica name"),
+        )
         .arg(
             Arg::new("protocol")
                 .short('p')
                 .long("protocol")
-
                 .value_name("PROTOCOL")
-                .help("Name of a protocol (nvmf) used for sharing the replica (default none)"))
+                .help("Name of a protocol (nvmf) used for sharing the replica (default none)"),
+        )
         .arg(
             Arg::new("size")
                 .short('s')
                 .long("size")
-
                 .required(true)
                 .value_name("NUMBER")
-                .help("Size of the replica"))
+                .help("Size of the replica"),
+        )
         .arg(
             Arg::new("thin")
                 .short('t')
                 .long("thin")
                 .action(clap::ArgAction::SetTrue)
-                .help("Whether replica is thin provisioned (default false)"))
+                .help("Whether replica is thin provisioned (default false)"),
+        )
         .arg(
             Arg::new("allowed-host")
                 .long("allowed-host")
-
                 .action(clap::ArgAction::Append)
                 .required(false)
-                .help(
-                    "NQN of hosts which are allowed to connect to the target",
-                ),
+                .help("NQN of hosts which are allowed to connect to the target"),
         );
 
     let create_v2 = Command::new("create2")
@@ -63,46 +61,48 @@ pub fn subcommands() -> Command {
             Arg::new("pool")
                 .required(true)
                 .index(1)
-                .help("Storage pool name"))
+                .help("Storage pool name"),
+        )
         .arg(
             Arg::new("name")
                 .required(true)
                 .index(2)
-                .help("Replica name"))
+                .help("Replica name"),
+        )
         .arg(
             Arg::new("uuid")
-                .required(true).index(3)
-                .help("Unique replica uuid"))
+                .required(true)
+                .index(3)
+                .help("Unique replica uuid"),
+        )
         .arg(
             Arg::new("protocol")
                 .short('p')
                 .long("protocol")
-
                 .value_name("PROTOCOL")
-                .help("Name of a protocol (nvmf) used for sharing the replica (default none)"))
+                .help("Name of a protocol (nvmf) used for sharing the replica (default none)"),
+        )
         .arg(
             Arg::new("size")
                 .short('s')
                 .long("size")
-
                 .required(true)
                 .value_name("NUMBER")
-                .help("Size of the replica"))
+                .help("Size of the replica"),
+        )
         .arg(
             Arg::new("thin")
                 .short('t')
                 .long("thin")
                 .action(clap::ArgAction::SetTrue)
-                .help("Whether replica is thin provisioned (default false)"))
+                .help("Whether replica is thin provisioned (default false)"),
+        )
         .arg(
             Arg::new("allowed-host")
                 .long("allowed-host")
-
                 .action(clap::ArgAction::Append)
                 .required(false)
-                .help(
-                    "NQN of hosts which are allowed to connect to the target",
-                ),
+                .help("NQN of hosts which are allowed to connect to the target"),
         );
 
     let destroy = Command::new("destroy").about("Destroy replica").arg(
@@ -112,24 +112,25 @@ pub fn subcommands() -> Command {
             .help("Replica uuid"),
     );
 
-    let share = Command::new("share").about("Share or unshare replica")
-        .arg(
-            Arg::new("name")
-                .required(true)
-                .index(1)
-                .help("Replica name"))
-        .arg(
-            Arg::new("protocol")
-                .required(true)
-                .index(2)
-                .help("Name of a protocol (nvmf) used for sharing or \"none\" to unshare the replica"))
-        .arg(
-            Arg::new("allowed-host")
-                .long("allowed-host")
-
-                .action(clap::ArgAction::Append)
-                .required(false)
-                .help("NQN of hosts which are allowed to connect to the target"));
+    let share =
+        Command::new("share")
+            .about("Share or unshare replica")
+            .arg(
+                Arg::new("name")
+                    .required(true)
+                    .index(1)
+                    .help("Replica name"),
+            )
+            .arg(Arg::new("protocol").required(true).index(2).help(
+                "Name of a protocol (nvmf) used for sharing or \"none\" to unshare the replica",
+            ))
+            .arg(
+                Arg::new("allowed-host")
+                    .long("allowed-host")
+                    .action(clap::ArgAction::Append)
+                    .required(false)
+                    .help("NQN of hosts which are allowed to connect to the target"),
+            );
 
     Command::new("replica")
         .subcommand_required(true)
@@ -154,16 +155,12 @@ pub async fn handler(ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
         ("share", args) => replica_share(ctx, args).await,
         ("stats", args) => replica_stat(ctx, args).await,
         (cmd, _) => {
-            Err(Status::not_found(format!("command {cmd} does not exist")))
-                .context(GrpcStatus)
+            Err(Status::not_found(format!("command {cmd} does not exist"))).context(GrpcStatus)
         }
     }
 }
 
-async fn replica_create(
-    mut ctx: Context,
-    matches: &ArgMatches,
-) -> crate::Result<()> {
+async fn replica_create(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     let pool = matches
         .get_one::<String>("pool")
         .ok_or_else(|| ClientError::MissingValue {
@@ -177,16 +174,18 @@ async fn replica_create(
         })?
         .to_owned();
     let size =
-        parse_size(matches.get_one::<String>("size").ok_or_else(|| {
-            ClientError::MissingValue {
-                field: "size".to_string(),
-            }
-        })?)
+        parse_size(
+            matches
+                .get_one::<String>("size")
+                .ok_or_else(|| ClientError::MissingValue {
+                    field: "size".to_string(),
+                })?,
+        )
         .map_err(|s| Status::invalid_argument(format!("Bad size '{s}'")))
         .context(GrpcStatus)?;
     let thin = matches.get_flag("thin");
-    let share = parse_replica_protocol(matches.get_one::<String>("protocol"))
-        .context(GrpcStatus)?;
+    let share =
+        parse_replica_protocol(matches.get_one::<String>("protocol")).context(GrpcStatus)?;
     let allowed_hosts = matches
         .get_many::<String>("allowed-host")
         .unwrap_or_default()
@@ -221,10 +220,7 @@ async fn replica_create(
     Ok(())
 }
 
-async fn replica_create_v2(
-    mut ctx: Context,
-    matches: &ArgMatches,
-) -> crate::Result<()> {
+async fn replica_create_v2(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     let pool = matches
         .get_one::<String>("pool")
         .ok_or_else(|| ClientError::MissingValue {
@@ -244,16 +240,18 @@ async fn replica_create_v2(
         })?
         .to_owned();
     let size =
-        parse_size(matches.get_one::<String>("size").ok_or_else(|| {
-            ClientError::MissingValue {
-                field: "size".to_string(),
-            }
-        })?)
+        parse_size(
+            matches
+                .get_one::<String>("size")
+                .ok_or_else(|| ClientError::MissingValue {
+                    field: "size".to_string(),
+                })?,
+        )
         .map_err(|s| Status::invalid_argument(format!("Bad size '{s}'")))
         .context(GrpcStatus)?;
     let thin = matches.get_flag("thin");
-    let share = parse_replica_protocol(matches.get_one::<String>("protocol"))
-        .context(GrpcStatus)?;
+    let share =
+        parse_replica_protocol(matches.get_one::<String>("protocol")).context(GrpcStatus)?;
     let allowed_hosts = matches
         .get_many::<String>("allowed-host")
         .unwrap_or_default()
@@ -269,8 +267,7 @@ async fn replica_create_v2(
         size: size.as_u64(),
         allowed_hosts,
     };
-    let response =
-        ctx.client.create_replica_v2(rq).await.context(GrpcStatus)?;
+    let response = ctx.client.create_replica_v2(rq).await.context(GrpcStatus)?;
 
     match ctx.output {
         OutputFormat::Json => {
@@ -290,10 +287,7 @@ async fn replica_create_v2(
     Ok(())
 }
 
-async fn replica_destroy(
-    mut ctx: Context,
-    matches: &ArgMatches,
-) -> crate::Result<()> {
+async fn replica_destroy(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     let uuid = matches
         .get_one::<String>("uuid")
         .ok_or_else(|| ClientError::MissingValue {
@@ -303,9 +297,7 @@ async fn replica_destroy(
 
     let response = ctx
         .client
-        .destroy_replica(rpc::DestroyReplicaRequest {
-            uuid: uuid.clone(),
-        })
+        .destroy_replica(rpc::DestroyReplicaRequest { uuid: uuid.clone() })
         .await
         .context(GrpcStatus)?;
 
@@ -327,10 +319,7 @@ async fn replica_destroy(
     Ok(())
 }
 
-async fn replica_list(
-    mut ctx: Context,
-    _matches: &ArgMatches,
-) -> crate::Result<()> {
+async fn replica_list(mut ctx: Context, _matches: &ArgMatches) -> crate::Result<()> {
     let response = ctx
         .client
         .list_replicas(rpc::Null {})
@@ -379,10 +368,7 @@ async fn replica_list(
     Ok(())
 }
 
-async fn replica_list2(
-    mut ctx: Context,
-    _matches: &ArgMatches,
-) -> crate::Result<()> {
+async fn replica_list2(mut ctx: Context, _matches: &ArgMatches) -> crate::Result<()> {
     let response = ctx
         .client
         .list_replicas_v2(rpc::Null {})
@@ -432,13 +418,10 @@ async fn replica_list2(
     Ok(())
 }
 
-async fn replica_share(
-    mut ctx: Context,
-    matches: &ArgMatches,
-) -> crate::Result<()> {
+async fn replica_share(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     let name = matches.get_one::<String>("name").unwrap().to_owned();
-    let share = parse_replica_protocol(matches.get_one::<String>("protocol"))
-        .context(GrpcStatus)?;
+    let share =
+        parse_replica_protocol(matches.get_one::<String>("protocol")).context(GrpcStatus)?;
     let allowed_hosts = matches
         .get_many::<String>("allowed-host")
         .unwrap_or_default()
@@ -473,10 +456,7 @@ async fn replica_share(
     Ok(())
 }
 
-async fn replica_stat(
-    mut ctx: Context,
-    _matches: &ArgMatches,
-) -> crate::Result<()> {
+async fn replica_stat(mut ctx: Context, _matches: &ArgMatches) -> crate::Result<()> {
     let response = ctx
         .client
         .stat_replicas(rpc::Null {})
@@ -500,15 +480,13 @@ async fn replica_stat(
                 return Ok(());
             }
 
-            let header =
-                vec!["POOL", "NAME", "RDCNT", "WRCNT", "RDBYTES", "WRBYTES"];
+            let header = vec!["POOL", "NAME", "RDCNT", "WRCNT", "RDBYTES", "WRBYTES"];
             let table = replicas
                 .iter()
                 .map(|replica| {
                     let stats = replica.stats.as_ref().unwrap();
                     let read = ctx.units(Byte::from_u64(stats.bytes_read));
-                    let written =
-                        ctx.units(Byte::from_u64(stats.bytes_written));
+                    let written = ctx.units(Byte::from_u64(stats.bytes_written));
                     vec![
                         replica.pool.clone(),
                         replica.uuid.clone(),

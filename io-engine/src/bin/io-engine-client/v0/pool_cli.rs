@@ -1,7 +1,6 @@
 use crate::{
     context::{Context, OutputFormat},
-    ClientError,
-    GrpcStatus,
+    ClientError, GrpcStatus,
 };
 use byte_unit::Byte;
 use clap::{Arg, ArgMatches, Command};
@@ -48,8 +47,7 @@ pub async fn handler(ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
         ("destroy", args) => destroy(ctx, args).await,
         ("list", args) => list(ctx, args).await,
         (cmd, _) => {
-            Err(Status::not_found(format!("command {cmd} does not exist")))
-                .context(GrpcStatus)
+            Err(Status::not_found(format!("command {cmd} does not exist"))).context(GrpcStatus)
         }
     }
 }
@@ -106,9 +104,7 @@ async fn destroy(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
 
     let response = ctx
         .client
-        .destroy_pool(rpc::DestroyPoolRequest {
-            name: name.clone(),
-        })
+        .destroy_pool(rpc::DestroyPoolRequest { name: name.clone() })
         .await
         .context(GrpcStatus)?;
 
@@ -171,10 +167,7 @@ async fn list(mut ctx: Context, _matches: &ArgMatches) -> crate::Result<()> {
                     ]
                 })
                 .collect();
-            ctx.print_list(
-                vec!["NAME", "STATE", ">CAPACITY", ">USED", "DISKS"],
-                table,
-            );
+            ctx.print_list(vec!["NAME", "STATE", ">CAPACITY", ">USED", "DISKS"], table);
         }
     };
 

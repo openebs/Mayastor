@@ -9,13 +9,9 @@ use nix::errno::Errno;
 
 use spdk_rs::{
     libspdk::{
-        spdk_bdev_io,
-        spdk_bdev_io_complete_nvme_status,
-        spdk_io_channel,
-        SPDK_NVME_SC_ABORTED_SQ_DELETION,
-        SPDK_NVME_SC_CAPACITY_EXCEEDED,
-        SPDK_NVME_SC_INVALID_OPCODE,
-        SPDK_NVME_SC_RESERVATION_CONFLICT,
+        spdk_bdev_io, spdk_bdev_io_complete_nvme_status, spdk_io_channel,
+        SPDK_NVME_SC_ABORTED_SQ_DELETION, SPDK_NVME_SC_CAPACITY_EXCEEDED,
+        SPDK_NVME_SC_INVALID_OPCODE, SPDK_NVME_SC_RESERVATION_CONFLICT,
     },
     BdevIo,
 };
@@ -23,18 +19,8 @@ use spdk_rs::{
 use super::{FaultReason, IOLogChannel, Nexus, NexusChannel, NEXUS_PRODUCT_ID};
 
 use crate::core::{
-    BlockDevice,
-    BlockDeviceHandle,
-    CoreError,
-    Cores,
-    IoCompletionStatus,
-    IoStatus,
-    IoSubmissionFailure,
-    IoType,
-    LvolFailure,
-    Mthread,
-    NvmeStatus,
-    ReadOptions,
+    BlockDevice, BlockDeviceHandle, CoreError, Cores, IoCompletionStatus, IoStatus,
+    IoSubmissionFailure, IoType, LvolFailure, Mthread, NvmeStatus, ReadOptions,
 };
 
 #[cfg(feature = "nexus-io-tracing")]
@@ -187,11 +173,9 @@ impl<'n> NexusBio<'n> {
         if let Err(_e) = match self.io_type() {
             IoType::Read => self.readv(),
             // these IOs are submitted to all the underlying children
-            IoType::Write
-            | IoType::WriteZeros
-            | IoType::Reset
-            | IoType::Unmap
-            | IoType::Flush => self.submit_all(),
+            IoType::Write | IoType::WriteZeros | IoType::Reset | IoType::Unmap | IoType::Flush => {
+                self.submit_all()
+            }
             IoType::NvmeAdmin => {
                 self.fail();
                 Err(CoreError::NotSupported {
@@ -224,11 +208,7 @@ impl<'n> NexusBio<'n> {
     }
 
     /// Invoked when a nexus IO completes.
-    fn child_completion(
-        device: &dyn BlockDevice,
-        status: IoCompletionStatus,
-        ctx: *mut c_void,
-    ) {
+    fn child_completion(device: &dyn BlockDevice, status: IoCompletionStatus, ctx: *mut c_void) {
         let mut nexus_io = NexusBio::from(ctx as *mut spdk_bdev_io);
         nexus_io.complete(device, status);
     }
@@ -246,11 +226,7 @@ impl<'n> NexusBio<'n> {
     }
 
     /// Completion handler for the nexus when a child I/O completes.
-    fn complete(
-        &mut self,
-        child: &dyn BlockDevice,
-        status: IoCompletionStatus,
-    ) {
+    fn complete(&mut self, child: &dyn BlockDevice, status: IoCompletionStatus) {
         #[cfg(feature = "fault-injection")]
         let status = self.inject_completion_error(child, status);
 
@@ -295,10 +271,9 @@ impl<'n> NexusBio<'n> {
     fn fail(&self) {
         match self.nexus().last_error {
             IoCompletionStatus::NvmeError(s) => self.fail_nvme_status(s),
-            IoCompletionStatus::LvolError(LvolFailure::NoSpace) => self
-                .fail_nvme_status(NvmeStatus::Generic(
-                    SPDK_NVME_SC_CAPACITY_EXCEEDED,
-                )),
+            IoCompletionStatus::LvolError(LvolFailure::NoSpace) => {
+                self.fail_nvme_status(NvmeStatus::Generic(SPDK_NVME_SC_CAPACITY_EXCEEDED))
+            }
             _ => self.0.fail(),
         }
     }
@@ -361,10 +336,7 @@ impl<'n> NexusBio<'n> {
 
     /// submit a read operation to one of the children of this nexus
     #[inline]
-    fn submit_read(
-        &self,
-        hdl: &dyn BlockDeviceHandle,
-    ) -> Result<(), CoreError> {
+    fn submit_read(&self, hdl: &dyn BlockDeviceHandle) -> Result<(), CoreError> {
         #[cfg(feature = "fault-injection")]
         self.inject_submission_error(hdl)?;
 
@@ -394,15 +366,11 @@ impl<'n> NexusBio<'n> {
                 // TODO: ENOMEM and ENXIO should be handled differently and
                 // device should not be retired in case of ENOMEM.
                 let device = hdl.get_device().device_name();
-                error!(
-                    "{self:?}: read I/O to '{device}' submission failed: {r:?}"
-                );
+                error!("{self:?}: read I/O to '{device}' submission failed: {r:?}");
 
                 self.fault_device(
                     &device,
-                    IoCompletionStatus::IoSubmissionError(
-                        IoSubmissionFailure::Read,
-                    ),
+                    IoCompletionStatus::IoSubmissionError(IoSubmissionFailure::Read),
                 );
                 r
             } else {
@@ -410,9 +378,7 @@ impl<'n> NexusBio<'n> {
                 r
             }
         } else {
-            error!(
-                "{self:?}: read I/O submission failed: no children available"
-            );
+            error!("{self:?}: read I/O submission failed: no children available");
 
             Err(CoreError::NoDevicesAvailable {})
         }
@@ -503,10 +469,7 @@ impl<'n> NexusBio<'n> {
     }
 
     #[inline]
-    fn submit_write(
-        &self,
-        hdl: &dyn BlockDeviceHandle,
-    ) -> Result<(), CoreError> {
+    fn submit_write(&self, hdl: &dyn BlockDeviceHandle) -> Result<(), CoreError> {
         trace_nexus_io!(
             "Submitting: {self:?} -> {name}",
             name = hdl.get_device().device_name()
@@ -525,10 +488,7 @@ impl<'n> NexusBio<'n> {
     }
 
     #[inline]
-    fn submit_unmap(
-        &self,
-        hdl: &dyn BlockDeviceHandle,
-    ) -> Result<(), CoreError> {
+    fn submit_unmap(&self, hdl: &dyn BlockDeviceHandle) -> Result<(), CoreError> {
         trace_nexus_io!(
             "Submitting: {self:?} -> {name}",
             name = hdl.get_device().device_name()
@@ -543,10 +503,7 @@ impl<'n> NexusBio<'n> {
     }
 
     #[inline]
-    fn submit_write_zeroes(
-        &self,
-        hdl: &dyn BlockDeviceHandle,
-    ) -> Result<(), CoreError> {
+    fn submit_write_zeroes(&self, hdl: &dyn BlockDeviceHandle) -> Result<(), CoreError> {
         trace_nexus_io!(
             "Submitting: {self:?} -> {name}",
             name = hdl.get_device().device_name()
@@ -564,10 +521,7 @@ impl<'n> NexusBio<'n> {
     }
 
     #[inline]
-    fn submit_reset(
-        &self,
-        hdl: &dyn BlockDeviceHandle,
-    ) -> Result<(), CoreError> {
+    fn submit_reset(&self, hdl: &dyn BlockDeviceHandle) -> Result<(), CoreError> {
         trace_nexus_io!(
             "Submitting: {self:?} -> {name}",
             name = hdl.get_device().device_name()
@@ -577,10 +531,7 @@ impl<'n> NexusBio<'n> {
     }
 
     #[inline]
-    fn submit_flush(
-        &self,
-        hdl: &dyn BlockDeviceHandle,
-    ) -> Result<(), CoreError> {
+    fn submit_flush(&self, hdl: &dyn BlockDeviceHandle) -> Result<(), CoreError> {
         trace_nexus_io!(
             "Submitting: {self:?} -> {name}",
             name = hdl.get_device().device_name()
@@ -647,9 +598,7 @@ impl<'n> NexusBio<'n> {
 
             if let Some(log) = self.fault_device(
                 &device,
-                IoCompletionStatus::IoSubmissionError(
-                    IoSubmissionFailure::Write,
-                ),
+                IoCompletionStatus::IoSubmissionError(IoSubmissionFailure::Write),
             ) {
                 self.log_io(&log);
             }
@@ -666,9 +615,7 @@ impl<'n> NexusBio<'n> {
             self.ctx_mut().status = IoStatus::Success;
         } else {
             debug_assert_eq!(self.ctx().in_flight, 0);
-            error!(
-                "{self:?}: failing nexus I/O: all child I/O submissions failed"
-            );
+            error!("{self:?}: failing nexus I/O: all child I/O submissions failed");
             self.fail();
         }
 
@@ -702,9 +649,7 @@ impl<'n> NexusBio<'n> {
         io_status: IoCompletionStatus,
     ) -> Option<IOLogChannel> {
         let reason = match io_status {
-            IoCompletionStatus::LvolError(LvolFailure::NoSpace) => {
-                FaultReason::NoSpace
-            }
+            IoCompletionStatus::LvolError(LvolFailure::NoSpace) => FaultReason::NoSpace,
             _ => FaultReason::IoError,
         };
 
@@ -712,11 +657,7 @@ impl<'n> NexusBio<'n> {
     }
 
     /// TODO
-    fn completion_error(
-        &mut self,
-        child: &dyn BlockDevice,
-        status: IoCompletionStatus,
-    ) {
+    fn completion_error(&mut self, child: &dyn BlockDevice, status: IoCompletionStatus) {
         // We have experienced a failure on one of the child devices. We need to
         // ensure we do not submit more IOs to this child. We do not
         // need to tell other cores about this because
@@ -731,9 +672,7 @@ impl<'n> NexusBio<'n> {
 
         if matches!(
             status,
-            IoCompletionStatus::NvmeError(NvmeStatus::Generic(
-                SPDK_NVME_SC_INVALID_OPCODE
-            ))
+            IoCompletionStatus::NvmeError(NvmeStatus::Generic(SPDK_NVME_SC_INVALID_OPCODE))
         ) {
             warn!(
                 "{self:?}: invalid opcode error on '{dev}', skipping retire",
@@ -746,9 +685,7 @@ impl<'n> NexusBio<'n> {
         // replica should not be retired.
         if matches!(
             status,
-            IoCompletionStatus::NvmeError(NvmeStatus::Generic(
-                SPDK_NVME_SC_RESERVATION_CONFLICT
-            ))
+            IoCompletionStatus::NvmeError(NvmeStatus::Generic(SPDK_NVME_SC_RESERVATION_CONFLICT))
         ) {
             warn!(
                 "{self:?}: reservation conflict on '{dev}', shutdown nexus",
@@ -760,9 +697,7 @@ impl<'n> NexusBio<'n> {
 
         if matches!(
             status,
-            IoCompletionStatus::NvmeError(NvmeStatus::Generic(
-                SPDK_NVME_SC_ABORTED_SQ_DELETION
-            ))
+            IoCompletionStatus::NvmeError(NvmeStatus::Generic(SPDK_NVME_SC_ABORTED_SQ_DELETION))
         ) {
             warn!(
                 "{self:?}: aborted submission queue deleted on '{dev}'",
@@ -784,14 +719,9 @@ impl<'n> NexusBio<'n> {
     /// Checks if an error is to be injected upon submission.
     #[cfg(feature = "fault-injection")]
     #[inline]
-    fn inject_submission_error(
-        &self,
-        hdl: &dyn BlockDeviceHandle,
-    ) -> Result<(), CoreError> {
+    fn inject_submission_error(&self, hdl: &dyn BlockDeviceHandle) -> Result<(), CoreError> {
         use crate::core::fault_injection::{
-            inject_submission_error,
-            FaultDomain::NexusChild,
-            InjectIoCtx,
+            inject_submission_error, FaultDomain::NexusChild, InjectIoCtx,
         };
 
         inject_submission_error(&InjectIoCtx::with_iovs(
@@ -813,9 +743,7 @@ impl<'n> NexusBio<'n> {
         status: IoCompletionStatus,
     ) -> IoCompletionStatus {
         use crate::core::fault_injection::{
-            inject_completion_error,
-            FaultDomain::NexusChild,
-            InjectIoCtx,
+            inject_completion_error, FaultDomain::NexusChild, InjectIoCtx,
         };
 
         inject_completion_error(

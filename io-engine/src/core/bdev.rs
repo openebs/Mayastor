@@ -15,12 +15,7 @@ use crate::{
     bdev_api::bdev_uri_eq,
     core::{
         share::{NvmfShareProps, Protocol, Share, UpdateProps},
-        BlockDeviceIoStats,
-        CoreError,
-        DescriptorGuard,
-        PtplProps,
-        ShareNvmf,
-        UnshareNvmf,
+        BlockDeviceIoStats, CoreError, DescriptorGuard, PtplProps, ShareNvmf, UnshareNvmf,
     },
     subsys::NvmfSubsystem,
     target::nvmf,
@@ -69,9 +64,7 @@ where
 {
     /// TODO
     pub(crate) fn new(b: spdk_rs::Bdev<T>) -> Self {
-        Self {
-            inner: b,
-        }
+        Self { inner: b }
     }
 
     /// Constructs a Bdev from a raw SPDK pointer.
@@ -79,17 +72,12 @@ where
         if bdev.is_null() {
             None
         } else {
-            unsafe {
-                Some(Self::new(spdk_rs::Bdev::unsafe_from_inner_ptr(bdev)))
-            }
+            unsafe { Some(Self::new(spdk_rs::Bdev::unsafe_from_inner_ptr(bdev))) }
         }
     }
 
     /// Opens a Bdev by its name in read_write mode.
-    pub fn open_by_name(
-        name: &str,
-        read_write: bool,
-    ) -> Result<DescriptorGuard<T>, CoreError> {
+    pub fn open_by_name(name: &str, read_write: bool) -> Result<DescriptorGuard<T>, CoreError> {
         if let Some(bdev) = Self::lookup_by_name(name) {
             bdev.open(read_write)
         } else {
@@ -102,19 +90,10 @@ where
     /// Opens the current Bdev.
     /// A Bdev can be opened multiple times resulting in a new descriptor for
     /// each call.
-    pub fn open(
-        &self,
-        read_write: bool,
-    ) -> Result<DescriptorGuard<T>, CoreError> {
-        match spdk_rs::BdevDesc::<T>::open(
-            self.name(),
-            read_write,
-            bdev_event_callback,
-        ) {
+    pub fn open(&self, read_write: bool) -> Result<DescriptorGuard<T>, CoreError> {
+        match spdk_rs::BdevDesc::<T>::open(self.name(), read_write, bdev_event_callback) {
             Ok(d) => Ok(DescriptorGuard::new(d)),
-            Err(err) => Err(CoreError::OpenBdev {
-                source: err,
-            }),
+            Err(err) => Err(CoreError::OpenBdev { source: err }),
         }
     }
 
@@ -179,19 +158,16 @@ where
                 unmap_latency_ticks: stat.unmap_latency_ticks,
                 tick_rate: self.get_tick_rate(),
             }),
-            Err(err) => Err(CoreError::DeviceStatisticsFailed {
-                source: err,
-            }),
+            Err(err) => Err(CoreError::DeviceStatisticsFailed { source: err }),
         }
     }
 
     /// Resets io stats for a given Bdev.
     pub async fn reset_bdev_io_stats(&self) -> Result<(), CoreError> {
-        self.inner.stats_reset_async().await.map_err(|err| {
-            CoreError::DeviceStatisticsFailed {
-                source: err,
-            }
-        })
+        self.inner
+            .stats_reset_async()
+            .await
+            .map_err(|err| CoreError::DeviceStatisticsFailed { source: err })
     }
 }
 
@@ -216,8 +192,7 @@ where
 
         // todo: add option to use uuid here, will allow for the replica uuid to
         // be used!
-        let subsystem =
-            NvmfSubsystem::try_from_with(me, ptpl).context(ShareNvmf {})?;
+        let subsystem = NvmfSubsystem::try_from_with(me, ptpl).context(ShareNvmf {})?;
 
         if let Some((cntlid_min, cntlid_max)) = props.cntlid_range() {
             subsystem
@@ -246,8 +221,7 @@ where
     ) -> Result<(), Self::Error> {
         match self.shared() {
             Some(Protocol::Nvmf) => {
-                if let Some(subsystem) = NvmfSubsystem::nqn_lookup(self.name())
-                {
+                if let Some(subsystem) = NvmfSubsystem::nqn_lookup(self.name()) {
                     let props = UpdateProps::from(props.into());
                     subsystem.allow_any(props.host_any());
                     subsystem
@@ -300,12 +274,10 @@ where
     /// TODO
     fn allowed_hosts(&self) -> Vec<String> {
         match self.shared() {
-            Some(Protocol::Nvmf) => {
-                match NvmfSubsystem::nqn_lookup(self.name()) {
-                    Some(subsystem) => subsystem.allowed_hosts(),
-                    None => vec![],
-                }
-            }
+            Some(Protocol::Nvmf) => match NvmfSubsystem::nqn_lookup(self.name()) {
+                Some(subsystem) => subsystem.allowed_hosts(),
+                None => vec![],
+            },
             _ => vec![],
         }
     }
@@ -313,9 +285,7 @@ where
     /// return the URI that was used to construct the bdev
     fn bdev_uri(&self) -> Option<url::Url> {
         self.bdev_uri_original().map(|mut uri| {
-            if !uri.query_pairs().any(|e| e.0 == "uuid")
-                && !self.uuid().is_nil()
-            {
+            if !uri.query_pairs().any(|e| e.0 == "uuid") && !self.uuid().is_nil() {
                 uri.query_pairs_mut()
                     .append_pair("uuid", &self.uuid_as_string());
             }
@@ -436,11 +406,7 @@ pub struct BdevStats {
 impl BdevStats {
     /// Create a new `Self` from the given parts.
     pub fn new(name: String, uuid: String, stats: BlockDeviceIoStats) -> Self {
-        Self {
-            name,
-            uuid,
-            stats,
-        }
+        Self { name, uuid, stats }
     }
 }
 

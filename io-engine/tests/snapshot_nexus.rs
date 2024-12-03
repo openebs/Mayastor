@@ -11,17 +11,10 @@ use common::{
             bdev::ListBdevOptions,
             pool::CreatePoolRequest,
             replica::{CreateReplicaRequest, ListReplicaOptions},
-            snapshot::{
-                ListSnapshotsRequest,
-                NexusCreateSnapshotReplicaDescriptor,
-                SnapshotInfo,
-            },
+            snapshot::{ListSnapshotsRequest, NexusCreateSnapshotReplicaDescriptor, SnapshotInfo},
             GrpcConnect,
         },
-        Binary,
-        Builder,
-        ComposeTest,
-        MayastorTest,
+        Binary, Builder, ComposeTest, MayastorTest,
     },
     nexus::NexusBuilder,
     nvme::{list_mayastor_nvme_devices, nvme_connect, nvme_disconnect_all},
@@ -31,14 +24,8 @@ use common::{
 
 use io_engine::{
     bdev::{
-        device_create,
-        device_destroy,
-        device_open,
-        nexus::{
-            nexus_create,
-            nexus_lookup_mut,
-            NexusReplicaSnapshotDescriptor,
-        },
+        device_create, device_destroy, device_open,
+        nexus::{nexus_create, nexus_lookup_mut, NexusReplicaSnapshotDescriptor},
         Nexus,
     },
     constants::NVME_NQN_PREFIX,
@@ -51,11 +38,8 @@ use nix::errno::Errno;
 use io_engine_api::v1::{
     replica::list_replica_options,
     snapshot::{
-        destroy_snapshot_request::Pool,
-        list_snapshots_request,
-        CreateReplicaSnapshotRequest,
-        CreateSnapshotCloneRequest,
-        DestroySnapshotRequest,
+        destroy_snapshot_request::Pool, list_snapshots_request, CreateReplicaSnapshotRequest,
+        CreateSnapshotCloneRequest, DestroySnapshotRequest,
     },
 };
 use std::{pin::Pin, str};
@@ -178,11 +162,7 @@ async fn launch_instance(create_replicas: bool) -> (ComposeTest, Vec<String>) {
     let mut bdev_urls = Vec::new();
 
     for n in [replica1_name(), replica2_name()] {
-        let bdev_url = format!(
-            "nvmf://{}:8420/{NVME_NQN_PREFIX}:{}",
-            ms1.endpoint.ip(),
-            n,
-        );
+        let bdev_url = format!("nvmf://{}:8420/{NVME_NQN_PREFIX}:{}", ms1.endpoint.ip(), n,);
 
         bdev_urls.push(bdev_url);
     }
@@ -296,8 +276,7 @@ async fn test_replica_handle_snapshot() {
 
     ms.spawn(async move {
         let device_name = create_device(&urls[0]).await;
-        let descr = device_open(&device_name, false)
-            .expect("Can't open remote lvol device");
+        let descr = device_open(&device_name, false).expect("Can't open remote lvol device");
         let handle = descr.into_handle().unwrap();
 
         handle
@@ -338,9 +317,7 @@ async fn test_list_no_snapshots() {
     // Make sure no devices exist.
     let bdevs = ms1
         .bdev
-        .list(ListBdevOptions {
-            name: None,
-        })
+        .list(ListBdevOptions { name: None })
         .await
         .expect("Failed to list existing devices")
         .into_inner()
@@ -364,10 +341,7 @@ async fn test_list_no_snapshots() {
     assert_eq!(snapshots.len(), 0, "Some snapshots present");
 }
 
-fn check_nexus_snapshot_status(
-    res: &NexusSnapshotStatus,
-    status: &Vec<(String, u32)>,
-) {
+fn check_nexus_snapshot_status(res: &NexusSnapshotStatus, status: &Vec<(String, u32)>) {
     assert_eq!(
         res.replicas_skipped.len(),
         0,
@@ -390,10 +364,7 @@ fn check_nexus_snapshot_status(
         assert!(
             res.replicas_done.iter().any(|r| {
                 if r.replica_uuid.eq(uuid) {
-                    assert_eq!(
-                        r.status, *e,
-                        "Replica snapshot status doesn't match"
-                    );
+                    assert_eq!(r.status, *e, "Replica snapshot status doesn't match");
                     true
                 } else {
                     false
@@ -686,14 +657,9 @@ async fn test_snapshot_ancestor_usage() {
     tokio::spawn(async move {
         let device = get_mayastor_nvme_device();
 
-        test_write_to_file(
-            device,
-            DataSize::default(),
-            1,
-            DataSize::from_mb(1),
-        )
-        .await
-        .expect("Failed to write to nexus");
+        test_write_to_file(device, DataSize::default(), 1, DataSize::from_mb(1))
+            .await
+            .expect("Failed to write to nexus");
 
         s.send(()).expect("Failed to notify the waiter");
     });
@@ -728,15 +694,13 @@ async fn test_snapshot_ancestor_usage() {
     );
 
     assert_eq!(
-        usage.num_allocated_clusters_snapshots,
-        usage2.num_allocated_clusters_snapshots,
+        usage.num_allocated_clusters_snapshots, usage2.num_allocated_clusters_snapshots,
         "Amount of clusters allocated by snapshots has changed"
     );
 
     // Create a second snapshot after data has been written to nexus.
     ms.spawn(async move {
-        let nexus =
-            nexus_lookup_mut(&nexus_name()).expect("Can't find the nexus");
+        let nexus = nexus_lookup_mut(&nexus_name()).expect("Can't find the nexus");
 
         let snapshot_params = SnapshotParams::new(
             Some("e62".to_string()),
@@ -841,8 +805,7 @@ async fn test_snapshot_ancestor_usage() {
     // Create the third snapshot and make sure it correctly references space of
     // 2 pre-existing snapshots.
     ms.spawn(async move {
-        let nexus =
-            nexus_lookup_mut(&nexus_name()).expect("Can't find the nexus");
+        let nexus = nexus_lookup_mut(&nexus_name()).expect("Can't find the nexus");
 
         let snapshot_params = SnapshotParams::new(
             Some("e63".to_string()),

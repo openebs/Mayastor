@@ -64,11 +64,7 @@ pub struct ControllerStateMachine {
 #[derive(Debug, Snafu, Clone)]
 #[snafu(visibility(pub(crate)), context(suffix(false)))]
 pub enum ControllerStateMachineError {
-    #[snafu(display(
-        "invalid transition from {:?} to {:?}",
-        current_state,
-        new_state
-    ))]
+    #[snafu(display("invalid transition from {:?} to {:?}", current_state, new_state))]
     ControllerStateTransitionError {
         current_state: NvmeControllerState,
         new_state: NvmeControllerState,
@@ -88,10 +84,7 @@ pub enum ControllerStateMachineError {
 
 /// Check if a transition exists between two given states.
 /// Initial state: New, final state: Unconfigured.
-fn check_transition(
-    from: NvmeControllerState,
-    to: NvmeControllerState,
-) -> bool {
+fn check_transition(from: NvmeControllerState, to: NvmeControllerState) -> bool {
     use NvmeControllerState::*;
     match from {
         New => matches!(to, Initializing),

@@ -8,12 +8,8 @@ use crate::{
     error::NvmeError,
     nvme_device::NvmeDevice,
     nvme_tree::{
-        NvmeCtrlrIterator,
-        NvmeHostIterator,
-        NvmeNamespaceInCtrlrIterator,
-        NvmeNamespaceIterator,
-        NvmeRoot,
-        NvmeSubsystemIterator,
+        NvmeCtrlrIterator, NvmeHostIterator, NvmeNamespaceInCtrlrIterator, NvmeNamespaceIterator,
+        NvmeRoot, NvmeSubsystemIterator,
     },
 };
 
@@ -24,9 +20,7 @@ pub struct NvmeStringWrapper {
 
 impl NvmeStringWrapper {
     pub fn new(s: *mut i8) -> Self {
-        NvmeStringWrapper {
-            s,
-        }
+        NvmeStringWrapper { s }
     }
     pub fn as_ptr(&self) -> *const i8 {
         self.s
@@ -79,9 +73,7 @@ impl TryFrom<&str> for NvmeTarget {
     type Error = NvmeError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let url = Url::parse(value).map_err(|source| NvmeError::UrlError {
-            source,
-        })?;
+        let url = Url::parse(value).map_err(|source| NvmeError::UrlError { source })?;
 
         let trtype = match url.scheme() {
             "nvmf" | "nvmf+tcp" => Ok(NvmeTransportType::Tcp),
@@ -135,29 +127,17 @@ impl NvmeTarget {
     /// Returns Ok on successful connect
     pub fn connect(&self) -> Result<(), NvmeError> {
         let r = NvmeRoot::new(unsafe { crate::nvme_scan(std::ptr::null()) });
-        let hostid =
-            NvmeStringWrapper::new(unsafe { crate::nvmf_hostid_from_file() });
+        let hostid = NvmeStringWrapper::new(unsafe { crate::nvmf_hostid_from_file() });
 
         let hostnqn = match self.hostnqn_autogen {
-            true => NvmeStringWrapper::new(unsafe {
-                crate::nvmf_hostnqn_generate()
-            }),
-            false => NvmeStringWrapper::new(unsafe {
-                crate::nvmf_hostnqn_from_file()
-            }),
+            true => NvmeStringWrapper::new(unsafe { crate::nvmf_hostnqn_generate() }),
+            false => NvmeStringWrapper::new(unsafe { crate::nvmf_hostnqn_from_file() }),
         };
 
-        let h = unsafe {
-            crate::nvme_lookup_host(
-                r.as_mut_ptr(),
-                hostnqn.as_ptr(),
-                hostid.as_ptr(),
-            )
-        };
+        let h =
+            unsafe { crate::nvme_lookup_host(r.as_mut_ptr(), hostnqn.as_ptr(), hostid.as_ptr()) };
         if h.is_null() {
-            return Err(NvmeError::LookupHostError {
-                rc: -libc::ENOMEM,
-            });
+            return Err(NvmeError::LookupHostError { rc: -libc::ENOMEM });
         }
 
         let subsysnqn = std::ffi::CString::new(self.subsysnqn.clone()).unwrap();
@@ -178,9 +158,7 @@ impl NvmeTarget {
             )
         };
         if nvme_ctrl.is_null() {
-            return Err(NvmeError::CreateCtrlrError {
-                rc: -libc::ENOMEM,
-            });
+            return Err(NvmeError::CreateCtrlrError { rc: -libc::ENOMEM });
         }
         let cfg = crate::nvme_fabrics_config {
             host_traddr,
@@ -202,9 +180,7 @@ impl NvmeTarget {
         };
         let ret = unsafe { crate::nvmf_add_ctrl(h, nvme_ctrl, &cfg) };
         if ret != 0 {
-            return Err(NvmeError::AddCtrlrError {
-                rc: ret,
-            });
+            return Err(NvmeError::AddCtrlrError { rc: ret });
         }
         Ok(())
     }
@@ -212,23 +188,16 @@ impl NvmeTarget {
     /// List block devices for this target
     ///
     /// `retries`: number of times to retry until at least one device is found
-    pub fn block_devices(
-        &self,
-        mut retries: usize,
-    ) -> Result<Vec<String>, NvmeError> {
+    pub fn block_devices(&self, mut retries: usize) -> Result<Vec<String>, NvmeError> {
         let mut devices = Vec::<String>::new();
         loop {
-            let r =
-                NvmeRoot::new(unsafe { crate::nvme_scan(std::ptr::null()) });
+            let r = NvmeRoot::new(unsafe { crate::nvme_scan(std::ptr::null()) });
             let hostiter = NvmeHostIterator::new(&r);
             for host in hostiter {
                 let subsysiter = NvmeSubsystemIterator::new(host);
                 for subsys in subsysiter {
-                    let cstr = unsafe {
-                        std::ffi::CStr::from_ptr(crate::nvme_subsystem_get_nqn(
-                            subsys,
-                        ))
-                    };
+                    let cstr =
+                        unsafe { std::ffi::CStr::from_ptr(crate::nvme_subsystem_get_nqn(subsys)) };
                     if cstr.to_str().unwrap() != self.subsysnqn {
                         continue;
                     }
@@ -236,13 +205,9 @@ impl NvmeTarget {
                     for ns in nsiter {
                         devices.push(format!(
                             "/dev/{}",
-                            unsafe {
-                                std::ffi::CStr::from_ptr(
-                                    crate::nvme_ns_get_name(ns),
-                                )
-                            }
-                            .to_str()
-                            .unwrap()
+                            unsafe { std::ffi::CStr::from_ptr(crate::nvme_ns_get_name(ns),) }
+                                .to_str()
+                                .unwrap()
                         ));
                     }
                 }
@@ -268,11 +233,8 @@ impl NvmeTarget {
         for host in hostiter {
             let subsysiter = NvmeSubsystemIterator::new(host);
             for subsys in subsysiter {
-                let cstr = unsafe {
-                    std::ffi::CStr::from_ptr(crate::nvme_subsystem_get_nqn(
-                        subsys,
-                    ))
-                };
+                let cstr =
+                    unsafe { std::ffi::CStr::from_ptr(crate::nvme_subsystem_get_nqn(subsys)) };
                 if cstr.to_str().unwrap() != self.subsysnqn {
                     continue;
                 }
@@ -282,9 +244,7 @@ impl NvmeTarget {
                     if ret == 0 {
                         i += 1;
                     } else {
-                        return Err(NvmeError::FileIoError {
-                            rc: ret,
-                        });
+                        return Err(NvmeError::FileIoError { rc: ret });
                     }
                 }
             }
@@ -299,30 +259,22 @@ impl NvmeTarget {
 
         NvmeDevice {
             namespace: unsafe { crate::nvme_ns_get_nsid(n) },
-            device: unsafe {
-                std::ffi::CStr::from_ptr(crate::nvme_ns_get_name(n))
-            }
-            .to_str()
-            .unwrap()
-            .to_string(),
-            firmware: unsafe {
-                std::ffi::CStr::from_ptr(crate::nvme_ns_get_firmware(n))
-            }
-            .to_str()
-            .unwrap()
-            .to_string(),
-            model: unsafe {
-                std::ffi::CStr::from_ptr(crate::nvme_ns_get_model(n))
-            }
-            .to_str()
-            .unwrap()
-            .to_string(),
-            serial: unsafe {
-                std::ffi::CStr::from_ptr(crate::nvme_ns_get_serial(n))
-            }
-            .to_str()
-            .unwrap()
-            .to_string(),
+            device: unsafe { std::ffi::CStr::from_ptr(crate::nvme_ns_get_name(n)) }
+                .to_str()
+                .unwrap()
+                .to_string(),
+            firmware: unsafe { std::ffi::CStr::from_ptr(crate::nvme_ns_get_firmware(n)) }
+                .to_str()
+                .unwrap()
+                .to_string(),
+            model: unsafe { std::ffi::CStr::from_ptr(crate::nvme_ns_get_model(n)) }
+                .to_str()
+                .unwrap()
+                .to_string(),
+            serial: unsafe { std::ffi::CStr::from_ptr(crate::nvme_ns_get_serial(n)) }
+                .to_str()
+                .unwrap()
+                .to_string(),
             utilisation: nuse,
             max_lba: unsafe { crate::nvme_ns_get_lba_count(n) },
             capacity: nsze,
@@ -397,18 +349,14 @@ impl NvmeTarget {
 
 #[test]
 fn nvme_parse_uri() {
-    let target =
-        NvmeTarget::try_from("nvmf://1.2.3.4:1234/testnqn.what-ever.foo")
-            .unwrap();
+    let target = NvmeTarget::try_from("nvmf://1.2.3.4:1234/testnqn.what-ever.foo").unwrap();
 
     assert_eq!(target.trsvcid, 1234);
     assert_eq!(target.traddr, "1.2.3.4");
     assert_eq!(target.trtype, NvmeTransportType::Tcp);
     assert_eq!(target.subsysnqn, "testnqn.what-ever.foo");
 
-    let target =
-        NvmeTarget::try_from("nvmf+tcp://1.2.3.4:1234/testnqn.what-ever.foo")
-            .unwrap();
+    let target = NvmeTarget::try_from("nvmf+tcp://1.2.3.4:1234/testnqn.what-ever.foo").unwrap();
 
     assert_eq!(target.trsvcid, 1234);
     assert_eq!(target.traddr, "1.2.3.4");

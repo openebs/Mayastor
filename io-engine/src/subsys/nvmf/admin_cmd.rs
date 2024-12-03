@@ -17,25 +17,12 @@ use crate::{
 };
 use spdk_rs::{
     libspdk::{
-        nvme_cmd_cdw10_get,
-        nvme_cmd_cdw11_get,
-        nvme_status_get,
-        spdk_bdev,
-        spdk_bdev_desc,
-        spdk_io_channel,
-        spdk_nvme_cmd,
-        spdk_nvme_cpl,
-        spdk_nvme_status,
-        spdk_nvmf_bdev_ctrlr_nvme_passthru_admin,
-        spdk_nvmf_request,
-        spdk_nvmf_request_complete,
-        spdk_nvmf_request_copy_to_buf,
-        spdk_nvmf_request_get_bdev,
-        spdk_nvmf_request_get_cmd,
-        spdk_nvmf_request_get_response,
-        spdk_nvmf_request_get_subsystem,
-        spdk_nvmf_set_custom_admin_cmd_hdlr,
-        spdk_nvmf_subsystem_get_max_nsid,
+        nvme_cmd_cdw10_get, nvme_cmd_cdw11_get, nvme_status_get, spdk_bdev, spdk_bdev_desc,
+        spdk_io_channel, spdk_nvme_cmd, spdk_nvme_cpl, spdk_nvme_status,
+        spdk_nvmf_bdev_ctrlr_nvme_passthru_admin, spdk_nvmf_request, spdk_nvmf_request_complete,
+        spdk_nvmf_request_copy_to_buf, spdk_nvmf_request_get_bdev, spdk_nvmf_request_get_cmd,
+        spdk_nvmf_request_get_response, spdk_nvmf_request_get_subsystem,
+        spdk_nvmf_set_custom_admin_cmd_hdlr, spdk_nvmf_subsystem_get_max_nsid,
     },
     nvme_admin_opc,
 };
@@ -62,10 +49,7 @@ impl NvmfReq {
     /// Returns the NVMe completion
     pub fn response(&self) -> NvmeCpl {
         NvmeCpl(
-            NonNull::new(unsafe {
-                &mut *spdk_nvmf_request_get_response(self.0.as_ptr())
-            })
-            .unwrap(),
+            NonNull::new(unsafe { &mut *spdk_nvmf_request_get_response(self.0.as_ptr()) }).unwrap(),
         )
     }
 
@@ -120,19 +104,15 @@ pub fn set_snapshot_time(cmd: &mut spdk_nvme_cmd) -> u64 {
 }
 
 /// Decode snapshot information from incoming NVMe admin command data.
-fn decode_snapshot_params(
-    req: *mut spdk_nvmf_request,
-) -> Option<SnapshotParams> {
+fn decode_snapshot_params(req: *mut spdk_nvmf_request) -> Option<SnapshotParams> {
     const ITEM_SZ: usize = std::mem::size_of::<NvmeSnapshotMessage>();
 
     let mut val: Vec<u8> = Vec::with_capacity(ITEM_SZ * 2);
 
     let encoded_msg = unsafe {
-        let bytes_copied = spdk_nvmf_request_copy_to_buf(
-            req,
-            val.as_mut_ptr() as _,
-            val.capacity() as u64,
-        ) as usize;
+        let bytes_copied =
+            spdk_nvmf_request_copy_to_buf(req, val.as_mut_ptr() as _, val.capacity() as u64)
+                as usize;
 
         info!(
             "## length = {}, iov_cnt = {}, size = {}",
@@ -188,9 +168,7 @@ extern "C" fn nvmf_create_snapshot_hdlr(req: *mut spdk_nvmf_request) -> i32 {
     let mut bdev: *mut spdk_bdev = std::ptr::null_mut();
     let mut desc: *mut spdk_bdev_desc = std::ptr::null_mut();
     let mut ch: *mut spdk_io_channel = std::ptr::null_mut();
-    let rc = unsafe {
-        spdk_nvmf_request_get_bdev(1, req, &mut bdev, &mut desc, &mut ch)
-    };
+    let rc = unsafe { spdk_nvmf_request_get_bdev(1, req, &mut bdev, &mut desc, &mut ch) };
     if rc != 0 {
         /* No bdev found for this namespace. Continue. */
         debug!("no bdev found");
@@ -201,9 +179,7 @@ extern "C" fn nvmf_create_snapshot_hdlr(req: *mut spdk_nvmf_request) -> i32 {
     if bd.driver() == nexus::NEXUS_MODULE_NAME {
         // Received command on a published Nexus
         set_snapshot_time(unsafe { &mut *spdk_nvmf_request_get_cmd(req) });
-        unsafe {
-            spdk_nvmf_bdev_ctrlr_nvme_passthru_admin(bdev, desc, ch, req, None)
-        }
+        unsafe { spdk_nvmf_bdev_ctrlr_nvme_passthru_admin(bdev, desc, ch, req, None) }
     } else {
         // Received command on a shared replica (lvol)
         let nvmf_req = NvmfReq(NonNull::new(req).unwrap());
@@ -215,11 +191,7 @@ extern "C" fn nvmf_create_snapshot_hdlr(req: *mut spdk_nvmf_request) -> i32 {
     }
 }
 
-async fn create_remote_snapshot(
-    bdev: UntypedBdev,
-    params: SnapshotParams,
-    nvmf_req: NvmfReq,
-) {
+async fn create_remote_snapshot(bdev: UntypedBdev, params: SnapshotParams, nvmf_req: NvmfReq) {
     let Some(mut replica_ops) = ReplicaFactory::bdev_as_replica(bdev) else {
         debug!("unsupported bdev driver");
         nvmf_req.complete_error(nix::errno::Errno::ENOTSUP as i32);

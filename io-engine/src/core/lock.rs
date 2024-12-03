@@ -26,11 +26,7 @@ pub struct ResourceLockManagerConfig {
 impl ResourceLockManagerConfig {
     /// Add resource subsystem to the config.
     /// Panics if another subsystem with the same id already exists.
-    pub fn with_subsystem<T: AsRef<str>>(
-        mut self,
-        id: T,
-        num_objects: usize,
-    ) -> Self {
+    pub fn with_subsystem<T: AsRef<str>>(mut self, id: T, num_objects: usize) -> Self {
         let ids = id.as_ref();
 
         if self.subsystems.iter().any(|(i, _)| ids.eq(i)) {
@@ -54,10 +50,9 @@ impl ResourceSubsystem {
     /// Create a new resource subsystem with target id and maximum number of
     /// objects.
     fn new(id: String, num_objects: usize) -> Self {
-        let object_locks =
-            std::iter::repeat_with(|| Mutex::new(LockStats::default()))
-                .take(num_objects)
-                .collect::<Vec<_>>();
+        let object_locks = std::iter::repeat_with(|| Mutex::new(LockStats::default()))
+            .take(num_objects)
+            .collect::<Vec<_>>();
 
         Self {
             id,

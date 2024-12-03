@@ -66,8 +66,7 @@ mod v1 {
     pub type HostRpcClient = host::HostRpcClient<Channel>;
     pub type NexusRpcClient = nexus::NexusRpcClient<Channel>;
     pub type SnapshotRpcClient = snapshot::SnapshotRpcClient<Channel>;
-    pub type SnapshotRebuildRpcClient =
-        snapshot_rebuild::SnapshotRebuildRpcClient<Channel>;
+    pub type SnapshotRebuildRpcClient = snapshot_rebuild::SnapshotRebuildRpcClient<Channel>;
     pub type TestRpcClient = test::TestRpcClient<Channel>;
     pub type StatsRpcClient = stats::StatsRpcClient<Channel>;
 
@@ -93,8 +92,7 @@ mod v1 {
             let host = HostRpcClient::connect(h.clone()).await.unwrap();
             let nexus = NexusRpcClient::connect(h.clone()).await.unwrap();
             let snapshot = SnapshotRpcClient::connect(h.clone()).await.unwrap();
-            let snapshot_rebuild =
-                SnapshotRebuildRpcClient::connect(h.clone()).await.unwrap();
+            let snapshot_rebuild = SnapshotRebuildRpcClient::connect(h.clone()).await.unwrap();
             let test = TestRpcClient::connect(h.clone()).await.unwrap();
             let stats = StatsRpcClient::connect(h).await.unwrap();
 
@@ -144,9 +142,11 @@ impl Context {
             }
             if let Some(ref mut authority) = parts.authority {
                 if authority.port().is_none() {
-                    parts.authority = Authority::from_maybe_shared(Bytes::from(
-                        format!("{}:{}", authority.host(), 10124),
-                    ))
+                    parts.authority = Authority::from_maybe_shared(Bytes::from(format!(
+                        "{}:{}",
+                        authority.host(),
+                        10124
+                    )))
                     .ok()
                 }
             }
@@ -163,11 +163,12 @@ impl Context {
             println!("Connecting to {:?}", host.uri());
         }
 
-        let output = matches.get_one::<String>("output").ok_or_else(|| {
-            Error::OutputFormatInvalid {
-                format: "<none>".to_string(),
-            }
-        })?;
+        let output =
+            matches
+                .get_one::<String>("output")
+                .ok_or_else(|| Error::OutputFormatInvalid {
+                    format: "<none>".to_string(),
+                })?;
         let output = output.parse()?;
 
         let client = MayaClient::connect(host.clone()).await.unwrap();
@@ -211,11 +212,7 @@ impl Context {
         }
     }
 
-    pub(crate) fn print_list(
-        &self,
-        headers: Vec<&str>,
-        mut data: Vec<Vec<String>>,
-    ) {
+    pub(crate) fn print_list(&self, headers: Vec<&str>, mut data: Vec<Vec<String>>) {
         assert_ne!(data.len(), 0);
         let ncols = data.first().unwrap().len();
         assert_eq!(headers.len(), ncols);
@@ -271,9 +268,7 @@ impl Context {
     pub(crate) async fn print_streamed_list(
         &self,
         headers: Vec<&str>,
-        mut recv: tokio::sync::mpsc::Receiver<
-            Result<Vec<String>, tonic::Status>,
-        >,
+        mut recv: tokio::sync::mpsc::Receiver<Result<Vec<String>, tonic::Status>>,
     ) -> Result<(), tonic::Status> {
         let Some(data) = recv.recv().await else {
             return Ok(());

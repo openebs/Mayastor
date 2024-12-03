@@ -5,18 +5,12 @@ use io_engine::constants::NVME_NQN_PREFIX;
 use common::compose::{
     rpc::v1::{
         bdev::{DestroyBdevRequest, ListBdevOptions},
-        nexus::{
-            AddChildNexusRequest,
-            CreateNexusRequest,
-            RemoveChildNexusRequest,
-        },
+        nexus::{AddChildNexusRequest, CreateNexusRequest, RemoveChildNexusRequest},
         pool::CreatePoolRequest,
         replica::CreateReplicaRequest,
-        GrpcConnect,
-        RpcHandle,
+        GrpcConnect, RpcHandle,
     },
-    Binary,
-    Builder,
+    Binary, Builder,
 };
 
 fn nexus_uuid() -> String {
@@ -73,9 +67,7 @@ async fn create_replicas(h: &mut RpcHandle) {
 async fn check_aliases(h: &mut RpcHandle, present: bool) {
     let bdevs = h
         .bdev
-        .list(ListBdevOptions {
-            name: None,
-        })
+        .list(ListBdevOptions { name: None })
         .await
         .unwrap()
         .into_inner();

@@ -7,23 +7,12 @@ use uuid::Uuid;
 
 use crate::{
     bdev::nvmx::{
-        controller_inner::SpdkNvmeController,
-        NvmeController,
-        NvmeControllerState,
-        NvmeDeviceHandle,
-        NvmeNamespace,
-        NVME_CONTROLLERS,
+        controller_inner::SpdkNvmeController, NvmeController, NvmeControllerState,
+        NvmeDeviceHandle, NvmeNamespace, NVME_CONTROLLERS,
     },
     core::{
-        BlockDevice,
-        BlockDeviceDescriptor,
-        BlockDeviceHandle,
-        BlockDeviceIoStats,
-        CoreError,
-        DeviceEventSink,
-        DeviceIoController,
-        DeviceTimeoutAction,
-        IoType,
+        BlockDevice, BlockDeviceDescriptor, BlockDeviceHandle, BlockDeviceIoStats, CoreError,
+        DeviceEventSink, DeviceIoController, DeviceTimeoutAction, IoType,
     },
     ffihelper::{cb_arg, done_cb},
 };
@@ -48,9 +37,7 @@ unsafe impl Send for NvmeDeviceDescriptor {}
 
 impl NvmeDeviceDescriptor {
     /// TODO
-    fn create(
-        controller: &NvmeController,
-    ) -> Result<Box<dyn BlockDeviceDescriptor>, CoreError> {
+    fn create(controller: &NvmeController) -> Result<Box<dyn BlockDeviceDescriptor>, CoreError> {
         if let Some(ns) = controller.namespace() {
             Ok(Box::new(NvmeDeviceDescriptor {
                 ns,
@@ -77,9 +64,7 @@ impl BlockDeviceDescriptor for NvmeDeviceDescriptor {
         self.name.clone()
     }
 
-    fn into_handle(
-        self: Box<Self>,
-    ) -> Result<Box<dyn BlockDeviceHandle>, CoreError> {
+    fn into_handle(self: Box<Self>) -> Result<Box<dyn BlockDeviceHandle>, CoreError> {
         Ok(Box::new(NvmeDeviceHandle::create(
             &self.name,
             self.io_device_id,
@@ -99,9 +84,7 @@ impl BlockDeviceDescriptor for NvmeDeviceDescriptor {
         )?))
     }
 
-    async fn get_io_handle_nonblock(
-        &self,
-    ) -> Result<Box<dyn BlockDeviceHandle>, CoreError> {
+    async fn get_io_handle_nonblock(&self) -> Result<Box<dyn BlockDeviceHandle>, CoreError> {
         let h = NvmeDeviceHandle::create_async(
             &self.name,
             self.io_device_id,
@@ -128,11 +111,11 @@ impl NvmeBlockDevice {
             warn!("read-only mode is not supported in NvmeBlockDevice::open_by_name()");
         }
 
-        let controller = NVME_CONTROLLERS.lookup_by_name(name).ok_or(
-            CoreError::BdevNotFound {
+        let controller = NVME_CONTROLLERS
+            .lookup_by_name(name)
+            .ok_or(CoreError::BdevNotFound {
                 name: name.to_string(),
-            },
-        )?;
+            })?;
 
         let controller = controller.lock();
 
@@ -209,14 +192,13 @@ impl BlockDevice for NvmeBlockDevice {
     }
 
     async fn io_stats(&self) -> Result<BlockDeviceIoStats, CoreError> {
-        let carc = NVME_CONTROLLERS.lookup_by_name(&self.name).ok_or(
-            CoreError::BdevNotFound {
+        let carc = NVME_CONTROLLERS
+            .lookup_by_name(&self.name)
+            .ok_or(CoreError::BdevNotFound {
                 name: self.name.to_string(),
-            },
-        )?;
+            })?;
 
-        let (s, r) =
-            oneshot::channel::<Result<BlockDeviceIoStats, CoreError>>();
+        let (s, r) = oneshot::channel::<Result<BlockDeviceIoStats, CoreError>>();
         // Schedule async I/O stats collection and wait for the result.
         {
             let controller = carc.lock();
@@ -232,10 +214,7 @@ impl BlockDevice for NvmeBlockDevice {
         r.await.expect("Failed awaiting at io_stats")
     }
 
-    fn open(
-        &self,
-        read_write: bool,
-    ) -> Result<Box<dyn BlockDeviceDescriptor>, CoreError> {
+    fn open(&self, read_write: bool) -> Result<Box<dyn BlockDeviceDescriptor>, CoreError> {
         NvmeBlockDevice::open_by_name(&self.name, read_write)
     }
 
@@ -243,15 +222,13 @@ impl BlockDevice for NvmeBlockDevice {
         Some(Box::new(NvmeDeviceIoController::new(self.name.to_string())))
     }
 
-    fn add_event_listener(
-        &self,
-        listener: DeviceEventSink,
-    ) -> Result<(), CoreError> {
-        let controller = NVME_CONTROLLERS.lookup_by_name(&self.name).ok_or(
-            CoreError::BdevNotFound {
-                name: self.name.clone(),
-            },
-        )?;
+    fn add_event_listener(&self, listener: DeviceEventSink) -> Result<(), CoreError> {
+        let controller =
+            NVME_CONTROLLERS
+                .lookup_by_name(&self.name)
+                .ok_or(CoreError::BdevNotFound {
+                    name: self.name.clone(),
+                })?;
         let controller = controller.lock();
         controller.register_device_listener(listener)
     }
@@ -263,19 +240,16 @@ struct NvmeDeviceIoController {
 
 impl NvmeDeviceIoController {
     pub fn new(name: String) -> Self {
-        Self {
-            name,
-        }
+        Self { name }
     }
 
-    fn lookup_controller(
-        &self,
-    ) -> Result<Arc<Mutex<NvmeController<'static>>>, CoreError> {
-        let controller = NVME_CONTROLLERS.lookup_by_name(&self.name).ok_or(
-            CoreError::BdevNotFound {
-                name: self.name.to_string(),
-            },
-        )?;
+    fn lookup_controller(&self) -> Result<Arc<Mutex<NvmeController<'static>>>, CoreError> {
+        let controller =
+            NVME_CONTROLLERS
+                .lookup_by_name(&self.name)
+                .ok_or(CoreError::BdevNotFound {
+                    name: self.name.to_string(),
+                })?;
         Ok(controller)
     }
 }
@@ -288,10 +262,7 @@ impl DeviceIoController for NvmeDeviceIoController {
         controller.get_timeout_action()
     }
 
-    fn set_timeout_action(
-        &mut self,
-        action: DeviceTimeoutAction,
-    ) -> Result<(), CoreError> {
+    fn set_timeout_action(&mut self, action: DeviceTimeoutAction) -> Result<(), CoreError> {
         let controller = self.lookup_controller()?;
         let mut controller = controller.lock();
 

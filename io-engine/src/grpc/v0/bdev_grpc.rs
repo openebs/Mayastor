@@ -5,14 +5,8 @@ use std::{convert::TryFrom, pin::Pin};
 use url::Url;
 
 use io_engine_api::v0::{
-    bdev_rpc_server::BdevRpc,
-    Bdev as RpcBdev,
-    BdevShareReply,
-    BdevShareRequest,
-    BdevUri,
-    Bdevs,
-    CreateReply,
-    Null,
+    bdev_rpc_server::BdevRpc, Bdev as RpcBdev, BdevShareReply, BdevShareRequest, BdevUri, Bdevs,
+    CreateReply, Null,
 };
 
 use crate::{
@@ -65,9 +59,7 @@ impl BdevRpc for BdevSvc {
                 bdev.into_iter().for_each(|bdev| list.push(bdev.into()))
             }
 
-            Ok(Bdevs {
-                bdevs: list,
-            })
+            Ok(Bdevs { bdevs: list })
         })?;
 
         rx.await
@@ -77,10 +69,7 @@ impl BdevRpc for BdevSvc {
     }
 
     #[instrument(level = "debug", err)]
-    async fn create(
-        &self,
-        request: Request<BdevUri>,
-    ) -> Result<Response<CreateReply>, Status> {
+    async fn create(&self, request: Request<BdevUri>) -> Result<Response<CreateReply>, Status> {
         let uri = request.into_inner().uri;
 
         let rx = rpc_submit(async move { bdev_create(&uri).await })?;
@@ -88,11 +77,7 @@ impl BdevRpc for BdevSvc {
         rx.await
             .map_err(|_| Status::cancelled("cancelled"))?
             .map_err(Status::from)
-            .map(|name| {
-                Ok(Response::new(CreateReply {
-                    name,
-                }))
-            })?
+            .map(|name| Ok(Response::new(CreateReply { name })))?
     }
 
     #[instrument(level = "debug", err)]
@@ -123,8 +108,7 @@ impl BdevRpc for BdevSvc {
         let rx = match proto.as_str() {
             "nvmf" => rpc_submit::<_, String, CoreError>(async move {
                 let mut bdev = UntypedBdev::get_by_name(&bdev_name)?;
-                let props =
-                    NvmfShareProps::new().with_allowed_hosts(r.allowed_hosts);
+                let props = NvmfShareProps::new().with_allowed_hosts(r.allowed_hosts);
                 let share = Pin::new(&mut bdev).share_nvmf(Some(props)).await?;
                 let bdev = UntypedBdev::get_by_name(&bdev_name)?;
                 Ok(bdev.share_uri().unwrap_or(share))
@@ -136,16 +120,10 @@ impl BdevRpc for BdevSvc {
         rx.await
             .map_err(|_| Status::cancelled("cancelled"))?
             .map_err(|e| match e {
-                CoreError::BdevNotFound {
-                    name,
-                } => Status::not_found(name),
+                CoreError::BdevNotFound { name } => Status::not_found(name),
                 e => Status::internal(e.to_string()),
             })
-            .map(|uri| {
-                Ok(Response::new(BdevShareReply {
-                    uri,
-                }))
-            })?
+            .map(|uri| Ok(Response::new(BdevShareReply { uri })))?
     }
 
     #[instrument(level = "debug", err)]

@@ -1,9 +1,7 @@
 use composer::ComposeTest;
 
 use mayastor::{
-    bdev_rpc_client::BdevRpcClient,
-    json_rpc_client::JsonRpcClient,
-    mayastor_client::MayastorClient,
+    bdev_rpc_client::BdevRpcClient, json_rpc_client::JsonRpcClient, mayastor_client::MayastorClient,
 };
 
 use std::{
@@ -28,15 +26,10 @@ pub struct RpcHandle {
 
 impl RpcHandle {
     /// connect to the containers and construct a handle
-    pub(super) async fn connect(
-        name: String,
-        endpoint: SocketAddr,
-    ) -> Result<Self, String> {
+    pub(super) async fn connect(name: String, endpoint: SocketAddr) -> Result<Self, String> {
         let mut attempts = 40;
         loop {
-            if TcpStream::connect_timeout(&endpoint, Duration::from_millis(100))
-                .is_ok()
-            {
+            if TcpStream::connect_timeout(&endpoint, Duration::from_millis(100)).is_ok() {
                 break;
             } else {
                 thread::sleep(Duration::from_millis(101));
@@ -74,9 +67,7 @@ pub struct GrpcConnect<'a> {
 impl<'a> GrpcConnect<'a> {
     /// create new gRPC connect object
     pub fn new(comp: &'a ComposeTest) -> Self {
-        Self {
-            ct: comp,
-        }
+        Self { ct: comp }
     }
 
     /// return grpc handles to the containers

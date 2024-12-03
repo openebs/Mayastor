@@ -19,11 +19,7 @@ use crate::{
     bdev::{device_create, device_destroy, device_lookup},
     bdev_api::BdevError,
     core::{
-        BlockDevice,
-        BlockDeviceDescriptor,
-        BlockDeviceHandle,
-        CoreError,
-        DeviceEventSink,
+        BlockDevice, BlockDeviceDescriptor, BlockDeviceHandle, CoreError, DeviceEventSink,
         VerboseError,
     },
     eventing::replica_events::state_change_event_meta,
@@ -32,11 +28,7 @@ use crate::{
 };
 
 use crate::{
-    bdev::nexus::{
-        nexus_bdev::NexusNvmePreemption,
-        NexusNvmeParams,
-        NvmeReservation,
-    },
+    bdev::nexus::{nexus_bdev::NexusNvmePreemption, NexusNvmeParams, NvmeReservation},
     core::MayastorEnvironment,
     eventing::EventWithMeta,
 };
@@ -45,13 +37,10 @@ use events_api::event::EventAction;
 
 use spdk_rs::{
     libspdk::{
-        spdk_nvme_registered_ctrlr_extended_data,
-        spdk_nvme_reservation_status_extended_data,
+        spdk_nvme_registered_ctrlr_extended_data, spdk_nvme_reservation_status_extended_data,
     },
-    nvme_reservation_acquire_action,
-    nvme_reservation_register_action,
-    nvme_reservation_register_cptpl,
-    DmaError,
+    nvme_reservation_acquire_action, nvme_reservation_register_action,
+    nvme_reservation_register_cptpl, DmaError,
 };
 
 #[derive(Debug, Snafu)]
@@ -63,11 +52,7 @@ pub enum ChildError {
     ChildFaulted {},
     #[snafu(display("Child is being destroyed"))]
     ChildBeingDestroyed {},
-    #[snafu(display(
-        "Child is smaller than parent {} vs {}",
-        child_size,
-        parent_size
-    ))]
+    #[snafu(display("Child is smaller than parent {} vs {}", child_size, parent_size))]
     ChildTooSmall { child_size: u64, parent_size: u64 },
     #[snafu(display("Open child"))]
     OpenChild { source: CoreError },
@@ -89,10 +74,7 @@ pub enum ChildError {
     ResvAcquire { source: CoreError },
     #[snafu(display("Failed to release reservation for child: {}", source))]
     ResvRelease { source: CoreError },
-    #[snafu(display(
-        "Failed to get reservation report for child: {}",
-        source
-    ))]
+    #[snafu(display("Failed to get reservation report for child: {}", source))]
     ResvReport { source: CoreError },
     #[snafu(display("Invalid reservation type for child: {}", resv_type))]
     ResvType { resv_type: u8 },
@@ -417,9 +399,7 @@ impl<'c> NexusChild<'c> {
 
         let desc = dev.open(true).map_err(|source| {
             self.set_faulted_state(FaultReason::CantOpen);
-            ChildError::OpenChild {
-                source,
-            }
+            ChildError::OpenChild { source }
         })?;
         self.device_descriptor = Some(desc);
 
@@ -509,15 +489,13 @@ impl<'c> NexusChild<'c> {
     /// being rebuilt).
     #[inline]
     pub fn is_opened_unsync(&self) -> bool {
-        self.state() == ChildState::Open
-            && self.sync_state() == ChildSyncState::OutOfSync
+        self.state() == ChildState::Open && self.sync_state() == ChildSyncState::OutOfSync
     }
 
     /// Determines if the child is opened and fully synced.
     #[inline]
     pub fn is_healthy(&self) -> bool {
-        self.state() == ChildState::Open
-            && self.sync_state() == ChildSyncState::Synced
+        self.state() == ChildState::Open && self.sync_state() == ChildSyncState::Synced
     }
 
     /// Determines if the child is being rebuilt.
@@ -559,17 +537,10 @@ impl<'c> NexusChild<'c> {
             .unwrap_or(nvme_reservation_acquire_action::ACQUIRE);
         let preempt_key = preempt_key.unwrap_or_default();
         if let Err(e) = hdl
-            .nvme_resv_acquire(
-                current_key,
-                preempt_key,
-                acquire_action,
-                resv_type as u8,
-            )
+            .nvme_resv_acquire(current_key, preempt_key, acquire_action, resv_type as u8)
             .await
         {
-            return Err(ChildError::ResvAcquire {
-                source: e,
-            });
+            return Err(ChildError::ResvAcquire { source: e });
         }
 
         info!(
@@ -603,9 +574,7 @@ impl<'c> NexusChild<'c> {
     ) -> Result<Option<(u8, u64, [u8; 16])>, ChildError> {
         let mut buffer = hdl.dma_malloc(4096).context(HandleDmaMalloc {})?;
         if let Err(e) = hdl.nvme_resv_report(1, &mut buffer).await {
-            return Err(ChildError::ResvReport {
-                source: e,
-            });
+            return Err(ChildError::ResvReport { source: e });
         }
 
         trace!("{:?}: received reservation report", self);
@@ -613,9 +582,8 @@ impl<'c> NexusChild<'c> {
         let (stext, sl) = buffer.as_slice().split_at(std::mem::size_of::<
             spdk_nvme_reservation_status_extended_data,
         >());
-        let (pre, resv_status_ext, post) = unsafe {
-            stext.align_to::<spdk_nvme_reservation_status_extended_data>()
-        };
+        let (pre, resv_status_ext, post) =
+            unsafe { stext.align_to::<spdk_nvme_reservation_status_extended_data>() };
 
         assert!(pre.is_empty());
         assert!(post.is_empty());
@@ -624,14 +592,11 @@ impl<'c> NexusChild<'c> {
 
         info!(
             "reservation status: rtype {}, regctl {}, ptpls {}",
-            resv_status_ext[0].data.rtype,
-            regctl,
-            resv_status_ext[0].data.ptpls,
+            resv_status_ext[0].data.rtype, regctl, resv_status_ext[0].data.ptpls,
         );
 
-        let (pre, reg_ctrlr_ext, _post) = unsafe {
-            sl.align_to::<spdk_nvme_registered_ctrlr_extended_data>()
-        };
+        let (pre, reg_ctrlr_ext, _post) =
+            unsafe { sl.align_to::<spdk_nvme_registered_ctrlr_extended_data>() };
 
         if !pre.is_empty() {
             return Ok(None);
@@ -659,11 +624,7 @@ impl<'c> NexusChild<'c> {
                 rkey,
             );
             if c.rcsts.status() == 1 {
-                return Ok(Some((
-                    resv_status_ext[0].data.rtype,
-                    rkey,
-                    c.hostid,
-                )));
+                return Ok(Some((resv_status_ext[0].data.rtype, rkey, c.hostid)));
             }
         }
         Ok(None)
@@ -671,29 +632,21 @@ impl<'c> NexusChild<'c> {
 
     /// Check if we're the reservation holder.
     /// # Warning: Ignores bdevs without NVMe reservation support.
-    async fn resv_check_holder(
-        &self,
-        args: &NexusNvmeParams,
-    ) -> Result<(), ChildError> {
+    async fn resv_check_holder(&self, args: &NexusNvmeParams) -> Result<(), ChildError> {
         let hdl = self.get_io_handle_nonblock().await.context(HandleOpen {})?;
 
         let mut buffer = hdl.dma_malloc(4096).context(HandleDmaMalloc {})?;
         match hdl.nvme_resv_report(1, &mut buffer).await {
-            Err(CoreError::NotSupported {
-                ..
-            }) => return Ok(()),
-            Err(error) => Err(ChildError::ResvReport {
-                source: error,
-            }),
+            Err(CoreError::NotSupported { .. }) => return Ok(()),
+            Err(error) => Err(ChildError::ResvReport { source: error }),
             Ok(_) => Ok(()),
         }?;
 
         let (stext, sl) = buffer.as_slice().split_at(std::mem::size_of::<
             spdk_nvme_reservation_status_extended_data,
         >());
-        let (pre, resv_status_ext, post) = unsafe {
-            stext.align_to::<spdk_nvme_reservation_status_extended_data>()
-        };
+        let (pre, resv_status_ext, post) =
+            unsafe { stext.align_to::<spdk_nvme_reservation_status_extended_data>() };
 
         assert!(pre.is_empty());
         assert!(post.is_empty());
@@ -702,26 +655,22 @@ impl<'c> NexusChild<'c> {
 
         info!(
             "{:?}: reservation status: rtype {}, regctl {}, ptpls {}",
-            self,
-            resv_status_ext[0].data.rtype,
-            regctl,
-            resv_status_ext[0].data.ptpls,
+            self, resv_status_ext[0].data.rtype, regctl, resv_status_ext[0].data.ptpls,
         );
 
         let shared = |resv_type| {
             matches!(
                 resv_type,
-                NvmeReservation::ExclusiveAccessAllRegs
-                    | NvmeReservation::WriteExclusiveAllRegs
+                NvmeReservation::ExclusiveAccessAllRegs | NvmeReservation::WriteExclusiveAllRegs
             )
         };
 
         if args.resv_type as u8 != resv_status_ext[0].data.rtype {
-            let rtype =
-                NvmeReservation::try_from(resv_status_ext[0].data.rtype)
-                    .map_err(|_| ChildError::ResvType {
-                        resv_type: resv_status_ext[0].data.rtype,
-                    })?;
+            let rtype = NvmeReservation::try_from(resv_status_ext[0].data.rtype).map_err(|_| {
+                ChildError::ResvType {
+                    resv_type: resv_status_ext[0].data.rtype,
+                }
+            })?;
 
             // If we're shared, then we don't care which type it is since we're
             // registered...
@@ -734,16 +683,14 @@ impl<'c> NexusChild<'c> {
 
         if matches!(
             args.resv_type,
-            NvmeReservation::ExclusiveAccessAllRegs
-                | NvmeReservation::WriteExclusiveAllRegs
+            NvmeReservation::ExclusiveAccessAllRegs | NvmeReservation::WriteExclusiveAllRegs
         ) {
             // if we're in "shared" mode, we don't need to know more
             return Ok(());
         }
 
-        let (pre, reg_ctrlr_ext, _post) = unsafe {
-            sl.align_to::<spdk_nvme_registered_ctrlr_extended_data>()
-        };
+        let (pre, reg_ctrlr_ext, _post) =
+            unsafe { sl.align_to::<spdk_nvme_registered_ctrlr_extended_data>() };
         if !pre.is_empty() {
             // todo: why did the previous report return no holder in this
             // scenario?
@@ -769,9 +716,7 @@ impl<'c> NexusChild<'c> {
             let my_hostid = match hdl.host_id().await {
                 Ok(h) => h,
                 Err(e) => {
-                    return Err(ChildError::NvmeHostId {
-                        source: e,
-                    });
+                    return Err(ChildError::NvmeHostId { source: e });
                 }
             };
             if owner.rkey != args.resv_key || owner.hostid != my_hostid {
@@ -802,12 +747,8 @@ impl<'c> NexusChild<'c> {
         let resv_key = params.resv_key;
         if let Err(e) = self.resv_register(&*hdl, resv_key).await {
             return match e {
-                CoreError::NotSupported {
-                    ..
-                } => Ok(()),
-                _ => Err(ChildError::ResvRegisterKey {
-                    source: e,
-                }),
+                CoreError::NotSupported { .. } => Ok(()),
+                _ => Err(ChildError::ResvRegisterKey { source: e }),
             };
         }
 
@@ -862,12 +803,8 @@ impl<'c> NexusChild<'c> {
         // To be able to issue any other commands we must first register.
         if let Err(e) = self.resv_register(&*hdl, args.resv_key).await {
             return match e {
-                CoreError::NotSupported {
-                    ..
-                } => Ok(()),
-                _ => Err(ChildError::ResvRegisterKey {
-                    source: e,
-                }),
+                CoreError::NotSupported { .. } => Ok(()),
+                _ => Err(ChildError::ResvRegisterKey { source: e }),
             };
         }
 
@@ -887,9 +824,7 @@ impl<'c> NexusChild<'c> {
         let my_hostid = match hdl.host_id().await {
             Ok(h) => h,
             Err(e) => {
-                return Err(ChildError::NvmeHostId {
-                    source: e,
-                });
+                return Err(ChildError::NvmeHostId { source: e });
             }
         };
         info!(
@@ -897,21 +832,14 @@ impl<'c> NexusChild<'c> {
             self, my_hostid, hostid, pkey
         );
 
-        let rtype = NvmeReservation::try_from(rtype).map_err(|_| {
-            ChildError::ResvType {
-                resv_type: rtype,
-            }
-        })?;
-        if rtype == args.resv_type
-            && hostid == my_hostid
-            && pkey == args.resv_key
-        {
+        let rtype = NvmeReservation::try_from(rtype)
+            .map_err(|_| ChildError::ResvType { resv_type: rtype })?;
+        if rtype == args.resv_type && hostid == my_hostid && pkey == args.resv_key {
             return Ok(());
         }
         if !matches!(
             rtype,
-            NvmeReservation::WriteExclusiveAllRegs
-                | NvmeReservation::ExclusiveAccessAllRegs
+            NvmeReservation::WriteExclusiveAllRegs | NvmeReservation::ExclusiveAccessAllRegs
         ) {
             // This is the most straightforward case where we can simply preempt
             // the existing holder with our own key and type.
@@ -931,9 +859,7 @@ impl<'c> NexusChild<'c> {
             // registration, so we need to start over.
             self.resv_register(&*hdl, args.resv_key)
                 .await
-                .map_err(|e| ChildError::ResvRegisterKey {
-                    source: e,
-                })?;
+                .map_err(|e| ChildError::ResvRegisterKey { source: e })?;
             self.resv_acquire(&*hdl, args.resv_key, None, args.resv_type)
                 .await?;
             return Ok(());
@@ -951,9 +877,7 @@ impl<'c> NexusChild<'c> {
                 // 8.19.7
                 self.resv_release(&*hdl, args.resv_key, rtype, 0)
                     .await
-                    .map_err(|e| ChildError::ResvRelease {
-                        source: e,
-                    })?;
+                    .map_err(|e| ChildError::ResvRelease { source: e })?;
                 // And now we can acquire the reservation with our own more
                 // restricted reservation type.
                 self.resv_acquire(&*hdl, args.resv_key, None, args.resv_type)
@@ -992,10 +916,7 @@ impl<'c> NexusChild<'c> {
     /// Onlines a previously offlined child.
     /// The child is set out-of-sync so that it will be rebuilt.
     /// TODO: channels need to be updated when block devices are opened.
-    pub(crate) async fn online(
-        &mut self,
-        parent_size: u64,
-    ) -> Result<String, ChildError> {
+    pub(crate) async fn online(&mut self, parent_size: u64) -> Result<String, ChildError> {
         info!("{:?}: bringing child online", self);
 
         let state = self.state.load();
@@ -1023,10 +944,9 @@ impl<'c> NexusChild<'c> {
 
         // Re-create the block device as it will have been previously
         // destroyed.
-        let name =
-            device_create(&self.name).await.context(ChildBdevCreate {
-                child: self.name.clone(),
-            })?;
+        let name = device_create(&self.name).await.context(ChildBdevCreate {
+            child: self.name.clone(),
+        })?;
 
         self.device = device_lookup(&name);
         if self.device.is_none() {
@@ -1055,10 +975,10 @@ impl<'c> NexusChild<'c> {
     pub(crate) async fn close(&self) -> Result<(), BdevError> {
         info!("{self:?}: closing child...");
 
-        if self.destroy_state.compare_exchange(
-            ChildDestroyState::None,
-            ChildDestroyState::Destroying,
-        ) != Ok(ChildDestroyState::None)
+        if self
+            .destroy_state
+            .compare_exchange(ChildDestroyState::None, ChildDestroyState::Destroying)
+            != Ok(ChildDestroyState::None)
         {
             warn!("{self:?}: already being closed");
             return Ok(());
@@ -1079,9 +999,7 @@ impl<'c> NexusChild<'c> {
         info!("{self:?}: destroying block device...");
         match device_destroy(&self.name).await {
             Ok(_) => {
-                info!(
-                    "{self:?}: block device destroyed, waiting for removal..."
-                );
+                info!("{self:?}: block device destroyed, waiting for removal...");
 
                 // Only wait for block device removal if the child has been
                 // initialised.
@@ -1161,11 +1079,7 @@ impl<'c> NexusChild<'c> {
     }
 
     /// create a new nexus child
-    pub fn new(
-        name: String,
-        parent: String,
-        device: Option<Box<dyn BlockDevice>>,
-    ) -> Self {
+    pub fn new(name: String, parent: String, device: Option<Box<dyn BlockDevice>>) -> Self {
         // TODO: Remove check for persistent store
         if PersistentStore::enabled() && Self::uuid(&name).is_none() {
             panic!("Child name does not contain a UUID.");
@@ -1196,16 +1110,12 @@ impl<'c> NexusChild<'c> {
     }
 
     /// TODO
-    pub(super) fn remove_rebuild_job(
-        &self,
-    ) -> Option<std::sync::Arc<NexusRebuildJob>> {
+    pub(super) fn remove_rebuild_job(&self) -> Option<std::sync::Arc<NexusRebuildJob>> {
         NexusRebuildJob::remove(&self.name).ok()
     }
 
     /// Return the rebuild job which is rebuilding this child, if rebuilding.
-    pub(crate) fn rebuild_job(
-        &self,
-    ) -> Option<std::sync::Arc<NexusRebuildJob>> {
+    pub(crate) fn rebuild_job(&self) -> Option<std::sync::Arc<NexusRebuildJob>> {
         NexusRebuildJob::lookup(&self.name).ok()
     }
 
@@ -1230,9 +1140,7 @@ impl<'c> NexusChild<'c> {
     }
 
     /// Get I/O handle for the block device associated with this Nexus child.
-    pub fn get_io_handle(
-        &self,
-    ) -> Result<Box<dyn BlockDeviceHandle>, CoreError> {
+    pub fn get_io_handle(&self) -> Result<Box<dyn BlockDeviceHandle>, CoreError> {
         if let Some(desc) = self.device_descriptor.as_ref() {
             desc.get_io_handle()
         } else {
@@ -1243,9 +1151,7 @@ impl<'c> NexusChild<'c> {
         }
     }
 
-    pub async fn get_io_handle_nonblock(
-        &self,
-    ) -> Result<Box<dyn BlockDeviceHandle>, CoreError> {
+    pub async fn get_io_handle_nonblock(&self) -> Result<Box<dyn BlockDeviceHandle>, CoreError> {
         if let Some(desc) = self.device_descriptor.as_ref() {
             desc.get_io_handle_nonblock().await
         } else {
@@ -1313,11 +1219,7 @@ impl<'c> NexusChild<'c> {
 
         if io_log.is_none() {
             if let Some(d) = &self.device {
-                *io_log = Some(IOLog::new(
-                    &d.device_name(),
-                    d.num_blocks(),
-                    d.block_len(),
-                ));
+                *io_log = Some(IOLog::new(&d.device_name(), d.num_blocks(), d.block_len()));
 
                 debug!("{self:?}: started new I/O log: {log:?}", log = *io_log);
             }

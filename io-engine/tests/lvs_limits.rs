@@ -57,7 +57,7 @@ async fn lvs_metadata_limit() {
         let lvs = Lvs::create_or_import(lvs_args.clone()).await.unwrap();
 
         // Create replicas.
-        for i in 0 .. REPL_CNT {
+        for i in 0..REPL_CNT {
             let repl_name = format!("r_{i}");
             let repl_uuid = format!("45c23e54-dc86-45f6-b55b-e44d05f1{i:04}");
 
@@ -74,13 +74,8 @@ async fn lvs_metadata_limit() {
                 Ok(lvol) => lvol,
                 Err(err) => {
                     match err {
-                        LvsError::RepCreate {
-                            source, ..
-                        } => {
-                            assert!(matches!(
-                                source,
-                                BsError::OutOfMetadata {}
-                            ));
+                        LvsError::RepCreate { source, .. } => {
+                            assert!(matches!(source, BsError::OutOfMetadata {}));
                             break;
                         }
                         _ => {
@@ -91,12 +86,11 @@ async fn lvs_metadata_limit() {
             };
 
             // Create snapshots for each replicas.
-            for j in 0 .. SNAP_CNT {
+            for j in 0..SNAP_CNT {
                 let snap_name = format!("r_{i}_snap_{j}");
                 let eid = format!("e_{i}_{j}");
                 let txn_id = format!("t_{i}_{j}");
-                let snap_uuid =
-                    format!("55c23e54-dc89-45f6-b55b-e44d{i:04}{j:04}");
+                let snap_uuid = format!("55c23e54-dc89-45f6-b55b-e44d{i:04}{j:04}");
 
                 let snap_config = lvol
                     .prepare_snap_config(&snap_name, &eid, &txn_id, &snap_uuid)
@@ -104,13 +98,8 @@ async fn lvs_metadata_limit() {
 
                 if let Err(err) = lvol.create_snapshot(snap_config).await {
                     match err {
-                        LvsError::SnapshotCreate {
-                            source, ..
-                        } => {
-                            assert!(matches!(
-                                source,
-                                BsError::OutOfMetadata {}
-                            ));
+                        LvsError::SnapshotCreate { source, .. } => {
+                            assert!(matches!(source, BsError::OutOfMetadata {}));
                             break;
                         }
                         _ => {

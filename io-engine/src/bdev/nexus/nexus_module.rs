@@ -3,13 +3,8 @@ use serde_json::json;
 use super::{nexus_iter, NioCtx};
 
 use spdk_rs::{
-    BdevModule,
-    BdevModuleBuild,
-    JsonWriteContext,
-    WithModuleConfigJson,
-    WithModuleFini,
-    WithModuleGetCtxSize,
-    WithModuleInit,
+    BdevModule, BdevModuleBuild, JsonWriteContext, WithModuleConfigJson, WithModuleFini,
+    WithModuleGetCtxSize, WithModuleInit,
 };
 
 /// Name for Nexus Bdev module name.

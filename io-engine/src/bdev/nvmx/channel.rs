@@ -4,16 +4,11 @@ use std::{mem::size_of, os::raw::c_void, ptr::NonNull, time::Duration};
 
 use spdk_rs::{
     libspdk::{
-        nvme_qpair_abort_all_queued_reqs,
-        nvme_transport_qpair_abort_reqs,
-        spdk_io_channel,
-        spdk_nvme_poll_group_process_completions,
-        spdk_nvme_qpair,
-        spdk_nvme_qpair_set_abort_dnr,
+        nvme_qpair_abort_all_queued_reqs, nvme_transport_qpair_abort_reqs, spdk_io_channel,
+        spdk_nvme_poll_group_process_completions, spdk_nvme_qpair, spdk_nvme_qpair_set_abort_dnr,
         spdk_put_io_channel,
     },
-    Poller,
-    PollerBuilder,
+    Poller, PollerBuilder,
 };
 
 use crate::{
@@ -22,11 +17,7 @@ use crate::{
 };
 
 use super::{
-    nvme_bdev_running_config,
-    NvmeControllerState,
-    PollGroup,
-    QPair,
-    SpdkNvmeController,
+    nvme_bdev_running_config, NvmeControllerState, PollGroup, QPair, SpdkNvmeController,
     NVME_CONTROLLERS,
 };
 
@@ -48,17 +39,13 @@ impl<'a> NvmeIoChannel<'a> {
     }
 
     #[inline]
-    pub fn inner_from_channel(
-        io_channel: *mut spdk_io_channel,
-    ) -> &'a mut NvmeIoChannelInner<'a> {
+    pub fn inner_from_channel(io_channel: *mut spdk_io_channel) -> &'a mut NvmeIoChannelInner<'a> {
         NvmeIoChannel::from_raw(Self::io_channel_ctx(io_channel)).inner_mut()
     }
 
     #[inline]
     fn io_channel_ctx(ch: *mut spdk_io_channel) -> *mut c_void {
-        unsafe {
-            (ch as *mut u8).add(size_of::<spdk_io_channel>()) as *mut c_void
-        }
+        unsafe { (ch as *mut u8).add(size_of::<spdk_io_channel>()) as *mut c_void }
     }
 }
 
@@ -78,9 +65,7 @@ pub struct NvmeIoChannelInner<'a> {
     io_stats_controller: IoStatsController,
     pub device: Box<dyn BlockDevice>,
     /// to prevent the controller from being destroyed before the channel
-    ctrl: Option<
-        std::sync::Arc<parking_lot::Mutex<crate::bdev::NvmeController<'a>>>,
-    >,
+    ctrl: Option<std::sync::Arc<parking_lot::Mutex<crate::bdev::NvmeController<'a>>>>,
     num_pending_ios: u64,
 
     // Flag to indicate the shutdown state of the channel.
@@ -179,11 +164,7 @@ impl NvmeIoChannelInner<'_> {
     }
 
     /// Reinitialize channel after reset unless the channel is shutdown.
-    pub fn reinitialize(
-        &mut self,
-        ctrlr_name: &str,
-        ctrlr_handle: SpdkNvmeController,
-    ) -> i32 {
+    pub fn reinitialize(&mut self, ctrlr_name: &str, ctrlr_handle: SpdkNvmeController) -> i32 {
         if self.is_shutdown {
             error!(
                 "{} I/O channel is shutdown, channel reinitialization not possible",
@@ -256,12 +237,7 @@ impl IoStatsController {
 
     #[inline]
     /// Account amount of blocks and I/O operations.
-    pub fn account_block_io(
-        &mut self,
-        op: IoType,
-        num_ops: u64,
-        num_blocks: u64,
-    ) {
+    pub fn account_block_io(&mut self, op: IoType, num_ops: u64, num_blocks: u64) {
         match op {
             IoType::Read => {
                 self.io_stats.num_read_ops += num_ops;
@@ -298,10 +274,7 @@ impl IoStatsController {
 
 pub struct NvmeControllerIoChannel(NonNull<spdk_io_channel>);
 
-extern "C" fn disconnected_qpair_cb(
-    _qpair: *mut spdk_nvme_qpair,
-    ctx: *mut c_void,
-) {
+extern "C" fn disconnected_qpair_cb(_qpair: *mut spdk_nvme_qpair, ctx: *mut c_void) {
     let inner = NvmeIoChannel::from_raw(ctx).inner_mut();
 
     if let Some(qpair) = inner.qpair() {
@@ -474,9 +447,7 @@ impl NvmeControllerIoChannel {
 
 /// Wrapper around SPDK I/O channel.
 impl NvmeControllerIoChannel {
-    pub fn from_null_checked(
-        ch: *mut spdk_io_channel,
-    ) -> Option<NvmeControllerIoChannel> {
+    pub fn from_null_checked(ch: *mut spdk_io_channel) -> Option<NvmeControllerIoChannel> {
         if ch.is_null() {
             None
         } else {

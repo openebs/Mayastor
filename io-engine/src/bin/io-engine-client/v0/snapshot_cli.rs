@@ -3,8 +3,7 @@
 
 use crate::{
     context::{Context, OutputFormat},
-    ClientError,
-    GrpcStatus,
+    ClientError, GrpcStatus,
 };
 use clap::{Arg, ArgMatches, Command};
 use colored_json::ToColoredJson;
@@ -16,8 +15,7 @@ pub async fn handler(ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     match matches.subcommand().unwrap() {
         ("create", args) => create(ctx, args).await,
         (cmd, _) => {
-            Err(Status::not_found(format!("command {cmd} does not exist")))
-                .context(GrpcStatus)
+            Err(Status::not_found(format!("command {cmd} does not exist"))).context(GrpcStatus)
         }
     }
 }
@@ -47,9 +45,7 @@ async fn create(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
 
     let response = ctx
         .client
-        .create_snapshot(rpc::CreateSnapshotRequest {
-            uuid: uuid.clone(),
-        })
+        .create_snapshot(rpc::CreateSnapshotRequest { uuid: uuid.clone() })
         .await
         .context(GrpcStatus)?;
 

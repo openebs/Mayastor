@@ -58,45 +58,12 @@ curl -L https://nixos.org/nix/install | sh
 - Some of our team uses [NixOS][nixos] which has `nix` baked in, but you don't need to.
 - Some of our team uses [`direnv][direnv], but you don't need to.
 
-For some tasks, we use features from `nixUnstable`. You can use `nixos-unstable`
-**(or `nixpkgs-unstable` for `nix` users)** by [changing your channel][nix-channel].
-
-First, setting the following:
-
-```nix
-{ pkgs, ... }: {
-   nix.extraOptions = ''
-      experimental-features = nix-command flakes
-   '';
-   nix.package = pkgs.nixUnstable;
-}
-```
-
-Then, updating the channel:
-
-```bash
-$ sudo nix-channel --list
-nixos https://nixos.org/channels/nixos-22.11
-$ sudo nix-channel --remove nixos
-$ sudo nix-channel --add https://nixos.org/channels/nixos-unstable nixos
-$ sudo nixos-rebuild switch --update
-```
-
-> If you don't want, you can drop into a
-> `nixUnstable` supporting shell with:
->
-> ```bash
-> nix-shell -I nixpkgs=channel:nixpkgs-unstable -p nixUnstable --command "nix --experimental-features 'nix-command flakes' develop -f . mayastor"
-> ```
->
-> Don't want to use `nixUnstable`? **That's ok!** Use `nix-shell` and `nix-build` as you normally would.
-
 **Want to run or hack on Mayastor?** _You need more configuration!_ See
 [running][doc-run], then [testing][doc-test].
 
 You can use a tool like [`direnv`][direnv] to automate `nix shell` entry.
 If you are unable to use the Nix provided Rust for some reason, there are `rust` and
-`spdk` arguments to Nix shell. `nix-shell --arg rust none`
+`spdk-path` arguments to Nix shell. `nix-shell --arg rust none`
 
 After cloning the repository don't forget to run a:
 
@@ -109,11 +76,9 @@ to initialize the submodules.
 ## Iterative Builds
 
 Contributors often build Mayastor repeatedly during the development process.
-Using [`nix develop`][nix-develop] to enter a more persistent development shell can help improve
-iteration time:
 
 ```bash
-nix develop -f . io-engine
+nix-shell
 ```
 
 Once entered, you can start any tooling (eg `code .`) to ensure the correct resources are available.
@@ -129,20 +94,10 @@ cargo build --release
 **Want to run or hack on Mayastor?** _You need more configuration!_ See
 [running][doc-run], then [testing][doc-test].
 
-Whilst the nix develop will allow you to build mayastor exactly as the image build, it might not have all the necessary
-components required for testing.
-For that you might want to use the explicit shell configuration file: ci.nix:
-
-```bash
-nix-shell
-```
-
-To ensure you are aware of this, we greet you with a nice cow.
-
 ## Artifacts
 
 There are a few ways to build Mayastor! If you're hacking on Mayastor, it's best to use
-[`nix develop`][nix-develop] (above) then turn to traditional Rust tools. If you're looking for releases,
+[`nix-shell`][nix-shell] (above) then turn to traditional Rust tools. If you're looking for releases,
 use [`nix build`][nix-build] or [`nix bundle`][nix-bundle] depending on your needs.
 
 > **Why is the build process this way?**
@@ -157,10 +112,9 @@ use [`nix build`][nix-build] or [`nix bundle`][nix-bundle] depending on your nee
 You can build release binaries of Mayastor with [`nix build`][nix-build]:
 
 ```bash
-for PKG in io-engine; do
-  echo "Building ${PKG} to artifacts/pkgs/${PKG}"; \
-  nix build -f . -o artifacts/pkgs/${PKG} ${PKG};
-done
+nix build -f . -o artifacts/pkgs io-engine
+ls artifacts/pkgs/bin
+casperf  io-engine  io-engine-client
 ```
 
 Try them as if they were installed:
@@ -177,9 +131,9 @@ In order to make an artifact which can be distributed, we use [`nix bundle`][nix
 > `io-engine-client`. This is coming.
 
 ```bash
-for BUNDLE in io-engine; do
-  echo "Bundling ${BUNDLE} to artifacts/bundle/${BUNDLE}"; \
-  nix bundle -f . -o artifacts/bundles/${BUNDLE} ${BUNDLE};
+for BUNDLE in io-engine io-engine-cli casperf; do
+  echo "Bundling ${BUNDLE} to artifacts/bundle/${BUNDLE}"
+  nix bundle -f . -o artifacts/bundles/${BUNDLE} units.release.${BUNDLE} --extra-experimental-features flakes
 done
 ```
 
@@ -200,21 +154,29 @@ Build the Docker images with the CI build script:
   ❯ ./scripts/release.sh --help
   Usage: release.sh [OPTIONS]
 
-  Options:
     -d, --dry-run              Output actions that would be taken, but don't run them.
     -h, --help                 Display this text.
     --registry <host[:port]>   Push the built images to the provided registry.
+                               To also replace the image org provide the full repository path, example: docker.io/org
     --debug                    Build debug version of images where possible.
     --skip-build               Don't perform nix-build.
     --skip-publish             Don't publish built images.
-    --image           <image>  Specify what image to build.
+    --image           <image>  Specify what image to build and/or upload.
+    --tar                      Decompress and load images as tar rather than tar.gz.
+    --skip-images              Don't build nor upload any images.
     --alias-tag       <tag>    Explicit alias for short commit hash tag.
     --tag             <tag>    Explicit tag (overrides the git tag).
+    --incremental              Builds components in two stages allowing for faster rebuilds during development.
+    --skopeo-copy              Don't load containers into host, simply copy them to registry with skopeo.
+    --skip-cargo-deps          Don't prefetch the cargo build dependencies.
+
+  Environment Variables:
+    RUSTFLAGS                  Set Rust compiler options when building binaries.
 
   Examples:
     release.sh --registry 127.0.0.1:5000
 
-  ❯ ./scripts/release.sh --registry localhost:5000 --image "mayastor-io-engine"
+  ❯ ./scripts/release.sh --registry localhost:5000 --image "io-engine"
 ```
 
 The container images are packaged and pushed using either docker or podman - whichever is run successfully with
@@ -224,14 +186,14 @@ If you want to specifically test one of these first, please set DOCKER env varia
 Build the Docker images with [`nix build`][nix-build]:
 
 ```bash
-  nix-build --out-link artifacts/docker/mayastor-io-engine-image -A images.mayastor-io-engine
+  nix-build --out-link artifacts/docker/mayastor-io-engine-image -A images.io-engine
 ```
 
 **Optionally,** the generated Docker images will **not** tag to the `latest`. You may wish to do that if
 you want to run them locally:
 
 ```bash
-  ./scripts/release.sh --registry docker.io/your-registry --image "mayastor-io-engine --alias-tag latest"
+  ./scripts/release.sh --registry $registry --image "io-engine" --alias-tag latest
 ```
 
 ### Building KVM images

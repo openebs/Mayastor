@@ -2,31 +2,18 @@ use crate::{
     core::{
         logical_volume::LvolSpaceUsage,
         wiper::{WipeMethod, Wiper},
-        Bdev,
-        NvmfShareProps,
-        ProtectedSubsystems,
-        Protocol,
-        ResourceLockManager,
-        ToErrno,
+        Bdev, NvmfShareProps, ProtectedSubsystems, Protocol, ResourceLockManager, ToErrno,
         UpdateProps,
     },
     grpc::{
         acquire_subsystem_lock,
         v1::pool::{GrpcPoolFactory, PoolGrpc, PoolIdProbe},
-        GrpcClientContext,
-        GrpcResult,
-        RWLock,
-        RWSerializer,
+        GrpcClientContext, GrpcResult, RWLock, RWSerializer,
     },
     pool_backend::{FindPoolArgs, PoolBackend},
     replica_backend::{
-        FindReplicaArgs,
-        IReplicaFactory,
-        ListCloneArgs,
-        ListReplicaArgs,
-        ListSnapshotArgs,
-        ReplicaFactory,
-        ReplicaOps,
+        FindReplicaArgs, IReplicaFactory, ListCloneArgs, ListReplicaArgs, ListSnapshotArgs,
+        ReplicaFactory, ReplicaOps,
     },
 };
 use ::function_name::named;
@@ -39,8 +26,7 @@ use tonic::{Request, Status};
 pub struct ReplicaService {
     #[allow(unused)]
     name: String,
-    client_context:
-        std::sync::Arc<tokio::sync::RwLock<Option<GrpcClientContext>>>,
+    client_context: std::sync::Arc<tokio::sync::RwLock<Option<GrpcClientContext>>>,
 }
 
 #[async_trait::async_trait]
@@ -124,9 +110,7 @@ impl Default for ReplicaService {
 impl From<destroy_replica_request::Pool> for PoolIdProbe {
     fn from(value: destroy_replica_request::Pool) -> Self {
         match value {
-            destroy_replica_request::Pool::PoolName(name) => {
-                Self::UuidOrName(name)
-            }
+            destroy_replica_request::Pool::PoolName(name) => Self::UuidOrName(name),
             destroy_replica_request::Pool::PoolUuid(uuid) => Self::Uuid(uuid),
         }
     }
@@ -190,12 +174,12 @@ fn filter_replicas_by_replica_type(
                 // ... add other fields here as needed
             ];
 
-            query_fields.iter().any(|(query_field, replica_field)| {
-                match query_field {
+            query_fields
+                .iter()
+                .any(|(query_field, replica_field)| match query_field {
                     true => *replica_field,
                     false => false,
-                }
-            })
+                })
         })
         .collect()
 }
@@ -209,15 +193,11 @@ impl GrpcReplicaFactory {
             .map(Self)
             .collect::<Vec<_>>()
     }
-    pub(crate) async fn finder(
-        args: &FindReplicaArgs,
-    ) -> Result<ReplicaGrpc, Status> {
+    pub(crate) async fn finder(args: &FindReplicaArgs) -> Result<ReplicaGrpc, Status> {
         let replica = ReplicaFactory::find(args).await?;
         Ok(ReplicaGrpc::new(replica))
     }
-    pub(crate) async fn pool_finder<I: Into<FindPoolArgs>>(
-        args: I,
-    ) -> Result<PoolGrpc, Status> {
+    pub(crate) async fn pool_finder<I: Into<FindPoolArgs>>(args: I) -> Result<PoolGrpc, Status> {
         GrpcPoolFactory::finder(args).await.map_err(|error| {
             if error.code() == tonic::Code::NotFound {
                 Status::failed_precondition(error.to_string())
@@ -226,10 +206,7 @@ impl GrpcReplicaFactory {
             }
         })
     }
-    pub(crate) async fn list(
-        &self,
-        args: &ListReplicaArgs,
-    ) -> Result<Vec<Replica>, Status> {
+    pub(crate) async fn list(&self, args: &ListReplicaArgs) -> Result<Vec<Replica>, Status> {
         let replicas = self.as_factory().list(args).await?;
         Ok(replicas.into_iter().map(Into::into).collect::<Vec<_>>())
     }
@@ -247,10 +224,7 @@ impl GrpcReplicaFactory {
         let snapshots = self.as_factory().list_snaps(args).await?;
         Ok(snapshots.into_iter().map(Into::into).collect::<Vec<_>>())
     }
-    pub(crate) async fn list_clones(
-        &self,
-        args: &ListCloneArgs,
-    ) -> Result<Vec<Replica>, Status> {
+    pub(crate) async fn list_clones(&self, args: &ListCloneArgs) -> Result<Vec<Replica>, Status> {
         let clones = self.as_factory().list_clones(args).await?;
         Ok(clones.into_iter().map(Into::into).collect::<Vec<_>>())
     }
@@ -269,15 +243,10 @@ pub(crate) struct ReplicaGrpc {
 
 impl ReplicaGrpc {
     fn new(replica: Box<dyn ReplicaOps>) -> Self {
-        Self {
-            replica,
-        }
+        Self { replica }
     }
     /// Get a wiper for this replica.
-    pub(crate) fn wiper(
-        &self,
-        wipe_method: WipeMethod,
-    ) -> Result<Wiper, Status> {
+    pub(crate) fn wiper(&self, wipe_method: WipeMethod) -> Result<Wiper, Status> {
         let hdl = Bdev::open(&self.replica.try_as_bdev()?, true)
             .and_then(|desc| desc.into_handle())
             .map_err(|e| crate::lvs::LvsError::Invalid {
@@ -294,26 +263,21 @@ impl ReplicaGrpc {
     }
     async fn share(&mut self, args: ShareReplicaRequest) -> Result<(), Status> {
         let pool_name = self.replica.pool_name();
-        let pool_subsystem = ResourceLockManager::get_instance()
-            .get_subsystem(ProtectedSubsystems::POOL);
-        let _lock_guard =
-            acquire_subsystem_lock(pool_subsystem, Some(&pool_name)).await?;
+        let pool_subsystem =
+            ResourceLockManager::get_instance().get_subsystem(ProtectedSubsystems::POOL);
+        let _lock_guard = acquire_subsystem_lock(pool_subsystem, Some(&pool_name)).await?;
 
         let protocol = Protocol::try_from(args.share)?;
         // if we are already shared with the same protocol
         if self.replica.shared() == Some(protocol) {
             self.replica
-                .update_properties(
-                    UpdateProps::new().with_allowed_hosts(args.allowed_hosts),
-                )
+                .update_properties(UpdateProps::new().with_allowed_hosts(args.allowed_hosts))
                 .await?;
             return Ok(());
         }
 
         if let Protocol::Off = protocol {
-            return Err(Status::invalid_argument(
-                "Invalid share protocol NONE",
-            ));
+            return Err(Status::invalid_argument("Invalid share protocol NONE"));
         }
 
         let props = NvmfShareProps::new()
@@ -324,10 +288,9 @@ impl ReplicaGrpc {
     }
     async fn unshare(&mut self) -> Result<(), Status> {
         let pool_name = self.replica.pool_name();
-        let pool_subsystem = ResourceLockManager::get_instance()
-            .get_subsystem(ProtectedSubsystems::POOL);
-        let _lock_guard =
-            acquire_subsystem_lock(pool_subsystem, Some(&pool_name)).await?;
+        let pool_subsystem =
+            ResourceLockManager::get_instance().get_subsystem(ProtectedSubsystems::POOL);
+        let _lock_guard = acquire_subsystem_lock(pool_subsystem, Some(&pool_name)).await?;
 
         if self.replica.shared().is_some() {
             self.replica.unshare().await?;
@@ -346,9 +309,7 @@ impl ReplicaGrpc {
     pub(crate) fn verify_pool(&self, pool: &PoolGrpc) -> Result<(), Status> {
         let pool = pool.as_ops();
         let replica = &self.replica;
-        if pool.name() != replica.pool_name()
-            || pool.uuid() != replica.pool_uuid()
-        {
+        if pool.name() != replica.pool_name() || pool.uuid() != replica.pool_uuid() {
             let msg = format!(
                 "Specified pool: {pool:?} does not match the target replica's pool: {replica:?}!"
             );
@@ -369,10 +330,7 @@ impl From<ReplicaGrpc> for Replica {
 #[tonic::async_trait]
 impl ReplicaRpc for ReplicaService {
     #[named]
-    async fn create_replica(
-        &self,
-        request: Request<CreateReplicaRequest>,
-    ) -> GrpcResult<Replica> {
+    async fn create_replica(&self, request: Request<CreateReplicaRequest>) -> GrpcResult<Replica> {
         self.locked(
             GrpcClientContext::new(&request, function_name!()),
             async move {
@@ -391,10 +349,9 @@ impl ReplicaRpc for ReplicaService {
 
                     let args = request.into_inner();
 
-                    let pool = GrpcReplicaFactory::pool_finder(
-                        FindPoolArgs::uuid_or_name(&args.pooluuid),
-                    )
-                    .await?;
+                    let pool =
+                        GrpcReplicaFactory::pool_finder(FindPoolArgs::uuid_or_name(&args.pooluuid))
+                            .await?;
                     pool.create_replica(args).await
                 })
             },
@@ -403,10 +360,7 @@ impl ReplicaRpc for ReplicaService {
     }
 
     #[named]
-    async fn destroy_replica(
-        &self,
-        request: Request<DestroyReplicaRequest>,
-    ) -> GrpcResult<()> {
+    async fn destroy_replica(&self, request: Request<DestroyReplicaRequest>) -> GrpcResult<()> {
         self.locked(
             GrpcClientContext::new(&request, function_name!()),
             async move {
@@ -415,21 +369,15 @@ impl ReplicaRpc for ReplicaService {
                     let args = request.into_inner();
 
                     let pool = match &args.pool {
-                        Some(pool) => {
-                            Some(GrpcReplicaFactory::pool_finder(pool).await?)
-                        }
+                        Some(pool) => Some(GrpcReplicaFactory::pool_finder(pool).await?),
                         None => None,
                     };
                     let probe = FindReplicaArgs::new(&args.uuid);
-                    let replica = match GrpcReplicaFactory::finder(&probe).await
-                    {
-                        Err(mut status)
-                            if status.code() == tonic::Code::NotFound =>
-                        {
-                            status.metadata_mut().insert(
-                                "gtm-602",
-                                tonic::metadata::MetadataValue::from(0),
-                            );
+                    let replica = match GrpcReplicaFactory::finder(&probe).await {
+                        Err(mut status) if status.code() == tonic::Code::NotFound => {
+                            status
+                                .metadata_mut()
+                                .insert("gtm-602", tonic::metadata::MetadataValue::from(0));
                             Err(status)
                         }
                         _else => _else,
@@ -465,10 +413,9 @@ impl ReplicaRpc for ReplicaService {
                 let query = args.query;
                 let fargs = ListReplicaArgs::from(args);
 
-                for factory in
-                    GrpcReplicaFactory::factories().into_iter().filter(|f| {
-                        backends.is_empty() || backends.contains(&f.backend())
-                    })
+                for factory in GrpcReplicaFactory::factories()
+                    .into_iter()
+                    .filter(|f| backends.is_empty() || backends.contains(&f.backend()))
                 {
                     if let Ok(freplicas) = factory.list(&fargs).await {
                         replicas.extend(freplicas);
@@ -484,10 +431,7 @@ impl ReplicaRpc for ReplicaService {
     }
 
     #[named]
-    async fn share_replica(
-        &self,
-        request: Request<ShareReplicaRequest>,
-    ) -> GrpcResult<Replica> {
+    async fn share_replica(&self, request: Request<ShareReplicaRequest>) -> GrpcResult<Replica> {
         self.locked(
             GrpcClientContext::new(&request, function_name!()),
             async move {
@@ -495,8 +439,7 @@ impl ReplicaRpc for ReplicaService {
                     info!("{:?}", request.get_ref());
 
                     let probe = FindReplicaArgs::new(&request.get_ref().uuid);
-                    let mut replica =
-                        GrpcReplicaFactory::finder(&probe).await?;
+                    let mut replica = GrpcReplicaFactory::finder(&probe).await?;
                     replica.share(request.into_inner()).await?;
                     Ok(replica.into())
                 })
@@ -517,8 +460,7 @@ impl ReplicaRpc for ReplicaService {
                     info!("{:?}", request.get_ref());
 
                     let probe = FindReplicaArgs::new(&request.get_ref().uuid);
-                    let mut replica =
-                        GrpcReplicaFactory::finder(&probe).await?;
+                    let mut replica = GrpcReplicaFactory::finder(&probe).await?;
                     replica.unshare().await?;
                     Ok(replica.into())
                 })
@@ -528,10 +470,7 @@ impl ReplicaRpc for ReplicaService {
     }
 
     #[named]
-    async fn resize_replica(
-        &self,
-        request: Request<ResizeReplicaRequest>,
-    ) -> GrpcResult<Replica> {
+    async fn resize_replica(&self, request: Request<ResizeReplicaRequest>) -> GrpcResult<Replica> {
         self.locked(
             GrpcClientContext::new(&request, function_name!()),
             async move {
@@ -539,8 +478,7 @@ impl ReplicaRpc for ReplicaService {
                     info!("{:?}", request.get_ref());
 
                     let probe = FindReplicaArgs::new(&request.get_ref().uuid);
-                    let mut replica =
-                        GrpcReplicaFactory::finder(&probe).await?;
+                    let mut replica = GrpcReplicaFactory::finder(&probe).await?;
                     replica.resize(request.into_inner().requested_size).await?;
                     Ok(replica.into())
                 })
@@ -561,8 +499,7 @@ impl ReplicaRpc for ReplicaService {
                     info!("{:?}", request.get_ref());
 
                     let probe = FindReplicaArgs::new(&request.get_ref().uuid);
-                    let mut replica =
-                        GrpcReplicaFactory::finder(&probe).await?;
+                    let mut replica = GrpcReplicaFactory::finder(&probe).await?;
                     replica
                         .set_entity_id(request.into_inner().entity_id)
                         .await?;
@@ -583,10 +520,8 @@ impl From<LvolSpaceUsage> for ReplicaSpaceUsage {
             num_clusters: u.num_clusters,
             num_allocated_clusters: u.num_allocated_clusters,
             allocated_bytes_snapshots: u.allocated_bytes_snapshots,
-            num_allocated_clusters_snapshots: u
-                .num_allocated_clusters_snapshots,
-            allocated_bytes_snapshot_from_clone: u
-                .allocated_bytes_snapshot_from_clone,
+            num_allocated_clusters_snapshots: u.num_allocated_clusters_snapshots,
+            allocated_bytes_snapshot_from_clone: u.allocated_bytes_snapshot_from_clone,
         }
     }
 }

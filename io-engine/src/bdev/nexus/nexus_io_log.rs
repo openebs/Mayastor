@@ -39,19 +39,10 @@ impl Debug for IOLogChannelInner {
 
 impl IOLogChannelInner {
     /// Creates new I/O log channel for the given channel.
-    fn new(
-        core: u32,
-        device_name: &str,
-        num_blocks: u64,
-        block_len: u64,
-    ) -> Self {
+    fn new(core: u32, device_name: &str, num_blocks: u64, block_len: u64) -> Self {
         Self {
             core,
-            segments: UnsafeCell::new(Some(SegmentMap::new(
-                num_blocks,
-                block_len,
-                SEGMENT_SIZE,
-            ))),
+            segments: UnsafeCell::new(Some(SegmentMap::new(num_blocks, block_len, SEGMENT_SIZE))),
             device_name: device_name.to_owned(),
         }
     }
@@ -67,8 +58,7 @@ impl IOLogChannelInner {
     pub(crate) fn log_io(&self, io_type: IoType, lbn: u64, lbn_cnt: u64) {
         assert_eq!(self.core, Cores::current());
 
-        if matches!(io_type, IoType::Write | IoType::WriteZeros | IoType::Unmap)
-        {
+        if matches!(io_type, IoType::Write | IoType::WriteZeros | IoType::Unmap) {
             unsafe { &mut *self.segments.get() }
                 .as_mut()
                 .expect("Accessing stopped I/O log channel")
@@ -119,12 +109,7 @@ impl Debug for IOLogChannel {
 
 impl IOLogChannel {
     /// Creates new I/O log channel for the given channel.
-    fn new(
-        core: u32,
-        device_name: &str,
-        num_blocks: u64,
-        block_len: u64,
-    ) -> Self {
+    fn new(core: u32, device_name: &str, num_blocks: u64, block_len: u64) -> Self {
         Self(Rc::new(IOLogChannelInner::new(
             core,
             device_name,
@@ -155,20 +140,13 @@ impl Debug for IOLog {
 
 impl IOLog {
     /// Creates a new I/O log instance for the given device.
-    pub(crate) fn new(
-        device_name: &str,
-        num_blocks: u64,
-        block_len: u64,
-    ) -> Self {
+    pub(crate) fn new(device_name: &str, num_blocks: u64, block_len: u64) -> Self {
         assert!(!device_name.is_empty() && num_blocks > 0 && block_len > 0);
 
         let mut channels = HashMap::new();
 
         for i in Cores::list_cores() {
-            channels.insert(
-                i,
-                IOLogChannel::new(i, device_name, num_blocks, block_len),
-            );
+            channels.insert(i, IOLogChannel::new(i, device_name, num_blocks, block_len));
         }
 
         Self {

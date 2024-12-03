@@ -1,10 +1,4 @@
-use super::{
-    CoreError,
-    DeviceEventSink,
-    IoCompletionStatus,
-    IoType,
-    SnapshotParams,
-};
+use super::{CoreError, DeviceEventSink, IoCompletionStatus, IoType, SnapshotParams};
 
 use spdk_rs::{DmaBuf, DmaError, IoVec};
 
@@ -88,19 +82,13 @@ pub trait BlockDevice {
     async fn io_stats(&self) -> Result<BlockDeviceIoStats, CoreError>;
 
     /// Open device and obtain a descriptor.
-    fn open(
-        &self,
-        read_write: bool,
-    ) -> Result<Box<dyn BlockDeviceDescriptor>, CoreError>;
+    fn open(&self, read_write: bool) -> Result<Box<dyn BlockDeviceDescriptor>, CoreError>;
 
     /// Obtain I/O controller for device.
     fn get_io_controller(&self) -> Option<Box<dyn DeviceIoController>>;
 
     /// Register device event listener.
-    fn add_event_listener(
-        &self,
-        listener: DeviceEventSink,
-    ) -> Result<(), CoreError>;
+    fn add_event_listener(&self, listener: DeviceEventSink) -> Result<(), CoreError>;
 }
 
 /// Core trait that represents a descriptor for an opened block device.
@@ -114,9 +102,7 @@ pub trait BlockDeviceDescriptor {
     fn device_name(&self) -> String;
 
     /// Consumes BlockDeviceDescriptor and returns a BlockDeviceHandle.
-    fn into_handle(
-        self: Box<Self>,
-    ) -> Result<Box<dyn BlockDeviceHandle>, CoreError>;
+    fn into_handle(self: Box<Self>) -> Result<Box<dyn BlockDeviceHandle>, CoreError>;
 
     /// Returns a BlockDeviceHandle for this descriptor without consuming it.
     fn get_io_handle(&self) -> Result<Box<dyn BlockDeviceHandle>, CoreError>;
@@ -125,9 +111,7 @@ pub trait BlockDeviceDescriptor {
     fn unclaim(&self);
 
     /// TODO
-    async fn get_io_handle_nonblock(
-        &self,
-    ) -> Result<Box<dyn BlockDeviceHandle>, CoreError>;
+    async fn get_io_handle_nonblock(&self) -> Result<Box<dyn BlockDeviceHandle>, CoreError>;
 }
 
 /// TODO
@@ -167,19 +151,11 @@ pub trait BlockDeviceHandle {
 
     /// TODO
     #[deprecated(note = "use read_buf_blocks_async()")]
-    async fn read_at(
-        &self,
-        offset: u64,
-        buffer: &mut DmaBuf,
-    ) -> Result<u64, CoreError>;
+    async fn read_at(&self, offset: u64, buffer: &mut DmaBuf) -> Result<u64, CoreError>;
 
     /// TODO
     #[deprecated(note = "use write_buf_blocks_async()")]
-    async fn write_at(
-        &self,
-        offset: u64,
-        buffer: &DmaBuf,
-    ) -> Result<u64, CoreError>;
+    async fn write_at(&self, offset: u64, buffer: &DmaBuf) -> Result<u64, CoreError>;
 
     /// Reads the given number of blocks into the list of buffers from the
     /// device, starting at the given offset.
@@ -250,13 +226,8 @@ pub trait BlockDeviceHandle {
         num_blocks: u64,
         opts: ReadOptions,
     ) -> Result<(), CoreError> {
-        self.readv_blocks_async(
-            &mut [buf.to_io_vec()],
-            offset_blocks,
-            num_blocks,
-            opts,
-        )
-        .await
+        self.readv_blocks_async(&mut [buf.to_io_vec()], offset_blocks, num_blocks, opts)
+            .await
     }
 
     /// Writes the given number of blocks from the list of buffers to the
@@ -422,10 +393,7 @@ pub trait BlockDeviceHandle {
     async fn nvme_identify_ctrlr(&self) -> Result<DmaBuf, CoreError>;
 
     /// TODO
-    async fn create_snapshot(
-        &self,
-        params: SnapshotParams,
-    ) -> Result<u64, CoreError>;
+    async fn create_snapshot(&self, params: SnapshotParams) -> Result<u64, CoreError>;
 
     /// TODO
     async fn nvme_resv_register(
@@ -466,11 +434,7 @@ pub trait BlockDeviceHandle {
     }
 
     /// TODO
-    async fn nvme_resv_report(
-        &self,
-        _cdw11: u32,
-        _buffer: &mut DmaBuf,
-    ) -> Result<(), CoreError> {
+    async fn nvme_resv_report(&self, _cdw11: u32, _buffer: &mut DmaBuf) -> Result<(), CoreError> {
         Err(CoreError::NotSupported {
             source: Errno::EOPNOTSUPP,
         })
@@ -536,8 +500,5 @@ pub trait DeviceIoController {
     fn get_timeout_action(&self) -> Result<DeviceTimeoutAction, CoreError>;
 
     /// TODO
-    fn set_timeout_action(
-        &mut self,
-        action: DeviceTimeoutAction,
-    ) -> Result<(), CoreError>;
+    fn set_timeout_action(&mut self, action: DeviceTimeoutAction) -> Result<(), CoreError>;
 }

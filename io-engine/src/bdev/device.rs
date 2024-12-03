@@ -14,58 +14,25 @@ use once_cell::sync::{Lazy, OnceCell};
 
 use spdk_rs::{
     libspdk::{
-        spdk_bdev_comparev_blocks,
-        spdk_bdev_flush,
-        spdk_bdev_free_io,
-        spdk_bdev_io,
-        spdk_bdev_readv_blocks_with_flags,
-        spdk_bdev_reset,
-        spdk_bdev_unmap_blocks,
-        spdk_bdev_write_zeroes_blocks,
-        spdk_bdev_writev_blocks,
-        SPDK_NVME_IO_FLAGS_UNWRITTEN_READ_FAIL,
-        SPDK_NVME_IO_FLAG_CURRENT_UNWRITTEN_READ_FAIL,
+        spdk_bdev_comparev_blocks, spdk_bdev_flush, spdk_bdev_free_io, spdk_bdev_io,
+        spdk_bdev_readv_blocks_with_flags, spdk_bdev_reset, spdk_bdev_unmap_blocks,
+        spdk_bdev_write_zeroes_blocks, spdk_bdev_writev_blocks,
+        SPDK_NVME_IO_FLAGS_UNWRITTEN_READ_FAIL, SPDK_NVME_IO_FLAG_CURRENT_UNWRITTEN_READ_FAIL,
     },
-    nvme_admin_opc,
-    AsIoVecPtr,
-    BdevOps,
-    DmaBuf,
-    DmaError,
-    IoType,
-    IoVec,
+    nvme_admin_opc, AsIoVecPtr, BdevOps, DmaBuf, DmaError, IoType, IoVec,
 };
 
 use crate::core::{
-    mempool::MemoryPool,
-    Bdev,
-    BdevHandle,
-    BlockDevice,
-    BlockDeviceDescriptor,
-    BlockDeviceHandle,
-    BlockDeviceIoStats,
-    CoreError,
-    DeviceEventDispatcher,
-    DeviceEventSink,
-    DeviceEventType,
-    DeviceIoController,
-    IoCompletionCallback,
-    IoCompletionCallbackArg,
-    IoCompletionStatus,
-    NvmeStatus,
-    ReadOptions,
-    SnapshotParams,
-    ToErrno,
-    UntypedBdev,
-    UntypedBdevHandle,
+    mempool::MemoryPool, Bdev, BdevHandle, BlockDevice, BlockDeviceDescriptor, BlockDeviceHandle,
+    BlockDeviceIoStats, CoreError, DeviceEventDispatcher, DeviceEventSink, DeviceEventType,
+    DeviceIoController, IoCompletionCallback, IoCompletionCallbackArg, IoCompletionStatus,
+    NvmeStatus, ReadOptions, SnapshotParams, ToErrno, UntypedBdev, UntypedBdevHandle,
     UntypedDescriptorGuard,
 };
 
 #[cfg(feature = "fault-injection")]
 use crate::core::fault_injection::{
-    inject_completion_error,
-    inject_submission_error,
-    FaultDomain,
-    InjectIoCtx,
+    inject_completion_error, inject_submission_error, FaultDomain, InjectIoCtx,
 };
 use crate::replica_backend::ReplicaFactory;
 
@@ -150,10 +117,7 @@ impl BlockDevice for SpdkBlockDevice {
         self.0.stats_async().await
     }
     /// open the device returning descriptor to the device
-    fn open(
-        &self,
-        read_write: bool,
-    ) -> Result<Box<dyn BlockDeviceDescriptor>, CoreError> {
+    fn open(&self, read_write: bool) -> Result<Box<dyn BlockDeviceDescriptor>, CoreError> {
         let descr = self.0.open(read_write)?;
         Ok(Box::new(SpdkBlockDeviceDescriptor::from(descr)))
     }
@@ -163,10 +127,7 @@ impl BlockDevice for SpdkBlockDevice {
         None
     }
     /// add a callback to be called when a particular event is received
-    fn add_event_listener(
-        &self,
-        listener: DeviceEventSink,
-    ) -> Result<(), CoreError> {
+    fn add_event_listener(&self, listener: DeviceEventSink) -> Result<(), CoreError> {
         let mut map = BDEV_EVENT_DISPATCHER.lock().expect("lock poisoned");
         let disp = map.entry(self.device_name()).or_default();
         disp.add_listener(listener);
@@ -194,9 +155,7 @@ impl BlockDeviceDescriptor for SpdkBlockDeviceDescriptor {
         self.0.bdev().name().to_string()
     }
 
-    fn into_handle(
-        self: Box<Self>,
-    ) -> Result<Box<dyn BlockDeviceHandle>, CoreError> {
+    fn into_handle(self: Box<Self>) -> Result<Box<dyn BlockDeviceHandle>, CoreError> {
         let handle = SpdkBlockDeviceHandle::try_from(self.0)?;
         Ok(Box::new(handle))
     }
@@ -206,9 +165,7 @@ impl BlockDeviceDescriptor for SpdkBlockDeviceDescriptor {
         Ok(Box::new(handle))
     }
 
-    async fn get_io_handle_nonblock(
-        &self,
-    ) -> Result<Box<dyn BlockDeviceHandle>, CoreError> {
+    async fn get_io_handle_nonblock(&self) -> Result<Box<dyn BlockDeviceHandle>, CoreError> {
         let handle = SpdkBlockDeviceHandle::try_from(self.0.clone())?;
         Ok(Box::new(handle))
     }
@@ -228,9 +185,7 @@ struct SpdkBlockDeviceHandle {
 impl TryFrom<Arc<UntypedDescriptorGuard>> for SpdkBlockDeviceHandle {
     type Error = CoreError;
 
-    fn try_from(
-        desc: Arc<UntypedDescriptorGuard>,
-    ) -> Result<Self, Self::Error> {
+    fn try_from(desc: Arc<UntypedDescriptorGuard>) -> Result<Self, Self::Error> {
         let handle = BdevHandle::try_from(desc)?;
         Ok(SpdkBlockDeviceHandle::from(handle))
     }
@@ -255,19 +210,11 @@ impl BlockDeviceHandle for SpdkBlockDeviceHandle {
         DmaBuf::new(size, self.device.alignment())
     }
 
-    async fn read_at(
-        &self,
-        offset: u64,
-        buffer: &mut DmaBuf,
-    ) -> Result<u64, CoreError> {
+    async fn read_at(&self, offset: u64, buffer: &mut DmaBuf) -> Result<u64, CoreError> {
         self.handle.read_at(offset, buffer).await
     }
 
-    async fn write_at(
-        &self,
-        offset: u64,
-        buffer: &DmaBuf,
-    ) -> Result<u64, CoreError> {
+    async fn write_at(&self, offset: u64, buffer: &DmaBuf) -> Result<u64, CoreError> {
         self.handle.write_at(offset, buffer).await
     }
 
@@ -452,14 +399,8 @@ impl BlockDeviceHandle for SpdkBlockDeviceHandle {
         )?;
 
         let (desc, chan) = self.handle.io_tuple();
-        let rc = unsafe {
-            spdk_bdev_reset(
-                desc,
-                chan,
-                Some(bdev_io_completion),
-                ctx as *mut c_void,
-            )
-        };
+        let rc =
+            unsafe { spdk_bdev_reset(desc, chan, Some(bdev_io_completion), ctx as *mut c_void) };
 
         if rc < 0 {
             Err(CoreError::ResetDispatch {
@@ -585,10 +526,7 @@ impl BlockDeviceHandle for SpdkBlockDeviceHandle {
     }
 
     /// NVMe commands are not applicable for non-NVMe devices.
-    async fn create_snapshot(
-        &self,
-        snapshot: SnapshotParams,
-    ) -> Result<u64, CoreError> {
+    async fn create_snapshot(&self, snapshot: SnapshotParams) -> Result<u64, CoreError> {
         let bdev = self.handle.get_bdev();
 
         let Some(mut replica) = ReplicaFactory::bdev_as_replica(bdev) else {
@@ -597,12 +535,13 @@ impl BlockDeviceHandle for SpdkBlockDeviceHandle {
             });
         };
 
-        replica.create_snapshot(snapshot).await.map_err(|e| {
-            CoreError::SnapshotCreate {
+        replica
+            .create_snapshot(snapshot)
+            .await
+            .map_err(|e| CoreError::SnapshotCreate {
                 reason: e.to_string(),
                 source: e.to_errno(),
-            }
-        })?;
+            })?;
 
         Ok(0)
     }
@@ -659,12 +598,7 @@ struct IoCtx {
 
 /// TODO
 #[inline]
-pub fn io_type_to_err(
-    op: IoType,
-    source: Errno,
-    offset: u64,
-    len: u64,
-) -> CoreError {
+pub fn io_type_to_err(op: IoType, source: Errno, offset: u64, len: u64) -> CoreError {
     match op {
         IoType::Read => CoreError::ReadDispatch {
             source,
@@ -686,14 +620,10 @@ pub fn io_type_to_err(
             offset,
             len,
         },
-        IoType::Reset => CoreError::ResetDispatch {
-            source,
-        },
+        IoType::Reset => CoreError::ResetDispatch { source },
         _ => {
             warn!("Unsupported I/O operation: {:?}", op);
-            CoreError::NotSupported {
-                source,
-            }
+            CoreError::NotSupported { source }
         }
     }
 }
@@ -702,9 +632,8 @@ pub fn io_type_to_err(
 /// This must be called before the first I/O operations take place.
 pub fn bdev_io_ctx_pool_init(size: u64) {
     BDEV_IOCTX_POOL.get_or_init(|| {
-        MemoryPool::<IoCtx>::create("bdev_io_ctx", size).expect(
-            "Failed to create memory pool [bdev_io_ctx] for bdev I/O contexts",
-        )
+        MemoryPool::<IoCtx>::create("bdev_io_ctx", size)
+            .expect("Failed to create memory pool [bdev_io_ctx] for bdev I/O contexts")
     });
 }
 
@@ -716,9 +645,8 @@ fn alloc_bdev_io_ctx(
     num_blocks: u64,
 ) -> Result<*mut IoCtx, CoreError> {
     let pool = BDEV_IOCTX_POOL.get().unwrap();
-    pool.get(ctx).ok_or_else(|| {
-        io_type_to_err(op, Errno::ENOMEM, offset_blocks, num_blocks)
-    })
+    pool.get(ctx)
+        .ok_or_else(|| io_type_to_err(op, Errno::ENOMEM, offset_blocks, num_blocks))
 }
 
 /// Release the memory used by the bdev I/O context back to the pool.
@@ -727,11 +655,7 @@ fn free_bdev_io_ctx(ctx: *mut IoCtx) {
     pool.put(ctx);
 }
 
-extern "C" fn bdev_io_completion(
-    child_bio: *mut spdk_bdev_io,
-    success: bool,
-    ctx: *mut c_void,
-) {
+extern "C" fn bdev_io_completion(child_bio: *mut spdk_bdev_io, success: bool, ctx: *mut c_void) {
     let bio = unsafe { &mut *(ctx as *mut IoCtx) };
 
     // Get extended NVMe error status from original bio in case of error.
@@ -764,10 +688,7 @@ fn dispatch_bdev_event(event: DeviceEventType, name: &str) {
 }
 
 /// Called by spdk when there is an asynchronous bdev event i.e. removal.
-pub fn bdev_event_callback<T: BdevOps>(
-    event: spdk_rs::BdevEvent,
-    bdev: spdk_rs::Bdev<T>,
-) {
+pub fn bdev_event_callback<T: BdevOps>(event: spdk_rs::BdevEvent, bdev: spdk_rs::Bdev<T>) {
     let dev = Bdev::<T>::new(bdev);
 
     // Translate SPDK events into common device events.
@@ -801,12 +722,8 @@ impl From<ReadOptions> for u32 {
     fn from(opts: ReadOptions) -> Self {
         match opts {
             ReadOptions::None => 0,
-            ReadOptions::UnwrittenFail => {
-                SPDK_NVME_IO_FLAGS_UNWRITTEN_READ_FAIL
-            }
-            ReadOptions::CurrentUnwrittenFail => {
-                SPDK_NVME_IO_FLAG_CURRENT_UNWRITTEN_READ_FAIL
-            }
+            ReadOptions::UnwrittenFail => SPDK_NVME_IO_FLAGS_UNWRITTEN_READ_FAIL,
+            ReadOptions::CurrentUnwrittenFail => SPDK_NVME_IO_FLAG_CURRENT_UNWRITTEN_READ_FAIL,
         }
     }
 }

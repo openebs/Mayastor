@@ -4,16 +4,9 @@ use io_engine::{
 };
 use prettytable::{row, Table};
 use spdk_rs::libspdk::{
-    spdk_bit_array,
-    spdk_bit_array_capacity,
-    spdk_bit_array_get,
-    spdk_bit_pool,
-    spdk_bit_pool_capacity,
-    spdk_bit_pool_is_allocated,
-    spdk_blob_calc_used_clusters,
-    spdk_blob_is_thin_provisioned,
-    spdk_blob_mut_data,
-    spdk_blob_store,
+    spdk_bit_array, spdk_bit_array_capacity, spdk_bit_array_get, spdk_bit_pool,
+    spdk_bit_pool_capacity, spdk_bit_pool_is_allocated, spdk_blob_calc_used_clusters,
+    spdk_blob_is_thin_provisioned, spdk_blob_mut_data, spdk_blob_store,
 };
 
 /// TODO
@@ -142,11 +135,7 @@ pub fn print_replica(lvol: &Lvol) {
 }
 
 /// TODO
-pub fn print_blob_data(
-    name: &str,
-    bs: &spdk_blob_store,
-    blob: &spdk_blob_mut_data,
-) {
+pub fn print_blob_data(name: &str, bs: &spdk_blob_store, blob: &spdk_blob_mut_data) {
     println!("{name}:");
 
     // Clusters.
@@ -155,7 +144,7 @@ pub fn print_blob_data(
         blob.num_clusters, blob.num_allocated_clusters
     );
     print!("    ");
-    for i in 0 .. blob.num_allocated_clusters as isize {
+    for i in 0..blob.num_allocated_clusters as isize {
         let lba = unsafe { *blob.clusters.offset(i) };
         let num = lba_to_cluster(bs, lba);
         print!("0x{num:x} ");
@@ -168,7 +157,7 @@ pub fn print_blob_data(
         blob.num_clusters, blob.num_allocated_clusters
     );
     print!("    ");
-    for i in 0 .. blob.num_allocated_clusters as isize {
+    for i in 0..blob.num_allocated_clusters as isize {
         let c = unsafe { *blob.clusters.offset(i) };
         print!("0x{c:x} ");
     }
@@ -180,7 +169,7 @@ pub fn print_blob_data(
         blob.num_extent_pages, blob.extent_pages_array_size
     );
     print!("    ");
-    for i in 0 .. blob.extent_pages_array_size as isize {
+    for i in 0..blob.extent_pages_array_size as isize {
         let c = unsafe { *blob.extent_pages.offset(i) };
         print!("0x{c:x} ");
     }
@@ -199,7 +188,7 @@ fn print_used_array_bits(ba: *const spdk_bit_array, cnt: Option<u32>) {
     let cnt = cnt.unwrap_or_else(|| unsafe { spdk_bit_array_capacity(ba) });
     let mut total = 0;
 
-    for i in 0 .. cnt {
+    for i in 0..cnt {
         let v = unsafe { spdk_bit_array_get(ba, i) };
         if v {
             print!("0x{i:x} ");
@@ -216,7 +205,7 @@ fn print_used_pool_bits(bp: *const spdk_bit_pool, cnt: Option<u32>) {
     let cnt = cnt.unwrap_or_else(|| unsafe { spdk_bit_pool_capacity(bp) });
     let mut total = 0;
 
-    for i in 0 .. cnt {
+    for i in 0..cnt {
         let v = unsafe { spdk_bit_pool_is_allocated(bp, i) };
         if v {
             print!("0x{i:x} ");

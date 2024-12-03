@@ -12,8 +12,7 @@ use tonic::Status;
 
 pub fn subcommands() -> Command {
     let list = Command::new("list").about("List existing NVMe controllers");
-    let stats = Command::new("stats")
-        .about("Display I/O statistics for NVMe controllers");
+    let stats = Command::new("stats").about("Display I/O statistics for NVMe controllers");
 
     Command::new("controller")
         .subcommand_required(true)
@@ -28,8 +27,7 @@ pub async fn handler(ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
         ("list", args) => list_controllers(ctx, args).await,
         ("stats", args) => controller_stats(ctx, args).await,
         (cmd, _) => {
-            Err(Status::not_found(format!("command {cmd} does not exist")))
-                .context(GrpcStatus)
+            Err(Status::not_found(format!("command {cmd} does not exist"))).context(GrpcStatus)
         }
     }
 }
@@ -46,10 +44,7 @@ fn controller_state_to_str(idx: i32) -> String {
     .to_string()
 }
 
-async fn controller_stats(
-    mut ctx: Context,
-    _matches: &ArgMatches,
-) -> crate::Result<()> {
+async fn controller_stats(mut ctx: Context, _matches: &ArgMatches) -> crate::Result<()> {
     let response = ctx
         .client
         .stat_nvme_controllers(rpc::Null {})
@@ -101,10 +96,7 @@ async fn controller_stats(
     Ok(())
 }
 
-async fn list_controllers(
-    mut ctx: Context,
-    _matches: &ArgMatches,
-) -> crate::Result<()> {
+async fn list_controllers(mut ctx: Context, _matches: &ArgMatches) -> crate::Result<()> {
     let response = ctx
         .client
         .list_nvme_controllers(rpc::Null {})

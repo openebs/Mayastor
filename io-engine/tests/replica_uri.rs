@@ -1,17 +1,10 @@
 use common::compose::{
     rpc::v0::{
         mayastor::{
-            Bdev,
-            CreateNexusRequest,
-            CreatePoolRequest,
-            CreateReplicaRequest,
-            Null,
-            Replica,
-            ShareProtocolReplica,
-            ShareReplicaRequest,
+            Bdev, CreateNexusRequest, CreatePoolRequest, CreateReplicaRequest, Null, Replica,
+            ShareProtocolReplica, ShareReplicaRequest,
         },
-        GrpcConnect,
-        RpcHandle,
+        GrpcConnect, RpcHandle,
     },
     Builder,
 };
@@ -59,10 +52,7 @@ async fn replica_uri() {
         hdl.mayastor
             .create_pool(CreatePoolRequest {
                 name: pool_name(i),
-                disks: vec![format!(
-                    "malloc:///disk0?size_mb={}",
-                    DISKSIZE_KB / 1024
-                )],
+                disks: vec![format!("malloc:///disk0?size_mb={}", DISKSIZE_KB / 1024)],
             })
             .await
             .unwrap();

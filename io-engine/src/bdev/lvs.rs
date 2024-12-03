@@ -75,8 +75,7 @@ impl TryFrom<&Url> for Lvol {
             });
         }
 
-        let mut parameters: HashMap<String, String> =
-            uri.query_pairs().into_owned().collect();
+        let mut parameters: HashMap<String, String> = uri.query_pairs().into_owned().collect();
 
         let size = parameters
             .remove("size")
@@ -85,11 +84,9 @@ impl TryFrom<&Url> for Lvol {
                 message: "'size' is not specified".to_string(),
             })
             .and_then(|size| {
-                byte_unit::Byte::parse_str(&size, true).map_err(|error| {
-                    BdevError::InvalidUri {
-                        uri: uri.to_string(),
-                        message: format!("'size' is invalid: {error}"),
-                    }
+                byte_unit::Byte::parse_str(&size, true).map_err(|error| BdevError::InvalidUri {
+                    uri: uri.to_string(),
+                    message: format!("'size' is invalid: {error}"),
                 })
             })?
             .as_u64();
@@ -108,7 +105,7 @@ impl TryFrom<&Url> for Lvol {
         reject_unknown_parameters(uri, parameters)?;
 
         Ok(Self {
-            name: uri.path()[1 ..].into(),
+            name: uri.path()[1..].into(),
             size,
             lvs,
         })
@@ -119,11 +116,7 @@ impl TryFrom<String> for Lvs {
     type Error = BdevError;
 
     fn try_from(uri: String) -> Result<Self, Self::Error> {
-        let uri =
-            Url::parse(&uri).map_err(|source| BdevError::UriParseFailed {
-                uri,
-                source,
-            })?;
+        let uri = Url::parse(&uri).map_err(|source| BdevError::UriParseFailed { uri, source })?;
         let segments = uri::segments(&uri);
         if segments.is_empty() {
             return Err(BdevError::InvalidUri {
@@ -132,8 +125,7 @@ impl TryFrom<String> for Lvs {
             });
         }
 
-        let mut parameters: HashMap<String, String> =
-            uri.query_pairs().into_owned().collect();
+        let mut parameters: HashMap<String, String> = uri.query_pairs().into_owned().collect();
 
         let disk = parameters.remove("disk").ok_or(BdevError::InvalidUri {
             uri: uri.to_string(),
@@ -149,7 +141,7 @@ impl TryFrom<String> for Lvs {
             .map(LvsMode::from)?;
 
         Ok(Lvs {
-            name: uri.path()[1 ..].into(),
+            name: uri.path()[1..].into(),
             disk,
             mode,
         })
@@ -219,22 +211,18 @@ impl Lvs {
             backend: PoolBackend::Lvs,
         };
         match &self.mode {
-            LvsMode::Create => {
-                match crate::lvs::Lvs::import_from_args(args.clone()).await {
-                    Err(crate::lvs::LvsError::Import {
-                        ..
-                    }) => crate::lvs::Lvs::create_or_import(args).await,
-                    _ => {
-                        return Err(BdevError::BdevExists {
-                            name: self.name.to_owned(),
-                        })
-                    }
+            LvsMode::Create => match crate::lvs::Lvs::import_from_args(args.clone()).await {
+                Err(crate::lvs::LvsError::Import { .. }) => {
+                    crate::lvs::Lvs::create_or_import(args).await
                 }
-            }
+                _ => {
+                    return Err(BdevError::BdevExists {
+                        name: self.name.to_owned(),
+                    })
+                }
+            },
             LvsMode::Import => crate::lvs::Lvs::import_from_args(args).await,
-            LvsMode::CreateOrImport => {
-                crate::lvs::Lvs::create_or_import(args).await
-            }
+            LvsMode::CreateOrImport => crate::lvs::Lvs::create_or_import(args).await,
             LvsMode::Purge => {
                 Self::wipe_super(args.clone()).await?;
                 crate::lvs::Lvs::create_or_import(args).await
@@ -248,22 +236,16 @@ impl Lvs {
 
     async fn wipe_super(args: PoolArgs) -> Result<(), BdevError> {
         let disk =
-            crate::lvs::Lvs::parse_disk(args.disks.clone()).map_err(|_| {
-                BdevError::InvalidUri {
-                    uri: String::new(),
-                    message: String::new(),
-                }
+            crate::lvs::Lvs::parse_disk(args.disks.clone()).map_err(|_| BdevError::InvalidUri {
+                uri: String::new(),
+                message: String::new(),
             })?;
 
         let parsed = super::uri::parse(&disk)?;
         let bdev_str = parsed.create().await?;
         {
-            let bdev =
-                crate::core::Bdev::get_by_name(&bdev_str).map_err(|_| {
-                    BdevError::BdevNotFound {
-                        name: bdev_str,
-                    }
-                })?;
+            let bdev = crate::core::Bdev::get_by_name(&bdev_str)
+                .map_err(|_| BdevError::BdevNotFound { name: bdev_str })?;
 
             let hdl = crate::core::Bdev::open(&bdev, true)
                 .and_then(|desc| desc.into_handle())
@@ -271,11 +253,9 @@ impl Lvs {
                     name: bdev.name().into(),
                 })?;
 
-            let mut wiper = crate::core::wiper::Wiper::new(
-                hdl,
-                crate::core::wiper::WipeMethod::WriteZeroes,
-            )
-            .map_err(|_| BdevError::WipeFailed {})?;
+            let mut wiper =
+                crate::core::wiper::Wiper::new(hdl, crate::core::wiper::WipeMethod::WriteZeroes)
+                    .map_err(|_| BdevError::WipeFailed {})?;
             wiper
                 .wipe(0, 8 * 1024 * 1024)
                 .await
@@ -316,11 +296,12 @@ impl Lvs {
         let Some(lvol) = lvols.into_iter().find(|l| l.name() == name) else {
             return Ok(());
         };
-        lvol.destroy().await.map(|_| ()).map_err(|error| {
-            BdevError::DestroyBdevFailedStr {
+        lvol.destroy()
+            .await
+            .map(|_| ())
+            .map_err(|error| BdevError::DestroyBdevFailedStr {
                 error: error.to_string(),
                 name: self.name.to_owned(),
-            }
-        })
+            })
     }
 }

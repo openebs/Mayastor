@@ -10,12 +10,7 @@ use crossbeam::channel::{unbounded, Receiver, Sender};
 use futures::{channel::oneshot, FutureExt, StreamExt};
 
 use super::{
-    RebuildDescriptor,
-    RebuildError,
-    RebuildState,
-    RebuildStates,
-    RebuildStats,
-    RebuildTasks,
+    RebuildDescriptor, RebuildError, RebuildState, RebuildStates, RebuildStats, RebuildTasks,
     TaskResult,
 };
 
@@ -39,25 +34,18 @@ pub(super) struct RebuildFBendChan {
 impl RebuildFBendChan {
     fn new() -> Self {
         let (sender, receiver) = async_channel::unbounded();
-        Self {
-            sender,
-            receiver,
-        }
+        Self { sender, receiver }
     }
     async fn recv(&mut self) -> Option<RebuildJobRequest> {
         self.receiver.recv().await.ok()
     }
 
     /// Get a clone of the receive channel.
-    pub(super) fn recv_clone(
-        &self,
-    ) -> async_channel::Receiver<RebuildJobRequest> {
+    pub(super) fn recv_clone(&self) -> async_channel::Receiver<RebuildJobRequest> {
         self.receiver.clone()
     }
     /// Get a clone of the send channel.
-    pub(super) fn sender_clone(
-        &self,
-    ) -> async_channel::Sender<RebuildJobRequest> {
+    pub(super) fn sender_clone(&self) -> async_channel::Sender<RebuildJobRequest> {
         self.sender.clone()
     }
 }
@@ -66,9 +54,7 @@ impl RebuildFBendChan {
 /// A rebuild backend must implement this trait allowing it to
 /// be used by the `RebuildJobManager`.
 #[async_trait::async_trait(?Send)]
-pub(super) trait RebuildBackend:
-    std::fmt::Debug + std::fmt::Display
-{
+pub(super) trait RebuildBackend: std::fmt::Debug + std::fmt::Display {
     /// Callback for rebuild state change notifications.
     fn on_state_change(&mut self);
 
@@ -99,8 +85,7 @@ pub(super) struct RebuildJobManager {
     /// Current state of the rebuild job.
     pub(super) states: Arc<parking_lot::RwLock<RebuildStates>>,
     /// Channel list which allows the await of the rebuild.
-    pub(super) complete_chan:
-        Arc<parking_lot::Mutex<Vec<oneshot::Sender<RebuildState>>>>,
+    pub(super) complete_chan: Arc<parking_lot::Mutex<Vec<oneshot::Sender<RebuildState>>>>,
     /// Channel to share information between frontend and backend.
     pub(super) info_chan: RebuildFBendChan,
     /// Job serial number.
@@ -167,10 +152,7 @@ impl RebuildJobManager {
             serial,
         }
     }
-    pub fn into_backend(
-        self,
-        backend: impl RebuildBackend + 'static,
-    ) -> RebuildJobBackendManager {
+    pub fn into_backend(self, backend: impl RebuildBackend + 'static) -> RebuildJobBackendManager {
         RebuildJobBackendManager {
             manager: self,
             backend: Box::new(backend),
@@ -284,10 +266,7 @@ impl RebuildJobBackendManager {
     }
 
     /// Internal operations can bypass previous pending operations.
-    fn exec_internal_op(
-        &self,
-        op: super::RebuildOperation,
-    ) -> Result<bool, RebuildError> {
+    fn exec_internal_op(&self, op: super::RebuildOperation) -> Result<bool, RebuildError> {
         self.states.write().exec_op(op, true)
     }
 
@@ -305,8 +284,7 @@ impl RebuildJobBackendManager {
         );
 
         let blocks_transferred = std::cmp::min(
-            self.task_pool().segments_transferred
-                * descriptor.segment_size_blks,
+            self.task_pool().segments_transferred * descriptor.segment_size_blks,
             blocks_total,
         );
 
@@ -354,9 +332,7 @@ impl RebuildJobBackendManager {
             "{self}: failed to wait for {active} rebuild tasks \
             due to task channel failure"
         );
-        self.fail_with(RebuildError::RebuildTasksChannel {
-            active,
-        });
+        self.fail_with(RebuildError::RebuildTasksChannel { active });
     }
     fn task_pool(&self) -> &RebuildTasks {
         self.backend.task_pool()
@@ -372,7 +348,7 @@ impl RebuildJobBackendManager {
             self.task_pool().active
         );
 
-        for n in 0 .. self.task_pool().total {
+        for n in 0..self.task_pool().total {
             if !self.start_task_by_id(n) {
                 break;
             }
@@ -468,10 +444,7 @@ impl RebuildJobBackendManager {
 
     /// Handles a request messages replying to it if necessary.
     /// Returns false if the message was empty (ie the frontend is gone)
-    async fn handle_message(
-        &mut self,
-        message: Option<RebuildJobRequest>,
-    ) -> bool {
+    async fn handle_message(&mut self, message: Option<RebuildJobRequest>) -> bool {
         match message {
             Some(RebuildJobRequest::WakeUp) => {}
             Some(RebuildJobRequest::GetStats(reply)) => {

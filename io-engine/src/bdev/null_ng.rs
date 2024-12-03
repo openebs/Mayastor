@@ -2,16 +2,8 @@ use parking_lot::Mutex;
 use std::{cell::RefCell, marker::PhantomData, pin::Pin, time::Duration};
 
 use spdk_rs::{
-    BdevIo,
-    BdevModule,
-    BdevModuleBuild,
-    BdevOps,
-    IoChannel,
-    IoDevice,
-    IoType,
-    Poller,
-    PollerBuilder,
-    WithModuleInit,
+    BdevIo, BdevModule, BdevModuleBuild, BdevOps, IoChannel, IoDevice, IoType, Poller,
+    PollerBuilder, WithModuleInit,
 };
 
 const NULL_MODULE_NAME: &str = "NullNg";
@@ -94,17 +86,11 @@ impl<'a> BdevOps for NullIoDevice<'a> {
     }
 
     /// TODO
-    fn submit_request(
-        &self,
-        io_chan: IoChannel<Self::ChannelData>,
-        bio: BdevIo<Self>,
-    ) {
+    fn submit_request(&self, io_chan: IoChannel<Self::ChannelData>, bio: BdevIo<Self>) {
         let chan_data = io_chan.channel_data();
 
         match bio.io_type() {
-            IoType::Read | IoType::Write => {
-                chan_data.poller.data().iovs.lock().push(bio)
-            }
+            IoType::Read | IoType::Write => chan_data.poller.data().iovs.lock().push(bio),
             _ => bio.fail(),
         };
     }

@@ -99,9 +99,7 @@ pub fn nvme_connect(
         .unwrap();
 
     if !status.success() {
-        let msg = format!(
-            "failed to connect to {target_addr}, nqn '{nqn}': {status}"
-        );
+        let msg = format!("failed to connect to {target_addr}, nqn '{nqn}': {status}");
         if must_succeed {
             panic!("{}", msg);
         } else {
@@ -146,18 +144,14 @@ pub fn list_mayastor_nvme_devices() -> Vec<libnvme_rs::NvmeDevice> {
         .collect()
 }
 
-pub fn find_mayastor_nvme_device(
-    serial: &str,
-) -> Option<libnvme_rs::NvmeDevice> {
+pub fn find_mayastor_nvme_device(serial: &str) -> Option<libnvme_rs::NvmeDevice> {
     list_mayastor_nvme_devices()
         .into_iter()
         .find(|d| d.serial == serial)
 }
 
 /// Returns /dev/ file path for the given NVMe serial.
-pub fn find_mayastor_nvme_device_path(
-    serial: &str,
-) -> std::io::Result<PathBuf> {
+pub fn find_mayastor_nvme_device_path(serial: &str) -> std::io::Result<PathBuf> {
     list_mayastor_nvme_devices()
         .into_iter()
         .find(|d| d.serial == serial)

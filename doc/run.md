@@ -70,13 +70,13 @@ In order to use the full feature set of Mayastor, some or all of the following c
 - A Linux Kernel 5.1+ (with [`io-uring`][io_uring-intro] support)
 - The following kernel modules loaded:
 
-  - `nbd`: Network Block Device support
-  - `nvmet`: NVMe Target support
-  - `nvmet_rdma`: NVMe Target (rDMA) support
-  - `nvme_fabrics`: NVMe over Fabric support
-  - `nvme_tcp`: NVMe over TCP support
-  - `nvme_rdma`: NVMe (rDMA) support
-  - `nvme_loop`: NVMe Loop Device support
+    - `nbd`: Network Block Device support
+    - `nvmet`: NVMe Target support
+    - `nvmet_rdma`: NVMe Target (rDMA) support
+    - `nvme_fabrics`: NVMe over Fabric support
+    - `nvme_tcp`: NVMe over TCP support
+    - `nvme_rdma`: NVMe (rDMA) support
+    - `nvme_loop`: NVMe Loop Device support
 
   To load these on NixOS:
 
@@ -95,7 +95,7 @@ In order to use the full feature set of Mayastor, some or all of the following c
 
 - For Asymmetric Namespace Access (ANA) support (early preview), the following kernel build configuration enabled:
 
-  - `CONFIG_NVME_MULTIPATH`: enables support for multipath access to NVMe subsystems
+    - `CONFIG_NVME_MULTIPATH`: enables support for multipath access to NVMe subsystems
 
   This is usually already enabled in distributions kernels, at least for RHEL/CentOS 8.2, Ubuntu 20.04 LTS, and SUSE
   Linux Enterprise 15.2.
@@ -174,8 +174,8 @@ retag these to `latest` if required. If you forget, check `docker images`.
 **`io-engine-client`** and **`mayastor-csi`**:
 
 ```bash
-docker run --interactive --rm mayadata/io-engine-client:${TAG}
-docker run --interactive --rm mayadata/mayastor-csi:${TAG}
+docker run --interactive --rm openebs/mayastor-io-engine-client:${TAG}
+docker run --interactive --rm openebs/mayastor-io-engine:${TAG}
 ```
 
 **`mayastor`** requires some special parameters:
@@ -189,7 +189,7 @@ docker run \
   --volume /dev/shm:/dev/shm:rw \
   --volume /dev/hugepages:/dev/hugepages:rw \
   --network host \
-  mayadata/mayastor:${TAG}
+  openebs/mayastor-io-engine:${TAG}
 ```
 
 Why these parameters?

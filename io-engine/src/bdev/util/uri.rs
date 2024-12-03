@@ -22,10 +22,7 @@ pub(crate) fn segments(url: &Url) -> Vec<&str> {
 /// Acceptable values are: true, false, yes, no, on, off
 /// Also accept an (unsigned) integer, where 0 represents false
 /// and any other value represents true
-pub(crate) fn boolean(
-    value: &str,
-    empty: bool,
-) -> Result<bool, ParseBoolError> {
+pub(crate) fn boolean(value: &str, empty: bool) -> Result<bool, ParseBoolError> {
     if value.is_empty() {
         return Ok(empty);
     }
@@ -41,8 +38,6 @@ pub(crate) fn boolean(
     value.parse::<bool>()
 }
 
-pub(crate) fn uuid(
-    value: Option<String>,
-) -> Result<Option<uuid::Uuid>, uuid::Error> {
+pub(crate) fn uuid(value: Option<String>) -> Result<Option<uuid::Uuid>, uuid::Error> {
     value.map(|uuid| uuid::Uuid::parse_str(&uuid)).transpose()
 }

@@ -1,11 +1,5 @@
 use io_engine::core::{
-    mayastor_env_stop,
-    Cores,
-    MayastorCliArgs,
-    MayastorEnvironment,
-    Mthread,
-    ReactorState,
-    Reactors,
+    mayastor_env_stop, Cores, MayastorCliArgs, MayastorEnvironment, Mthread, ReactorState, Reactors,
 };
 use std::sync::atomic::{AtomicUsize, Ordering};
 

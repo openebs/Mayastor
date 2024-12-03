@@ -4,11 +4,9 @@ use common::{
     compose::{
         rpc::v1::{
             nexus::{ChildState, ChildStateReason},
-            GrpcConnect,
-            SharedRpcHandle,
+            GrpcConnect, SharedRpcHandle,
         },
-        Binary,
-        Builder,
+        Binary, Builder,
     },
     nexus::NexusBuilder,
     pool::PoolBuilder,
@@ -45,7 +43,7 @@ impl TestNode {
     }
 
     async fn clear(&mut self) {
-        for i in 0 .. self.replicas.len() {
+        for i in 0..self.replicas.len() {
             self.replicas[i].destroy().await.unwrap();
         }
         self.replicas.clear();
@@ -62,7 +60,7 @@ async fn test_src_selection(
     let to = std::time::Duration::from_secs(1);
 
     let mut replicas = Vec::new();
-    for i in 0 .. child_cfg.len() {
+    for i in 0..child_cfg.len() {
         replicas.push(nodes[child_cfg[i]].next_replica().await);
     }
 
@@ -75,9 +73,7 @@ async fn test_src_selection(
     nex.create().await.unwrap();
 
     println!("---------");
-    println!(
-        "> {child_cfg:?}: expect to rebuild #{dst} from #{expected_src_idx}"
-    );
+    println!("> {child_cfg:?}: expect to rebuild #{dst} from #{expected_src_idx}");
     let children = nex.get_nexus().await.unwrap().children;
 
     for (idx, child) in children.iter().enumerate() {
@@ -172,7 +168,7 @@ async fn nexus_rebuild_prefer_local_replica() {
 
     let mut nodes = Vec::new();
 
-    for idx in 0 .. 3 {
+    for idx in 0..3 {
         let ms = conn.grpc_handle_shared(&format!("ms_{idx}")).await.unwrap();
 
         let mut pool = PoolBuilder::new(ms.clone())

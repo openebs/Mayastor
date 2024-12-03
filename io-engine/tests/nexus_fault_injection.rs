@@ -6,12 +6,7 @@ use std::time::Duration;
 
 use io_engine::core::{
     fault_injection::{
-        FaultDomain,
-        FaultIoOperation,
-        FaultIoStage,
-        FaultMethod,
-        Injection,
-        InjectionBuilder,
+        FaultDomain, FaultIoOperation, FaultIoStage, FaultMethod, Injection, InjectionBuilder,
     },
     IoCompletionStatus,
 };
@@ -22,9 +17,7 @@ use common::{
             nexus::{ChildState, ChildStateReason},
             GrpcConnect,
         },
-        Binary,
-        Builder,
-        ComposeTest,
+        Binary, Builder, ComposeTest,
     },
     file_io::DataSize,
     fio::{spawn_fio_task, FioBuilder, FioJobBuilder},
@@ -67,11 +60,7 @@ async fn create_compose_test() -> ComposeTest {
         )
         .add_container_bin(
             "ms_nex",
-            Binary::from_dbg("io-engine").with_args(vec![
-                "-l",
-                "3",
-                "-Fcolor,compact",
-            ]),
+            Binary::from_dbg("io-engine").with_args(vec!["-l", "3", "-Fcolor,compact"]),
         )
         .with_clean(true)
         .build()
@@ -164,14 +153,9 @@ async fn test_injection_uri(inj_part: &str) {
     assert_eq!(&lst[0].device_name, dev_name);
 
     // Write less than pool size.
-    test_write_to_nexus(
-        &nex_0,
-        DataSize::from_bytes(0),
-        30,
-        DataSize::from_mb(1),
-    )
-    .await
-    .unwrap();
+    test_write_to_nexus(&nex_0, DataSize::from_bytes(0), 30, DataSize::from_mb(1))
+        .await
+        .unwrap();
 
     //
     let children = nex_0.get_nexus().await.unwrap().children;
@@ -218,8 +202,7 @@ async fn nexus_fault_injection_time_based() {
 
     // Create an injection that will start in 1 sec after first I/O
     // to the device, and end after 5s.
-    let inj_part =
-        "domain=child&op=write&stage=compl&begin_at=1000&end_at=5000";
+    let inj_part = "domain=child&op=write&stage=compl&begin_at=1000&end_at=5000";
     let inj_uri = format!("inject://{dev_name}?{inj_part}");
     add_fault_injection(nex_0.rpc(), &inj_uri).await.unwrap();
 
@@ -229,14 +212,9 @@ async fn nexus_fault_injection_time_based() {
     assert_eq!(&lst[0].device_name, dev_name);
 
     // Write some data. Injection is not yet active.
-    test_write_to_nexus(
-        &nex_0,
-        DataSize::from_bytes(0),
-        1,
-        DataSize::from_kb(1),
-    )
-    .await
-    .unwrap();
+    test_write_to_nexus(&nex_0, DataSize::from_bytes(0), 1, DataSize::from_kb(1))
+        .await
+        .unwrap();
     let children = nex_0.get_nexus().await.unwrap().children;
     assert_eq!(children[0].state, ChildState::Online as i32);
 
@@ -244,14 +222,9 @@ async fn nexus_fault_injection_time_based() {
     tokio::time::sleep(Duration::from_millis(1000)).await;
 
     // Write again. Now the child must fail.
-    test_write_to_nexus(
-        &nex_0,
-        DataSize::from_bytes(0),
-        1,
-        DataSize::from_kb(1),
-    )
-    .await
-    .unwrap();
+    test_write_to_nexus(&nex_0, DataSize::from_bytes(0), 1, DataSize::from_kb(1))
+        .await
+        .unwrap();
     let children = nex_0.get_nexus().await.unwrap().children;
     assert_eq!(children[0].state, ChildState::Faulted as i32);
 
@@ -266,14 +239,9 @@ async fn nexus_fault_injection_time_based() {
         .unwrap();
 
     // Write again. Now since the injection time ended, it must not fail.
-    test_write_to_nexus(
-        &nex_0,
-        DataSize::from_bytes(0),
-        1,
-        DataSize::from_kb(1),
-    )
-    .await
-    .unwrap();
+    test_write_to_nexus(&nex_0, DataSize::from_bytes(0), 1, DataSize::from_kb(1))
+        .await
+        .unwrap();
     let children = nex_0.get_nexus().await.unwrap().children;
     assert_eq!(children[0].state, ChildState::Online as i32);
 }
@@ -313,14 +281,9 @@ async fn nexus_fault_injection_range_based() {
     assert_eq!(&lst[0].device_name, dev_name);
 
     // Write two blocks from 0 offset. It must not fail.
-    test_write_to_nexus(
-        &nex_0,
-        DataSize::from_bytes(0),
-        1,
-        DataSize::from_kb(1),
-    )
-    .await
-    .unwrap();
+    test_write_to_nexus(&nex_0, DataSize::from_bytes(0), 1, DataSize::from_kb(1))
+        .await
+        .unwrap();
     let children = nex_0.get_nexus().await.unwrap().children;
     assert_eq!(children[0].state, ChildState::Online as i32);
 
@@ -383,8 +346,8 @@ async fn injection_uri_creation() {
         )))
         .with_io_operation(FaultIoOperation::Read)
         .with_io_stage(FaultIoStage::Completion)
-        .with_block_range(123 .. 456)
-        .with_time_range(Duration::from_secs(5) .. Duration::from_secs(10))
+        .with_block_range(123..456)
+        .with_time_range(Duration::from_secs(5)..Duration::from_secs(10))
         .with_retries(789)
         .build()
         .unwrap();
@@ -420,11 +383,7 @@ async fn replica_bdev_io_injection() {
         .unwrap()
         .add_container_bin(
             "ms_0",
-            Binary::from_dbg("io-engine").with_args(vec![
-                "-l",
-                "1",
-                "-Fcompact,color,nodate",
-            ]),
+            Binary::from_dbg("io-engine").with_args(vec!["-l", "1", "-Fcompact,color,nodate"]),
         )
         .with_clean(true)
         .build()

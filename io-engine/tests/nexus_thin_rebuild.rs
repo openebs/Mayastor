@@ -3,8 +3,7 @@ pub mod common;
 use common::{
     compose::{
         rpc::v1::{GrpcConnect, SharedRpcHandle},
-        Binary,
-        Builder,
+        Binary, Builder,
     },
     file_io::DataSize,
     nexus::{test_write_to_nexus, NexusBuilder},
@@ -95,14 +94,9 @@ async fn test_thin_rebuild(cfg: StorConfig) {
     nex_0.create().await.unwrap();
     nex_0.publish().await.unwrap();
 
-    test_write_to_nexus(
-        &nex_0,
-        DataSize::from_bytes(0),
-        14,
-        DataSize::from_mb(1),
-    )
-    .await
-    .unwrap();
+    test_write_to_nexus(&nex_0, DataSize::from_bytes(0), 14, DataSize::from_mb(1))
+        .await
+        .unwrap();
 
     nex_0.add_replica(&repl_2, false).await.unwrap();
 

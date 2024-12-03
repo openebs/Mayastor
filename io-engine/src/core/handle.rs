@@ -10,33 +10,15 @@ use nix::errno::Errno;
 
 use spdk_rs::{
     libspdk::{
-        spdk_bdev_desc,
-        spdk_bdev_free_io,
-        spdk_bdev_io,
-        spdk_bdev_nvme_admin_passthru_ro,
-        spdk_bdev_read,
-        spdk_bdev_reset,
-        spdk_bdev_write,
-        spdk_bdev_write_zeroes,
-        spdk_io_channel,
+        spdk_bdev_desc, spdk_bdev_free_io, spdk_bdev_io, spdk_bdev_nvme_admin_passthru_ro,
+        spdk_bdev_read, spdk_bdev_reset, spdk_bdev_write, spdk_bdev_write_zeroes, spdk_io_channel,
         spdk_nvme_cmd,
     },
-    nvme_admin_opc,
-    BdevOps,
-    DmaBuf,
-    DmaError,
-    IoChannelGuard,
-    NvmeStatus,
+    nvme_admin_opc, BdevOps, DmaBuf, DmaError, IoChannelGuard, NvmeStatus,
 };
 
 use crate::{
-    core::{
-        Bdev,
-        CoreError,
-        DescriptorGuard,
-        IoCompletionStatus,
-        SnapshotParams,
-    },
+    core::{Bdev, CoreError, DescriptorGuard, IoCompletionStatus, SnapshotParams},
     ffihelper::cb_arg,
     subsys,
 };
@@ -57,30 +39,19 @@ pub type UntypedBdevHandle = BdevHandle<()>;
 impl<T: BdevOps> BdevHandle<T> {
     /// Opens a new bdev handle allocating a new descriptor as well as a new
     /// I/O channel.
-    pub fn open(
-        name: &str,
-        read_write: bool,
-        claim: bool,
-    ) -> Result<BdevHandle<T>, CoreError> {
+    pub fn open(name: &str, read_write: bool, claim: bool) -> Result<BdevHandle<T>, CoreError> {
         if let Ok(desc) = Bdev::<T>::open_by_name(name, read_write) {
             if claim && !desc.claim() {
-                return Err(CoreError::BdevNotFound {
-                    name: name.into(),
-                });
+                return Err(CoreError::BdevNotFound { name: name.into() });
             }
             return BdevHandle::try_from(Arc::new(desc));
         }
 
-        Err(CoreError::BdevNotFound {
-            name: name.into(),
-        })
+        Err(CoreError::BdevNotFound { name: name.into() })
     }
 
     /// Opens a new bdev handle given a bdev.
-    pub fn open_with_bdev(
-        bdev: &Bdev<T>,
-        read_write: bool,
-    ) -> Result<BdevHandle<T>, CoreError> {
+    pub fn open_with_bdev(bdev: &Bdev<T>, read_write: bool) -> Result<BdevHandle<T>, CoreError> {
         let desc = bdev.open(read_write)?;
         BdevHandle::try_from(Arc::new(desc))
     }
@@ -109,14 +80,8 @@ impl<T: BdevOps> BdevHandle<T> {
     /// private io completion callback that sends back the success status of the
     /// IO. When the IO is freed, it is returned to the memory pool. The
     /// buffer is not freed.
-    extern "C" fn io_completion_cb(
-        io: *mut spdk_bdev_io,
-        success: bool,
-        arg: *mut c_void,
-    ) {
-        let sender = unsafe {
-            Box::from_raw(arg as *const _ as *mut oneshot::Sender<NvmeStatus>)
-        };
+    extern "C" fn io_completion_cb(io: *mut spdk_bdev_io, success: bool, arg: *mut c_void) {
+        let sender = unsafe { Box::from_raw(arg as *const _ as *mut oneshot::Sender<NvmeStatus>) };
 
         unsafe {
             spdk_bdev_free_io(io);
@@ -133,11 +98,7 @@ impl<T: BdevOps> BdevHandle<T> {
 
     /// write the ['DmaBuf'] to the given offset. This function is implemented
     /// using a ['Future'] and is not intended for non-internal IO.
-    pub async fn write_at(
-        &self,
-        offset: u64,
-        buffer: &DmaBuf,
-    ) -> Result<u64, CoreError> {
+    pub async fn write_at(&self, offset: u64, buffer: &DmaBuf) -> Result<u64, CoreError> {
         let (s, r) = oneshot::channel::<NvmeStatus>();
         let errno = unsafe {
             spdk_bdev_write(
@@ -170,11 +131,7 @@ impl<T: BdevOps> BdevHandle<T> {
     }
 
     /// read at given offset into the ['DmaBuf']
-    pub async fn read_at(
-        &self,
-        offset: u64,
-        buffer: &mut DmaBuf,
-    ) -> Result<u64, CoreError> {
+    pub async fn read_at(&self, offset: u64, buffer: &mut DmaBuf) -> Result<u64, CoreError> {
         let (s, r) = oneshot::channel::<NvmeStatus>();
         let errno = unsafe {
             spdk_bdev_read(
@@ -198,12 +155,10 @@ impl<T: BdevOps> BdevHandle<T> {
 
         match r.await.expect("Failed awaiting read IO") {
             NvmeStatus::SUCCESS => Ok(buffer.len()),
-            NvmeStatus::UNWRITTEN_BLOCK => {
-                Err(CoreError::ReadingUnallocatedBlock {
-                    offset,
-                    len: buffer.len(),
-                })
-            }
+            NvmeStatus::UNWRITTEN_BLOCK => Err(CoreError::ReadingUnallocatedBlock {
+                offset,
+                len: buffer.len(),
+            }),
             status => Err(CoreError::ReadFailed {
                 status: IoCompletionStatus::NvmeError(status),
                 offset,
@@ -236,11 +191,7 @@ impl<T: BdevOps> BdevHandle<T> {
         }
     }
 
-    pub async fn write_zeroes_at(
-        &self,
-        offset: u64,
-        len: u64,
-    ) -> Result<(), CoreError> {
+    pub async fn write_zeroes_at(&self, offset: u64, len: u64) -> Result<(), CoreError> {
         let (s, r) = oneshot::channel::<NvmeStatus>();
         let errno = unsafe {
             spdk_bdev_write_zeroes(
@@ -267,19 +218,13 @@ impl<T: BdevOps> BdevHandle<T> {
         {
             Ok(())
         } else {
-            Err(CoreError::WriteZeroesFailed {
-                offset,
-                len,
-            })
+            Err(CoreError::WriteZeroesFailed { offset, len })
         }
     }
 
     /// create a snapshot, only works for nvme bdev
     /// returns snapshot time as u64 seconds since Unix epoch
-    pub async fn create_snapshot(
-        &self,
-        _snapshot: SnapshotParams,
-    ) -> Result<u64, CoreError> {
+    pub async fn create_snapshot(&self, _snapshot: SnapshotParams) -> Result<u64, CoreError> {
         let mut cmd = spdk_nvme_cmd::default();
         cmd.set_opc(nvme_admin_opc::CREATE_SNAPSHOT.into());
         let now = subsys::set_snapshot_time(&mut cmd);
@@ -290,10 +235,7 @@ impl<T: BdevOps> BdevHandle<T> {
 
     /// identify controller
     /// buffer must be at least 4096B
-    pub async fn nvme_identify_ctrlr(
-        &self,
-        buffer: &mut DmaBuf,
-    ) -> Result<(), CoreError> {
+    pub async fn nvme_identify_ctrlr(&self, buffer: &mut DmaBuf) -> Result<(), CoreError> {
         let mut cmd = spdk_nvme_cmd::default();
         cmd.set_opc(nvme_admin_opc::IDENTIFY.into());
         cmd.nsid = 0xffffffff;
@@ -374,10 +316,7 @@ impl<T: BdevOps> TryFrom<Arc<DescriptorGuard<T>>> for BdevHandle<T> {
 
     fn try_from(desc: Arc<DescriptorGuard<T>>) -> Result<Self, Self::Error> {
         if let Ok(channel) = desc.io_channel() {
-            return Ok(Self {
-                channel,
-                desc,
-            });
+            return Ok(Self { channel, desc });
         }
 
         Err(CoreError::GetIoChannel {

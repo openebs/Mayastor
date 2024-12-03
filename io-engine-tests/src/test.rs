@@ -1,18 +1,12 @@
 use super::compose::rpc::v1::{
     test::{
-        AddFaultInjectionRequest,
-        FaultInjection,
-        ListFaultInjectionsRequest,
+        AddFaultInjectionRequest, FaultInjection, ListFaultInjectionsRequest,
         RemoveFaultInjectionRequest,
     },
-    SharedRpcHandle,
-    Status,
+    SharedRpcHandle, Status,
 };
 
-pub async fn add_fault_injection(
-    rpc: SharedRpcHandle,
-    inj_uri: &str,
-) -> Result<(), Status> {
+pub async fn add_fault_injection(rpc: SharedRpcHandle, inj_uri: &str) -> Result<(), Status> {
     rpc.lock()
         .await
         .test
@@ -23,10 +17,7 @@ pub async fn add_fault_injection(
         .map(|r| r.into_inner())
 }
 
-pub async fn remove_fault_injection(
-    rpc: SharedRpcHandle,
-    inj_uri: &str,
-) -> Result<(), Status> {
+pub async fn remove_fault_injection(rpc: SharedRpcHandle, inj_uri: &str) -> Result<(), Status> {
     rpc.lock()
         .await
         .test
@@ -37,9 +28,7 @@ pub async fn remove_fault_injection(
         .map(|r| r.into_inner())
 }
 
-pub async fn list_fault_injections(
-    rpc: SharedRpcHandle,
-) -> Result<Vec<FaultInjection>, Status> {
+pub async fn list_fault_injections(rpc: SharedRpcHandle) -> Result<Vec<FaultInjection>, Status> {
     rpc.lock()
         .await
         .test

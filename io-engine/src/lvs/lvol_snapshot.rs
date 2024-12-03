@@ -14,28 +14,15 @@ use strum::{EnumCount, IntoEnumIterator};
 use events_api::event::EventAction;
 
 use spdk_rs::libspdk::{
-    spdk_blob,
-    spdk_blob_reset_used_clusters_cache,
-    spdk_lvol,
-    spdk_xattr_descriptor,
-    vbdev_lvol_create_clone_ext,
-    vbdev_lvol_create_snapshot_ext,
+    spdk_blob, spdk_blob_reset_used_clusters_cache, spdk_lvol, spdk_xattr_descriptor,
+    vbdev_lvol_create_clone_ext, vbdev_lvol_create_snapshot_ext,
 };
 
 use crate::{
     core::{
         logical_volume::LogicalVolume,
-        snapshot::{
-            CloneParams,
-            ISnapshotDescriptor,
-            SnapshotDescriptor,
-            SnapshotInfo,
-        },
-        Bdev,
-        CloneXattrs,
-        SnapshotParams,
-        SnapshotXattrs,
-        UntypedBdev,
+        snapshot::{CloneParams, ISnapshotDescriptor, SnapshotDescriptor, SnapshotInfo},
+        Bdev, CloneXattrs, SnapshotParams, SnapshotXattrs, UntypedBdev,
     },
     eventing::Event,
     ffihelper::{cb_arg, done_cb, IntoCString},
@@ -54,10 +41,7 @@ pub trait LvolSnapshotOps {
     type Lvol;
 
     /// Create Snapshot Common API.
-    async fn create_snapshot(
-        &self,
-        snap_param: SnapshotParams,
-    ) -> Result<Lvol, Self::Error>;
+    async fn create_snapshot(&self, snap_param: SnapshotParams) -> Result<Lvol, Self::Error>;
 
     /// Destroy snapshot.
     async fn destroy_snapshot(mut self) -> Result<(), Self::Error>;
@@ -73,19 +57,12 @@ pub trait LvolSnapshotOps {
     fn list_snapshot_by_snapshot_uuid(&self) -> Vec<SnapshotDescriptor>;
 
     /// List All Snapshot.
-    fn list_all_snapshots(
-        parent_lvol: Option<&Lvol>,
-    ) -> Vec<SnapshotDescriptor>;
+    fn list_all_snapshots(parent_lvol: Option<&Lvol>) -> Vec<SnapshotDescriptor>;
     /// List All Lvol Snapshots.
-    fn list_all_lvol_snapshots(
-        parent_lvol: Option<&Lvol>,
-    ) -> Vec<LvolSnapshotDescriptor>;
+    fn list_all_lvol_snapshots(parent_lvol: Option<&Lvol>) -> Vec<LvolSnapshotDescriptor>;
 
     /// Create snapshot clone.
-    async fn create_clone(
-        &self,
-        clone_param: CloneParams,
-    ) -> Result<Self::Lvol, Self::Error>;
+    async fn create_clone(&self, clone_param: CloneParams) -> Result<Self::Lvol, Self::Error>;
 
     /// Get clone list based on snapshot_uuid.
     fn list_clones_by_snapshot_uuid(&self) -> Vec<Self::Lvol>;
@@ -152,20 +129,11 @@ pub trait LvolSnapshotOps {
     ) -> Result<Self::Lvol, Self::Error>;
 
     /// Common API to set SnapshotDescriptor for ListReplicaSnapshot.
-    fn snapshot_descriptor(
-        &self,
-        parent: Option<&Lvol>,
-    ) -> Option<SnapshotDescriptor>;
+    fn snapshot_descriptor(&self, parent: Option<&Lvol>) -> Option<SnapshotDescriptor>;
     /// Common API to set SnapshotInfo for ListReplicaSnapshot.
-    fn snapshot_descriptor_info(
-        &self,
-        parent: Option<&Lvol>,
-    ) -> Option<SnapshotInfo>;
+    fn snapshot_descriptor_info(&self, parent: Option<&Lvol>) -> Option<SnapshotInfo>;
     /// Common API to set LvolSnapshotDescriptor for ListReplicaSnapshot.
-    fn lvol_snapshot_descriptor(
-        &self,
-        parent: Option<&Lvol>,
-    ) -> Option<LvolSnapshotDescriptor>;
+    fn lvol_snapshot_descriptor(&self, parent: Option<&Lvol>) -> Option<LvolSnapshotDescriptor>;
 
     /// Return bool value to indicate, if the snapshot is marked as discarded.
     fn is_discarded_snapshot(&self) -> bool;
@@ -179,10 +147,7 @@ pub trait LvolSnapshotOps {
 
     /// If self is clone or a snapshot whose parent is clone, then do ancestor
     /// calculation for all snapshot linked to clone.
-    fn calculate_clone_source_snap_usage(
-        &self,
-        total_ancestor_snap_size: u64,
-    ) -> Option<u64>;
+    fn calculate_clone_source_snap_usage(&self, total_ancestor_snap_size: u64) -> Option<u64>;
 
     /// Reset snapshot tree usage cache. if the lvol is replica, then reset
     /// cache will be based on replica uuid, which is parent uuid for all
@@ -258,12 +223,8 @@ impl AsyncParentIterator for LvolSnapshotIter {
         if self.inner_blob.is_null() {
             None
         } else {
-            let parent_blob =
-                unsafe { self.inner_lvol.bs_iter_parent(self.inner_blob) }?;
-            let uuid = Lvol::get_blob_xattr(
-                parent_blob,
-                SnapshotXattrs::SnapshotUuid.name(),
-            )?;
+            let parent_blob = unsafe { self.inner_lvol.bs_iter_parent(self.inner_blob) }?;
+            let uuid = Lvol::get_blob_xattr(parent_blob, SnapshotXattrs::SnapshotUuid.name())?;
             let snap_lvol = UntypedBdev::lookup_by_uuid_str(&uuid)
                 .and_then(|bdev| Lvol::try_from(bdev).ok())?;
             self.inner_blob = parent_blob;
@@ -325,20 +286,16 @@ impl LvolSnapshotOps for Lvol {
                         })
                     }
                 },
-                SnapshotXattrs::SnapshotCreateTime => {
-                    match params.create_time() {
-                        Some(v) => v,
-                        None => {
-                            return Err(LvsError::SnapshotConfigFailed {
-                                name: self.as_bdev().name().to_string(),
-                                msg: "create_time not provided".to_string(),
-                            })
-                        }
+                SnapshotXattrs::SnapshotCreateTime => match params.create_time() {
+                    Some(v) => v,
+                    None => {
+                        return Err(LvsError::SnapshotConfigFailed {
+                            name: self.as_bdev().name().to_string(),
+                            msg: "create_time not provided".to_string(),
+                        })
                     }
-                }
-                SnapshotXattrs::DiscardedSnapshot => {
-                    params.discarded_snapshot().to_string()
-                }
+                },
+                SnapshotXattrs::DiscardedSnapshot => params.discarded_snapshot().to_string(),
             };
             let attr_name = attr.name().to_string().into_cstring();
             let attr_val = av.into_cstring();
@@ -369,11 +326,7 @@ impl LvolSnapshotOps for Lvol {
         // stored inside CStrings.
         let mut cstrs: Vec<CString> = Vec::new();
 
-        self.prepare_snapshot_xattrs(
-            &mut attr_descrs,
-            snap_param.clone(),
-            &mut cstrs,
-        )?;
+        self.prepare_snapshot_xattrs(&mut attr_descrs, snap_param.clone(), &mut cstrs)?;
 
         let c_snapshot_name = snap_param.name().unwrap().into_cstring();
 
@@ -438,17 +391,15 @@ impl LvolSnapshotOps for Lvol {
                         })
                     }
                 },
-                CloneXattrs::CloneCreateTime => {
-                    match params.clone_create_time() {
-                        Some(v) => v,
-                        None => {
-                            return Err(LvsError::CloneConfigFailed {
-                                name: self.as_bdev().name().to_string(),
-                                msg: "create_time not provided".to_string(),
-                            })
-                        }
+                CloneXattrs::CloneCreateTime => match params.clone_create_time() {
+                    Some(v) => v,
+                    None => {
+                        return Err(LvsError::CloneConfigFailed {
+                            name: self.as_bdev().name().to_string(),
+                            msg: "create_time not provided".to_string(),
+                        })
                     }
-                }
+                },
                 CloneXattrs::CloneUuid => match params.clone_uuid() {
                     Some(v) => v,
                     None => {
@@ -486,14 +437,9 @@ impl LvolSnapshotOps for Lvol {
         // stored inside CStrings.
         let mut cstrs: Vec<CString> = Vec::new();
 
-        self.prepare_clone_xattrs(
-            &mut attr_descrs,
-            clone_param.clone(),
-            &mut cstrs,
-        )?;
+        self.prepare_clone_xattrs(&mut attr_descrs, clone_param.clone(), &mut cstrs)?;
 
-        let c_clone_name =
-            clone_param.clone_name().unwrap_or_default().into_cstring();
+        let c_clone_name = clone_param.clone_name().unwrap_or_default().into_cstring();
 
         unsafe {
             vbdev_lvol_create_clone_ext(
@@ -537,39 +483,29 @@ impl LvolSnapshotOps for Lvol {
     }
 
     /// Common API to set SnapshotDescriptor for ListReplicaSnapshot.
-    fn snapshot_descriptor(
-        &self,
-        parent: Option<&Lvol>,
-    ) -> Option<SnapshotDescriptor> {
+    fn snapshot_descriptor(&self, parent: Option<&Lvol>) -> Option<SnapshotDescriptor> {
         let info = self.snapshot_descriptor_info(parent)?;
         Some(SnapshotDescriptor::new(self.to_owned(), info))
     }
 
     /// Common API to set SnapshotDescriptor for ListReplicaSnapshot.
-    fn lvol_snapshot_descriptor(
-        &self,
-        parent: Option<&Lvol>,
-    ) -> Option<LvolSnapshotDescriptor> {
+    fn lvol_snapshot_descriptor(&self, parent: Option<&Lvol>) -> Option<LvolSnapshotDescriptor> {
         let info = self.snapshot_descriptor_info(parent)?;
         Some(LvolSnapshotDescriptor::new(self.to_owned(), info))
     }
 
     /// Common API to set SnapshotDescriptor for ListReplicaSnapshot.
-    fn snapshot_descriptor_info(
-        &self,
-        parent: Option<&Lvol>,
-    ) -> Option<SnapshotInfo> {
+    fn snapshot_descriptor_info(&self, parent: Option<&Lvol>) -> Option<SnapshotInfo> {
         let mut valid_snapshot = true;
         let mut snapshot_param: SnapshotParams = Default::default();
         for attr in SnapshotXattrs::iter() {
-            let curr_attr_val =
-                match Self::get_blob_xattr(self.blob_checked(), attr.name()) {
-                    Some(val) => val,
-                    None => {
-                        valid_snapshot = false;
-                        continue;
-                    }
-                };
+            let curr_attr_val = match Self::get_blob_xattr(self.blob_checked(), attr.name()) {
+                Some(val) => val,
+                None => {
+                    valid_snapshot = false;
+                    continue;
+                }
+            };
             match attr {
                 SnapshotXattrs::ParentId => {
                     if let Some(parent_lvol) = parent {
@@ -593,9 +529,8 @@ impl LvolSnapshotOps for Lvol {
                     snapshot_param.set_create_time(curr_attr_val);
                 }
                 SnapshotXattrs::DiscardedSnapshot => {
-                    snapshot_param.set_discarded_snapshot(
-                        curr_attr_val.parse().unwrap_or_default(),
-                    );
+                    snapshot_param
+                        .set_discarded_snapshot(curr_attr_val.parse().unwrap_or_default());
                 }
             }
         }
@@ -605,10 +540,8 @@ impl LvolSnapshotOps for Lvol {
         let parent_uuid = if let Some(parent_lvol) = parent {
             parent_lvol.uuid()
         } else {
-            match Bdev::lookup_by_uuid_str(
-                snapshot_param.parent_id().unwrap_or_default().as_str(),
-            )
-            .and_then(|b| Lvol::try_from(b).ok())
+            match Bdev::lookup_by_uuid_str(snapshot_param.parent_id().unwrap_or_default().as_str())
+                .and_then(|b| Lvol::try_from(b).ok())
             {
                 Some(parent) => parent.uuid(),
                 None => String::default(),
@@ -625,10 +558,7 @@ impl LvolSnapshotOps for Lvol {
     }
 
     /// Create Snapshot Common API for Local Device.
-    async fn create_snapshot(
-        &self,
-        snap_param: SnapshotParams,
-    ) -> Result<Lvol, LvsError> {
+    async fn create_snapshot(&self, snap_param: SnapshotParams) -> Result<Lvol, LvsError> {
         extern "C" fn snapshot_create_done_cb(
             arg: *mut c_void,
             lvol_ptr: *mut spdk_lvol,
@@ -648,13 +578,8 @@ impl LvolSnapshotOps for Lvol {
 
         let (s, r) = oneshot::channel::<LvolResult>();
 
-        self.do_create_snapshot(
-            snap_param,
-            snapshot_create_done_cb,
-            cb_arg(s),
-            r,
-        )
-        .await
+        self.do_create_snapshot(snap_param, snapshot_create_done_cb, cb_arg(s), r)
+            .await
     }
 
     /// Get a Snapshot Iterator.
@@ -714,9 +639,7 @@ impl LvolSnapshotOps for Lvol {
     }
 
     /// List All Snapshot.
-    fn list_all_snapshots(
-        parent_lvol: Option<&Lvol>,
-    ) -> Vec<SnapshotDescriptor> {
+    fn list_all_snapshots(parent_lvol: Option<&Lvol>) -> Vec<SnapshotDescriptor> {
         Self::list_all_lvol_snapshots(parent_lvol)
             .into_iter()
             .map(Into::into)
@@ -724,9 +647,7 @@ impl LvolSnapshotOps for Lvol {
     }
 
     /// List All Lvol Snapshots.
-    fn list_all_lvol_snapshots(
-        parent_lvol: Option<&Lvol>,
-    ) -> Vec<LvolSnapshotDescriptor> {
+    fn list_all_lvol_snapshots(parent_lvol: Option<&Lvol>) -> Vec<LvolSnapshotDescriptor> {
         let mut snapshot_list: Vec<LvolSnapshotDescriptor> = Vec::new();
 
         let bdev = match UntypedBdev::bdev_first() {
@@ -747,9 +668,7 @@ impl LvolSnapshotOps for Lvol {
                 continue;
             }
             match snapshot_lvol.lvol_snapshot_descriptor(parent_lvol) {
-                Some(snapshot_descriptor) => {
-                    snapshot_list.push(snapshot_descriptor)
-                }
+                Some(snapshot_descriptor) => snapshot_list.push(snapshot_descriptor),
                 None => continue,
             }
         }
@@ -757,15 +676,8 @@ impl LvolSnapshotOps for Lvol {
     }
 
     /// Create snapshot clone.
-    async fn create_clone(
-        &self,
-        clone_param: CloneParams,
-    ) -> Result<Self::Lvol, Self::Error> {
-        extern "C" fn clone_done_cb(
-            arg: *mut c_void,
-            lvol_ptr: *mut spdk_lvol,
-            errno: i32,
-        ) {
+    async fn create_clone(&self, clone_param: CloneParams) -> Result<Self::Lvol, Self::Error> {
+        extern "C" fn clone_done_cb(arg: *mut c_void, lvol_ptr: *mut spdk_lvol, errno: i32) {
             let res = if errno == 0 {
                 Ok(lvol_ptr)
             } else {
@@ -795,9 +707,7 @@ impl LvolSnapshotOps for Lvol {
             .map(|b| Lvol::try_from(b).unwrap())
             .filter_map(|b| {
                 let snap_lvol = b.is_snapshot_clone();
-                if snap_lvol.is_some()
-                    && snap_lvol.unwrap().uuid() == self.uuid()
-                {
+                if snap_lvol.is_some() && snap_lvol.unwrap().uuid() == self.uuid() {
                     Some(b)
                 } else {
                     None
@@ -866,18 +776,12 @@ impl LvolSnapshotOps for Lvol {
 
     // if self is clone or a snapshot whose parent is clone, then do ancestor
     // calculation for all snapshot linked to clone.
-    fn calculate_clone_source_snap_usage(
-        &self,
-        total_ancestor_snap_size: u64,
-    ) -> Option<u64> {
+    fn calculate_clone_source_snap_usage(&self, total_ancestor_snap_size: u64) -> Option<u64> {
         // if self is snapshot created from clone.
         if self.is_snapshot() {
             match UntypedBdev::lookup_by_uuid_str(
-                &Lvol::get_blob_xattr(
-                    self.blob_checked(),
-                    SnapshotXattrs::ParentId.name(),
-                )
-                .unwrap_or_default(),
+                &Lvol::get_blob_xattr(self.blob_checked(), SnapshotXattrs::ParentId.name())
+                    .unwrap_or_default(),
             ) {
                 Some(bdev) => match Lvol::try_from(bdev) {
                     Ok(l) => match l.is_snapshot_clone() {
@@ -885,8 +789,7 @@ impl LvolSnapshotOps for Lvol {
                             let usage = parent_snap_lvol.usage();
                             Some(
                                 total_ancestor_snap_size
-                                    - (usage.allocated_bytes_snapshots
-                                        + usage.allocated_bytes),
+                                    - (usage.allocated_bytes_snapshots + usage.allocated_bytes),
                             )
                         }
                         None => None,
@@ -914,28 +817,18 @@ impl LvolSnapshotOps for Lvol {
             reset_snapshot_tree_usage_cache_with_parent_uuid(self);
             return;
         }
-        if let Some(snapshot_parent_uuid) = Lvol::get_blob_xattr(
-            self.blob_checked(),
-            SnapshotXattrs::ParentId.name(),
-        ) {
-            if let Some(bdev) =
-                UntypedBdev::lookup_by_uuid_str(snapshot_parent_uuid.as_str())
-            {
+        if let Some(snapshot_parent_uuid) =
+            Lvol::get_blob_xattr(self.blob_checked(), SnapshotXattrs::ParentId.name())
+        {
+            if let Some(bdev) = UntypedBdev::lookup_by_uuid_str(snapshot_parent_uuid.as_str()) {
                 if let Ok(parent_lvol) = Lvol::try_from(bdev) {
                     unsafe {
-                        spdk_blob_reset_used_clusters_cache(
-                            parent_lvol.blob_checked(),
-                        );
+                        spdk_blob_reset_used_clusters_cache(parent_lvol.blob_checked());
                     }
-                    reset_snapshot_tree_usage_cache_with_parent_uuid(
-                        &parent_lvol,
-                    );
+                    reset_snapshot_tree_usage_cache_with_parent_uuid(&parent_lvol);
                 }
             } else {
-                reset_snapshot_tree_usage_cache_with_wildcard(
-                    self,
-                    snapshot_parent_uuid,
-                );
+                reset_snapshot_tree_usage_cache_with_wildcard(self, snapshot_parent_uuid);
             }
         }
     }
@@ -964,20 +857,14 @@ fn reset_snapshot_tree_usage_cache_with_parent_uuid(lvol: &Lvol) {
 /// bdev by matching parent uuid got from snapshot attribute.
 /// todo: need more optimization to adding new function in spdk to relate
 /// snapshot and clone blobs.
-fn reset_snapshot_tree_usage_cache_with_wildcard(
-    lvol: &Lvol,
-    snapshot_parent_uuid: String,
-) {
+fn reset_snapshot_tree_usage_cache_with_wildcard(lvol: &Lvol, snapshot_parent_uuid: String) {
     let mut successor_clones: Vec<Lvol> = vec![];
 
     let mut successor_snapshots = Lvol::list_all_lvol_snapshots(None)
         .iter()
         .map(|v| v.snapshot_lvol())
         .filter_map(|l| {
-            let uuid = Lvol::get_blob_xattr(
-                lvol.blob_checked(),
-                SnapshotXattrs::ParentId.name(),
-            );
+            let uuid = Lvol::get_blob_xattr(lvol.blob_checked(), SnapshotXattrs::ParentId.name());
             match uuid {
                 Some(uuid) if uuid == snapshot_parent_uuid => Some(l.clone()),
                 _ => None,

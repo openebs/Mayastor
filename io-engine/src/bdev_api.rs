@@ -17,11 +17,7 @@ pub enum BdevError {
     #[snafu(display("Error parsing URI '{}'", uri))]
     UriParseFailed { source: ParseError, uri: String },
     // No matching URI error.
-    #[snafu(display(
-        "No matching URI found for BDEV '{}' in aliases {:?}",
-        name,
-        aliases
-    ))]
+    #[snafu(display("No matching URI found for BDEV '{}' in aliases {:?}", name, aliases))]
     BdevNoMatchingUri { name: String, aliases: Vec<String> },
     // Unsupported URI scheme.
     #[snafu(display("Unsupported URI scheme: '{}'", scheme))]
@@ -58,16 +54,10 @@ pub enum BdevError {
         value: String,
     },
     // Bad value of a UUID parameter.
-    #[snafu(display(
-        "Invalid URI '{}': could not parse value of UUID parameter",
-        uri
-    ))]
+    #[snafu(display("Invalid URI '{}': could not parse value of UUID parameter", uri))]
     UuidParamParseFailed { source: uuid::Error, uri: String },
     // BDEV name already exists.
-    #[snafu(display(
-        "Failed to create a BDEV: name '{}' already exists",
-        name
-    ))]
+    #[snafu(display("Failed to create a BDEV: name '{}' already exists", name))]
     BdevExists { name: String },
     // Creating a BDEV with a different UUID.
     #[snafu(display(

@@ -5,8 +5,7 @@ use std::time::{Duration, Instant};
 use common::{
     compose::{
         rpc::v1::{nexus::ChildState, GrpcConnect, Status},
-        Binary,
-        Builder,
+        Binary, Builder,
     },
     nexus::NexusBuilder,
     pool::PoolBuilder,
@@ -33,7 +32,7 @@ async fn nexus_rebuild_parallel() {
     const DISK_NAME: &str = "disk";
 
     // Create pool data file.
-    for r in 0 .. R {
+    for r in 0..R {
         let name = format!("/tmp/{DISK_NAME}_{r}");
         common::delete_file(&[name.clone()]);
         common::truncate_file_bytes(&name, DISK_SIZE);
@@ -91,10 +90,10 @@ async fn nexus_rebuild_parallel() {
 
     let mut vols = Vec::new();
 
-    for i in 0 .. N {
+    for i in 0..N {
         // Create R replicas on the pools.
         let mut replicas = Vec::new();
-        for r in 0 .. R {
+        for r in 0..R {
             let mut repl = ReplicaBuilder::new(ms[r].clone())
                 .with_pool(&pools[r])
                 .with_name(&format!("v{i}r{r}"))
@@ -116,10 +115,7 @@ async fn nexus_rebuild_parallel() {
 
         nex.create().await.unwrap();
 
-        vols.push(Volume {
-            replicas,
-            nex,
-        });
+        vols.push(Volume { replicas, nex });
     }
 
     // Adding replicas / starting rebuilds.
@@ -132,17 +128,14 @@ async fn nexus_rebuild_parallel() {
         .expect("All volumes must go online");
 
     // Delete test files.
-    for r in 0 .. R {
+    for r in 0..R {
         let name = format!("/tmp/{DISK_NAME}_{r}");
         common::delete_file(&[name.clone()]);
     }
 }
 
 /// Monitors and prints volume states.
-async fn monitor_volumes(
-    vols: &Vec<Volume>,
-    timeout: Duration,
-) -> Result<(), Status> {
+async fn monitor_volumes(vols: &Vec<Volume>, timeout: Duration) -> Result<(), Status> {
     println!("\nMonitoring {n} volumes", n = vols.len());
 
     let start = Instant::now();
@@ -169,10 +162,7 @@ async fn monitor_volumes(
                         vols_degraded = true;
                     }
                     ChildState::Degraded => {
-                        s = format!(
-                            "{s} REBUILD {p:02} | ",
-                            p = c.rebuild_progress
-                        );
+                        s = format!("{s} REBUILD {p:02} | ", p = c.rebuild_progress);
                         vols_degraded = true;
                     }
                 }

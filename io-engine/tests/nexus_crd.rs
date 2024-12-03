@@ -12,11 +12,9 @@ use common::{
     compose::{
         rpc::v1::{
             nexus::{NexusNvmePreemption, NvmeReservation},
-            GrpcConnect,
-            SharedRpcHandle,
+            GrpcConnect, SharedRpcHandle,
         },
-        Binary,
-        Builder,
+        Binary, Builder,
     },
     file_io::DataSize,
     fio::{spawn_fio_task, FioBuilder, FioJobBuilder, FioJobResult},
@@ -28,11 +26,7 @@ use common::{
     test::{add_fault_injection, remove_fault_injection},
 };
 
-use io_engine::core::fault_injection::{
-    FaultDomain,
-    FaultIoOperation,
-    InjectionBuilder,
-};
+use io_engine::core::fault_injection::{FaultDomain, FaultIoOperation, InjectionBuilder};
 
 const POOL_SIZE: u64 = 500;
 const REPL_SIZE: u64 = 450;
@@ -71,12 +65,7 @@ async fn test_nexus_fail(crdt: &str) -> std::io::Result<()> {
         )
         .add_container_bin(
             "ms_nex",
-            Binary::from_dbg("io-engine").with_args(vec![
-                "-l",
-                "1,2,3,4",
-                "--tgt-crdt",
-                crdt,
-            ]),
+            Binary::from_dbg("io-engine").with_args(vec!["-l", "1,2,3,4", "--tgt-crdt", crdt]),
         )
         .with_clean(true)
         .build()
@@ -171,12 +160,7 @@ struct NexusManageTask {
 }
 
 /// Runs multiple FIO I/O jobs.
-async fn run_io_task(
-    s: Sender<()>,
-    nvmf: &NvmfLocation,
-    cnt: u32,
-    rt: u32,
-) -> std::io::Result<()> {
+async fn run_io_task(s: Sender<()>, nvmf: &NvmfLocation, cnt: u32, rt: u32) -> std::io::Result<()> {
     let _cg = NmveConnectGuard::connect_addr(&nvmf.addr, &nvmf.nqn);
     let path = find_mayastor_nvme_device_path(&nvmf.serial)
         .unwrap()
@@ -184,7 +168,7 @@ async fn run_io_task(
         .unwrap()
         .to_string();
 
-    let jobs = (0 .. cnt).map(|_| {
+    let jobs = (0..cnt).map(|_| {
         FioJobBuilder::new()
             .with_direct(true)
             .with_ioengine("libaio")

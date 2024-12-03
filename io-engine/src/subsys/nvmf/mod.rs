@@ -15,11 +15,7 @@ use snafu::Snafu;
 
 pub use admin_cmd::{set_snapshot_time, NvmeCpl, NvmfReq};
 use poll_groups::PollGroup;
-use spdk_rs::libspdk::{
-    spdk_subsystem,
-    spdk_subsystem_fini_next,
-    spdk_subsystem_init_next,
-};
+use spdk_rs::libspdk::{spdk_subsystem, spdk_subsystem_fini_next, spdk_subsystem_init_next};
 pub use subsystem::{NvmfSubsystem, SubType};
 pub use target::Target;
 
@@ -54,21 +50,13 @@ impl RpcErrorCode for Error {
 pub enum Error {
     #[snafu(display("Failed to create nvmf target {}", msg))]
     CreateTarget { msg: String },
-    #[snafu(display(
-        "Failed to destroy nvmf target {}: {}",
-        endpoint,
-        source
-    ))]
+    #[snafu(display("Failed to destroy nvmf target {}: {}", endpoint, source))]
     DestroyTarget { source: Errno, endpoint: String },
     #[snafu(display("Failed to create poll groups {}", msg))]
     PgError { msg: String },
     #[snafu(display("Failed to create transport {}", msg))]
     Transport { source: Errno, msg: String },
-    #[snafu(display(
-        "Failed to {} subsystem '{}': subsystem is busy",
-        op,
-        nqn
-    ))]
+    #[snafu(display("Failed to {} subsystem '{}': subsystem is busy", op, nqn))]
     SubsystemBusy { nqn: String, op: String },
     #[snafu(display("Failed nvmf subsystem operation for {} {} error: {}", source.desc(), nqn, msg))]
     Subsystem {

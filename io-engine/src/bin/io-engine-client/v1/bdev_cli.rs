@@ -3,8 +3,7 @@
 
 use crate::{
     context::{Context, OutputFormat},
-    ClientError,
-    GrpcStatus,
+    ClientError, GrpcStatus,
 };
 use byte_unit::Byte;
 use clap::{Arg, ArgMatches, Command};
@@ -21,8 +20,7 @@ pub async fn handler(ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
         ("destroy", args) => destroy(ctx, args).await,
         ("unshare", args) => unshare(ctx, args).await,
         (cmd, _) => {
-            Err(Status::not_found(format!("command {cmd} does not exist")))
-                .context(GrpcStatus)
+            Err(Status::not_found(format!("command {cmd} does not exist"))).context(GrpcStatus)
         }
     }
 }
@@ -54,9 +52,7 @@ pub fn subcommands() -> Command {
                 .long("allowed-host")
                 .action(clap::ArgAction::Append)
                 .required(false)
-                .help(
-                    "NQN of hosts which are allowed to connect to the target",
-                ),
+                .help("NQN of hosts which are allowed to connect to the target"),
         );
 
     let unshare = Command::new("unshare")
@@ -78,9 +74,7 @@ async fn list(mut ctx: Context, _args: &ArgMatches) -> crate::Result<()> {
     let response = ctx
         .v1
         .bdev
-        .list(v1rpc::bdev::ListBdevOptions {
-            name: None,
-        })
+        .list(v1rpc::bdev::ListBdevOptions { name: None })
         .await
         .context(GrpcStatus)?;
 
@@ -112,8 +106,7 @@ async fn list(mut ctx: Context, _args: &ArgMatches) -> crate::Result<()> {
             let table = bdevs
                 .iter()
                 .map(|bdev| {
-                    let cap =
-                        Byte::from_u64(bdev.num_blocks * bdev.blk_size as u64);
+                    let cap = Byte::from_u64(bdev.num_blocks * bdev.blk_size as u64);
                     vec![
                         bdev.uuid.to_string(),
                         bdev.num_blocks.to_string(),
@@ -143,9 +136,7 @@ async fn create(mut ctx: Context, args: &ArgMatches) -> crate::Result<()> {
     let response = ctx
         .v1
         .bdev
-        .create(v1rpc::bdev::CreateBdevRequest {
-            uri,
-        })
+        .create(v1rpc::bdev::CreateBdevRequest { uri })
         .await
         .context(GrpcStatus)?;
 
@@ -178,9 +169,7 @@ async fn destroy(mut ctx: Context, args: &ArgMatches) -> crate::Result<()> {
     let bdevs = ctx
         .v1
         .bdev
-        .list(v1rpc::bdev::ListBdevOptions {
-            name: None,
-        })
+        .list(v1rpc::bdev::ListBdevOptions { name: None })
         .await
         .context(GrpcStatus)?
         .into_inner();
@@ -196,9 +185,7 @@ async fn destroy(mut ctx: Context, args: &ArgMatches) -> crate::Result<()> {
     let _ = ctx
         .v1
         .bdev
-        .unshare(v1rpc::bdev::BdevUnshareRequest {
-            name,
-        })
+        .unshare(v1rpc::bdev::BdevUnshareRequest { name })
         .await
         .context(GrpcStatus)?;
 
@@ -293,9 +280,7 @@ async fn unshare(mut ctx: Context, args: &ArgMatches) -> crate::Result<()> {
     let response = ctx
         .v1
         .bdev
-        .unshare(v1rpc::bdev::BdevUnshareRequest {
-            name: name.clone(),
-        })
+        .unshare(v1rpc::bdev::BdevUnshareRequest { name: name.clone() })
         .await
         .context(GrpcStatus)?;
 

@@ -18,11 +18,7 @@ use rebuild_descriptor::RebuildDescriptor;
 pub(crate) use rebuild_error::{RebuildError, SnapshotRebuildError};
 use rebuild_job::RebuildOperation;
 pub use rebuild_job::{RebuildJob, RebuildJobOptions, RebuildVerifyMode};
-use rebuild_job_backend::{
-    RebuildFBendChan,
-    RebuildJobBackendManager,
-    RebuildJobRequest,
-};
+use rebuild_job_backend::{RebuildFBendChan, RebuildJobBackendManager, RebuildJobRequest};
 pub use rebuild_map::RebuildMap;
 pub use rebuild_state::RebuildState;
 use rebuild_state::RebuildStates;
@@ -35,8 +31,7 @@ pub use snapshot_rebuild::SnapshotRebuildJob;
 const SEGMENT_TASKS: usize = 16;
 
 /// Size of each segment used by the copy task
-pub(crate) const SEGMENT_SIZE: u64 =
-    spdk_rs::libspdk::SPDK_BDEV_LARGE_BUF_MAX_SIZE as u64;
+pub(crate) const SEGMENT_SIZE: u64 = spdk_rs::libspdk::SPDK_BDEV_LARGE_BUF_MAX_SIZE as u64;
 
 /// Checks whether a range is contained within another range
 trait WithinRange<T> {

@@ -3,9 +3,7 @@ use common::compose::{
         mayastor::{BdevShareRequest, BdevUri},
         GrpcConnect,
     },
-    Builder,
-    ComposeTest,
-    MayastorTest,
+    Builder, ComposeTest, MayastorTest,
 };
 use io_engine::{
     bdev::nexus::{nexus_create, nexus_lookup_mut},

@@ -95,8 +95,7 @@ async fn normal_request_reply() {
             assert_eq!(req.id.as_i64().unwrap(), 0);
             assert_eq!(req.jsonrpc.unwrap(), "2.0");
 
-            let params: Args =
-                serde_json::from_value(req.params.unwrap()).unwrap();
+            let params: Args = serde_json::from_value(req.params.unwrap()).unwrap();
 
             let resp = Response {
                 error: None,
@@ -152,8 +151,7 @@ fn connect_error() {
     // create tokio futures runtime
     let rt = Runtime::new().unwrap();
     // try to connect to server which does not exist
-    let call_res: Result<(), Error> =
-        rt.block_on(call("/crazy/path/look", "method", Some(())));
+    let call_res: Result<(), Error> = rt.block_on(call("/crazy/path/look", "method", Some(())));
     match call_res {
         Ok(_) => panic!("Expected error and got ok"),
         Err(Error::IoError(err)) => match err.kind() {
@@ -306,10 +304,7 @@ async fn rpc_error() {
         },
         |res: Result<(), Error>| match res {
             Ok(_) => panic!("Expected error and got ok"),
-            Err(Error::RpcError {
-                code,
-                msg,
-            }) => {
+            Err(Error::RpcError { code, msg }) => {
                 assert_eq!(code, RpcCode::NotFound);
                 assert_eq!(&msg, "Not found");
             }

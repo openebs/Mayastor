@@ -50,8 +50,7 @@ pub async fn handler(ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
         ("replica", args) => replica(ctx, args).await,
         ("reset", _) => reset(ctx).await,
         (cmd, _) => {
-            Err(Status::not_found(format!("command {cmd} does not exist")))
-                .context(GrpcStatus)
+            Err(Status::not_found(format!("command {cmd} does not exist"))).context(GrpcStatus)
         }
     }
 }
@@ -95,9 +94,8 @@ async fn pool(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
                 .iter()
                 .map(|stats| {
                     let tick_rate = stats.tick_rate;
-                    let ticks_time = |ticks| -> String {
-                        ticks_to_time(ticks, tick_rate).to_string()
-                    };
+                    let ticks_time =
+                        |ticks| -> String { ticks_to_time(ticks, tick_rate).to_string() };
                     vec![
                         stats.name.clone(),
                         stats.num_read_ops.to_string(),
@@ -179,9 +177,8 @@ async fn nexus(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
                 .iter()
                 .map(|stats| {
                     let tick_rate = stats.tick_rate;
-                    let ticks_time = |ticks| -> String {
-                        ticks_to_time(ticks, tick_rate).to_string()
-                    };
+                    let ticks_time =
+                        |ticks| -> String { ticks_to_time(ticks, tick_rate).to_string() };
                     vec![
                         stats.name.clone(),
                         stats.num_read_ops.to_string(),
@@ -246,8 +243,7 @@ async fn replica(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
             );
         }
         OutputFormat::Default => {
-            let stats: &Vec<v1rpc::stats::ReplicaIoStats> =
-                &response.get_ref().stats;
+            let stats: &Vec<v1rpc::stats::ReplicaIoStats> = &response.get_ref().stats;
             if stats.is_empty() {
                 if let Some(name) = replica_name {
                     ctx.v1(&format!(
@@ -265,9 +261,8 @@ async fn replica(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
                 .map(|p| {
                     let io_stat = p.stats.as_ref().unwrap();
                     let tick_rate = io_stat.tick_rate;
-                    let ticks_time = |ticks| -> String {
-                        ticks_to_time(ticks, tick_rate).to_string()
-                    };
+                    let ticks_time =
+                        |ticks| -> String { ticks_to_time(ticks, tick_rate).to_string() };
                     vec![
                         io_stat.name.clone(),
                         io_stat.num_read_ops.to_string(),

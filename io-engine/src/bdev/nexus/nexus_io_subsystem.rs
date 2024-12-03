@@ -102,10 +102,9 @@ impl<'n> NexusIoSubsystem<'n> {
         trace!("{:?}: pausing I/O...", self);
 
         loop {
-            let state = self.pause_state.compare_exchange(
-                NexusPauseState::Unpaused,
-                NexusPauseState::Pausing,
-            );
+            let state = self
+                .pause_state
+                .compare_exchange(NexusPauseState::Unpaused, NexusPauseState::Pausing);
 
             match state {
                 Ok(NexusPauseState::Unpaused) => {
@@ -118,37 +117,20 @@ impl<'n> NexusIoSubsystem<'n> {
                     );
 
                     if let Some(Protocol::Nvmf) = self.bdev.shared() {
-                        if let Some(subsystem) =
-                            NvmfSubsystem::nqn_lookup(&self.name)
-                        {
-                            trace!(
-                                "{:?}: pausing subsystem '{}'...",
-                                self,
-                                subsystem.get_nqn()
-                            );
+                        if let Some(subsystem) = NvmfSubsystem::nqn_lookup(&self.name) {
+                            trace!("{:?}: pausing subsystem '{}'...", self, subsystem.get_nqn());
 
                             if let Err(e) = subsystem.pause().await {
-                                panic!(
-                                    "Failed to pause subsystem '{}: {}",
-                                    subsystem.get_nqn(),
-                                    e
-                                );
+                                panic!("Failed to pause subsystem '{}: {}", subsystem.get_nqn(), e);
                             }
 
-                            trace!(
-                                "{:?}: subsystem '{}' paused",
-                                self,
-                                subsystem.get_nqn()
-                            );
+                            trace!("{:?}: subsystem '{}' paused", self, subsystem.get_nqn());
                         }
                     }
 
                     // Mark subsystem as paused after it has been paused.
                     self.pause_state
-                        .compare_exchange(
-                            NexusPauseState::Pausing,
-                            NexusPauseState::Paused,
-                        )
+                        .compare_exchange(NexusPauseState::Pausing, NexusPauseState::Paused)
                         .expect("Failed to mark subsystem as Paused");
                     break;
                 }
@@ -164,8 +146,7 @@ impl<'n> NexusIoSubsystem<'n> {
                 }
                 // Wait till the subsystem has completed transition and retry
                 // operation.
-                Err(NexusPauseState::Unpausing)
-                | Err(NexusPauseState::Pausing) => {
+                Err(NexusPauseState::Unpausing) | Err(NexusPauseState::Pausing) => {
                     trace!(
                         "{:?}: nexus is in intermediate state, \
                             deferring pause operation",
@@ -253,9 +234,7 @@ impl<'n> NexusIoSubsystem<'n> {
                     // In case the last pause discarded, resume the subsystem.
                     if v == 1 {
                         if state == NexusPauseState::Frozen || freeze {
-                            if let Some(subsystem) =
-                                NvmfSubsystem::nqn_lookup(&self.name)
-                            {
+                            if let Some(subsystem) = NvmfSubsystem::nqn_lookup(&self.name) {
                                 trace!(
                                     "{:?}: subsystem '{}' not being resumed",
                                     self,
@@ -264,11 +243,8 @@ impl<'n> NexusIoSubsystem<'n> {
                             }
                             self.pause_state.store(NexusPauseState::Frozen);
                         } else {
-                            if let Some(subsystem) =
-                                NvmfSubsystem::nqn_lookup(&self.name)
-                            {
-                                self.pause_state
-                                    .store(NexusPauseState::Unpausing);
+                            if let Some(subsystem) = NvmfSubsystem::nqn_lookup(&self.name) {
+                                self.pause_state.store(NexusPauseState::Unpausing);
                                 trace!(
                                     "{:?}: resuming subsystem '{}'...",
                                     self,
@@ -281,11 +257,7 @@ impl<'n> NexusIoSubsystem<'n> {
                                         e
                                     );
                                 }
-                                trace!(
-                                    "{:?}: subsystem '{}' resumed",
-                                    self,
-                                    subsystem.get_nqn()
-                                );
+                                trace!("{:?}: subsystem '{}' resumed", self, subsystem.get_nqn());
                             }
                             self.pause_state.store(NexusPauseState::Unpaused);
                         }

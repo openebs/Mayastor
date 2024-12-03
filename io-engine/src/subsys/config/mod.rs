@@ -13,23 +13,14 @@ use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
 use snafu::Snafu;
 use spdk_rs::libspdk::{
-    spdk_json_write_ctx,
-    spdk_json_write_val_raw,
-    spdk_subsystem,
-    spdk_subsystem_fini_next,
+    spdk_json_write_ctx, spdk_json_write_val_raw, spdk_subsystem, spdk_subsystem_fini_next,
     spdk_subsystem_init_next,
 };
 
 use crate::{
     jsonrpc::{jsonrpc_register, Code, RpcErrorCode},
     subsys::config::opts::{
-        BdevOpts,
-        GetOpts,
-        IoBufOpts,
-        NexusOpts,
-        NvmeBdevOpts,
-        NvmfTgtConfig,
-        PosixSocketOpts,
+        BdevOpts, GetOpts, IoBufOpts, NexusOpts, NvmeBdevOpts, NvmfTgtConfig, PosixSocketOpts,
     },
 };
 
@@ -69,8 +60,11 @@ impl ConfigSubsystem {
                         error!("error writing config file {} {}", target, e);
                     }
                 } else {
-                    warn!("request to save config file but no source file was given, guess \
-                    you have to scribble it down yourself {}", '\u{1f609}');
+                    warn!(
+                        "request to save config file but no source file was given, guess \
+                    you have to scribble it down yourself {}",
+                        '\u{1f609}'
+                    );
                 }
                 Ok(())
             };
@@ -93,11 +87,7 @@ impl ConfigSubsystem {
         };
 
         unsafe {
-            spdk_json_write_val_raw(
-                w,
-                data.as_ptr() as *const _,
-                data.as_bytes().len() as u64,
-            );
+            spdk_json_write_val_raw(w, data.as_ptr() as *const _, data.as_bytes().len() as u64);
         }
     }
 

@@ -6,13 +6,7 @@ use futures::future::join_all;
 use super::{Error, Nexus, NexusOperation, NexusState};
 use crate::{
     bdev::nexus::{nexus_lookup, NexusChild},
-    core::{
-        snapshot::ISnapshotDescriptor,
-        CoreError,
-        Reactor,
-        SnapshotParams,
-        ToErrno,
-    },
+    core::{snapshot::ISnapshotDescriptor, CoreError, Reactor, SnapshotParams, ToErrno},
 };
 use chrono::{DateTime, Utc};
 use std::pin::Pin;
@@ -95,10 +89,7 @@ impl ReplicaSnapshotExecutor {
                     if seen_replicas.contains(&r.replica_uuid) {
                         return Err(Error::FailedCreateSnapshot {
                             name: nexus.bdev_name(),
-                            reason: format!(
-                                "Duplicated replica {}",
-                                &r.replica_uuid,
-                            ),
+                            reason: format!("Duplicated replica {}", &r.replica_uuid,),
                         });
                     }
                     seen_replicas.insert(r.replica_uuid.to_string());
@@ -122,10 +113,7 @@ impl ReplicaSnapshotExecutor {
                 if !replica.is_healthy() {
                     return Err(Error::FailedCreateSnapshot {
                         name: nexus.bdev_name(),
-                        reason: format!(
-                            "Replica {} is not healthy",
-                            &r.replica_uuid,
-                        ),
+                        reason: format!("Replica {} is not healthy", &r.replica_uuid,),
                     });
                 }
 

@@ -4,25 +4,14 @@ use std::collections::HashMap;
 
 use spdk_rs::{
     libspdk::{
-        spdk_bdev_fn_table,
-        spdk_bdev_io,
-        spdk_bdev_io_complete_nvme_status,
-        spdk_io_channel,
+        spdk_bdev_fn_table, spdk_bdev_io, spdk_bdev_io_complete_nvme_status, spdk_io_channel,
     },
-    BdevIo,
-    UntypedBdev,
+    BdevIo, UntypedBdev,
 };
 
 use crate::core::IoCompletionStatus;
 
-use super::{
-    FaultDomain,
-    FaultInjectionError,
-    FaultIoStage,
-    FaultMethod,
-    InjectIoCtx,
-    Injection,
-};
+use super::{FaultDomain, FaultInjectionError, FaultIoStage, FaultMethod, InjectIoCtx, Injection};
 
 /// TODO
 struct BdevInfo {
@@ -44,10 +33,7 @@ fn get_bdevs<'a>() -> MutexGuard<'a, Bdevs> {
 }
 
 /// TODO
-unsafe extern "C" fn inject_submit_request(
-    chan: *mut spdk_io_channel,
-    io_ptr: *mut spdk_bdev_io,
-) {
+unsafe extern "C" fn inject_submit_request(chan: *mut spdk_io_channel, io_ptr: *mut spdk_bdev_io) {
     let mut g = get_bdevs();
 
     let io = BdevIo::<()>::legacy_from_ptr(io_ptr);
@@ -89,13 +75,11 @@ unsafe extern "C" fn inject_submit_request(
 }
 
 /// TODO
-pub(super) fn add_bdev_io_injection(
-    inj: &Injection,
-) -> Result<(), FaultInjectionError> {
+pub(super) fn add_bdev_io_injection(inj: &Injection) -> Result<(), FaultInjectionError> {
     if inj.io_stage != FaultIoStage::Submission {
         return Err(FaultInjectionError::InvalidInjection {
             name: inj.device_name.clone(),
-            msg: format!("bdev I/O supports only submission injections"),
+            msg: "bdev I/O supports only submission injections".to_string(),
         });
     }
 
@@ -105,7 +89,7 @@ pub(super) fn add_bdev_io_injection(
     ) {
         return Err(FaultInjectionError::InvalidInjection {
             name: inj.device_name.clone(),
-            msg: format!("bdev I/O supports only NVME error injection"),
+            msg: "bdev I/O supports only NVME error injection".to_string(),
         });
     }
 
@@ -121,9 +105,7 @@ pub(super) fn add_bdev_io_injection(
     if g.iter().any(|(_, v)| v.inj.device_name == inj.device_name) {
         return Err(FaultInjectionError::InvalidInjection {
             name: inj.device_name.clone(),
-            msg: format!(
-                "bdev I/O does not support multiple injections per bdev"
-            ),
+            msg: "bdev I/O does not support multiple injections per bdev".to_string(),
         });
     }
 

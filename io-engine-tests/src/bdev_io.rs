@@ -54,22 +54,14 @@ pub async fn read_some(
     Ok(())
 }
 
-pub async fn write_zeroes_some(
-    nexus_name: &str,
-    offset: u64,
-    len: u64,
-) -> Result<(), CoreError> {
+pub async fn write_zeroes_some(nexus_name: &str, offset: u64, len: u64) -> Result<(), CoreError> {
     let h = UntypedBdevHandle::open(nexus_name, true, false)?;
 
     h.write_zeroes_at(offset, len).await?;
     Ok(())
 }
 
-pub async fn read_some_safe(
-    nexus_name: &str,
-    offset: u64,
-    fill: u8,
-) -> Result<bool, CoreError> {
+pub async fn read_some_safe(nexus_name: &str, offset: u64, fill: u8) -> Result<bool, CoreError> {
     let h = UntypedBdevHandle::open(nexus_name, true, false)?;
 
     let buflen = u64::from(h.get_bdev().block_len() * 2);

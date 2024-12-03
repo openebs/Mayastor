@@ -59,16 +59,12 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
         .build()
         .unwrap();
 
-    Runtime {
-        rt,
-    }
+    Runtime { rt }
 });
 
 impl Runtime {
     pub fn new(rt: tokio::runtime::Runtime) -> Self {
-        Self {
-            rt,
-        }
+        Self { rt }
     }
     fn block_on(&self, f: impl Future<Output = ()> + Send + 'static) {
         self.rt.block_on(f);

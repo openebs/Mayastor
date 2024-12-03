@@ -90,8 +90,7 @@ async fn core_2() {
         .spawn(async {
             create_nexus().await;
 
-            let n =
-                nexus_lookup_mut("core_nexus").expect("failed to lookup nexus");
+            let n = nexus_lookup_mut("core_nexus").expect("failed to lookup nexus");
 
             let d1 = UntypedBdev::open_by_name("core_nexus", true)
                 .expect("failed to open first desc to nexus");
@@ -157,13 +156,8 @@ async fn core_4() {
 
         mayastor()
             .spawn(async move {
-                let create = nexus_create(
-                    nexus_name,
-                    nexus_size,
-                    None,
-                    &[BDEVNAME1.to_string()],
-                )
-                .await;
+                let create =
+                    nexus_create(nexus_name, nexus_size, None, &[BDEVNAME1.to_string()]).await;
                 if nexus_ok {
                     create.unwrap_or_else(|_| {
                         panic!(
@@ -179,10 +173,7 @@ async fn core_4() {
                             .add_child(BDEVNAME2, true)
                             .await
                             .unwrap_or_else(|_| {
-                                panic!(
-                                    "Case {} - Child should have been added",
-                                    test_case_index
-                                )
+                                panic!("Case {} - Child should have been added", test_case_index)
                             });
                     } else {
                         nexus
@@ -224,14 +215,9 @@ async fn core_5() {
 
         mayastor()
             .spawn(async move {
-                nexus_create(
-                    nexus_name,
-                    nexus_size,
-                    None,
-                    &[BDEVNAME1.to_string()],
-                )
-                .await
-                .unwrap();
+                nexus_create(nexus_name, nexus_size, None, &[BDEVNAME1.to_string()])
+                    .await
+                    .unwrap();
                 let mut nexus = nexus_lookup_mut(nexus_name).unwrap();
                 // need to refactor this test to use nvmf instead of nbd
                 // once the libnvme-rs refactoring is done

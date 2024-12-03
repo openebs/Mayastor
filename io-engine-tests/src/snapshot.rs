@@ -99,9 +99,7 @@ impl ReplicaSnapshotBuilder {
             .collect::<Vec<_>>())
     }
 }
-pub async fn list_snapshot(
-    rpc: SharedRpcHandle,
-) -> Result<Vec<SnapshotInfo>, Status> {
+pub async fn list_snapshot(rpc: SharedRpcHandle) -> Result<Vec<SnapshotInfo>, Status> {
     rpc.lock()
         .await
         .snapshot
@@ -184,9 +182,7 @@ impl SnapshotCloneBuilder {
             .collect::<Vec<_>>())
     }
 }
-pub async fn list_snapshot_clone(
-    rpc: SharedRpcHandle,
-) -> Result<Vec<Replica>, Status> {
+pub async fn list_snapshot_clone(rpc: SharedRpcHandle) -> Result<Vec<Replica>, Status> {
     rpc.lock()
         .await
         .snapshot

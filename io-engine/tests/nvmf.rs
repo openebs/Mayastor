@@ -1,13 +1,7 @@
 use io_engine::{
     bdev_api::bdev_create,
     constants::NVME_NQN_PREFIX,
-    core::{
-        mayastor_env_stop,
-        MayastorCliArgs,
-        MayastorEnvironment,
-        Reactor,
-        UntypedBdev,
-    },
+    core::{mayastor_env_stop, MayastorCliArgs, MayastorEnvironment, Reactor, UntypedBdev},
     subsys::{NvmfSubsystem, SubType},
 };
 
@@ -18,26 +12,17 @@ use common::{
     compose::{
         rpc::{
             v0::{
-                mayastor::{
-                    BdevShareRequest,
-                    BdevUri,
-                    CreateReply,
-                    ShareProtocolNexus,
-                },
+                mayastor::{BdevShareRequest, BdevUri, CreateReply, ShareProtocolNexus},
                 GrpcConnect,
             },
             v1::{
                 nexus::{CreateNexusRequest, PublishNexusRequest},
                 pool::CreatePoolRequest,
                 replica::CreateReplicaRequest,
-                GrpcConnect as v1GrpcConnect,
-                RpcHandle,
+                GrpcConnect as v1GrpcConnect, RpcHandle,
             },
         },
-        Binary,
-        Builder,
-        ComposeTest,
-        NetworkMode,
+        Binary, Builder, ComposeTest, NetworkMode,
     },
     nvme::{nvme_connect, nvme_disconnect_nqn},
 };
@@ -113,10 +98,7 @@ fn nvmf_target() {
 
             // we should have at least 2 subsystems
             Reactor::block_on(async {
-                assert_eq!(
-                    NvmfSubsystem::first().unwrap().into_iter().count(),
-                    2
-                );
+                assert_eq!(NvmfSubsystem::first().unwrap().into_iter().count(), 2);
             });
 
             // verify the bdev is claimed by our target -- make sure we skip
@@ -161,10 +143,7 @@ async fn nvmf_set_target_interface() {
             .name("cargo-test")
             .network(network)
             .unwrap()
-            .add_container_bin(
-                "ms1",
-                Binary::from_dbg("io-engine").with_args(args),
-            )
+            .add_container_bin("ms1", Binary::from_dbg("io-engine").with_args(args))
             .with_clean(true)
             .build()
             .await
@@ -179,12 +158,7 @@ async fn nvmf_set_target_interface() {
         let tgt_ip = match tgt_ip {
             Some(s) => s.to_string(),
             None => {
-                let cnt = test
-                    .list_cluster_containers()
-                    .await
-                    .unwrap()
-                    .pop()
-                    .unwrap();
+                let cnt = test.list_cluster_containers().await.unwrap().pop().unwrap();
                 let networks = cnt.network_settings.unwrap().networks.unwrap();
                 let ip_addr = networks
                     .get("cargo-test")
@@ -215,8 +189,7 @@ async fn nvmf_set_target_interface() {
             .into_inner()
             .uri;
 
-        let re = Regex::new(r"^nvmf(\+rdma\+tcp|\+tcp)://([0-9.]+):[0-9]+/.*$")
-            .unwrap();
+        let re = Regex::new(r"^nvmf(\+rdma\+tcp|\+tcp)://([0-9.]+):[0-9]+/.*$").unwrap();
         let cap = re.captures(&bdev_uri).unwrap();
         let shared_ip = cap.get(2).unwrap().as_str();
 
@@ -267,13 +240,7 @@ async fn test_rdma_target() {
         .add_container_bin(
             "ms_0",
             Binary::from_dbg("io-engine")
-                .with_args(vec![
-                    "-l",
-                    "1,2",
-                    "--enable-rdma",
-                    "-T",
-                    iface.as_str(),
-                ])
+                .with_args(vec!["-l", "1,2", "--enable-rdma", "-T", iface.as_str()])
                 .with_privileged(Some(true)),
         )
         .with_clean(true)

@@ -15,23 +15,11 @@ use std::{
 };
 
 use spdk_rs::libspdk::{
-    spdk_blob,
-    spdk_blob_calc_used_clusters,
-    spdk_blob_get_num_clusters,
-    spdk_blob_get_num_clusters_ancestors,
-    spdk_blob_get_xattr_value,
-    spdk_blob_is_read_only,
-    spdk_blob_is_thin_provisioned,
-    spdk_blob_set_xattr,
-    spdk_blob_sync_md,
-    spdk_bs_get_cluster_size,
-    spdk_bs_get_parent_blob,
-    spdk_bs_iter_next,
-    spdk_lvol,
-    vbdev_lvol_destroy,
-    vbdev_lvol_get_from_bdev,
-    vbdev_lvol_resize,
-    LVS_CLEAR_WITH_UNMAP,
+    spdk_blob, spdk_blob_calc_used_clusters, spdk_blob_get_num_clusters,
+    spdk_blob_get_num_clusters_ancestors, spdk_blob_get_xattr_value, spdk_blob_is_read_only,
+    spdk_blob_is_thin_provisioned, spdk_blob_set_xattr, spdk_blob_sync_md,
+    spdk_bs_get_cluster_size, spdk_bs_get_parent_blob, spdk_bs_iter_next, spdk_lvol,
+    vbdev_lvol_destroy, vbdev_lvol_get_from_bdev, vbdev_lvol_resize, LVS_CLEAR_WITH_UNMAP,
 };
 
 use super::{BsError, Lvs, LvsError};
@@ -40,26 +28,12 @@ use crate::{
     bdev::PtplFileOps,
     core::{
         logical_volume::{LogicalVolume, LvolSpaceUsage},
-        Bdev,
-        CloneXattrs,
-        LvolSnapshotOps,
-        NvmfShareProps,
-        Protocol,
-        PtplProps,
-        Share,
-        SnapshotXattrs,
-        UntypedBdev,
-        UpdateProps,
+        Bdev, CloneXattrs, LvolSnapshotOps, NvmfShareProps, Protocol, PtplProps, Share,
+        SnapshotXattrs, UntypedBdev, UpdateProps,
     },
     eventing::Event,
     ffihelper::{
-        cb_arg,
-        done_cb,
-        errno_result_from_i32,
-        pair,
-        ErrnoResult,
-        FfiResult,
-        IntoCString,
+        cb_arg, done_cb, errno_result_from_i32, pair, ErrnoResult, FfiResult, IntoCString,
     },
     pool_backend::PoolBackend,
 };
@@ -163,8 +137,7 @@ impl Debug for Lvol {
             self.pool_uuid(),
             self.name(),
             if self.is_thin() { "thin " } else { "" },
-            Byte::from(self.size())
-                .get_appropriate_unit(byte_unit::UnitType::Binary)
+            Byte::from(self.size()).get_appropriate_unit(byte_unit::UnitType::Binary)
         )
     }
 }
@@ -234,12 +207,13 @@ impl Share for Lvol {
 
     /// unshare the nvmf target
     async fn unshare(mut self: Pin<&mut Self>) -> Result<(), Self::Error> {
-        Pin::new(&mut self.as_bdev()).unshare().await.map_err(|e| {
-            LvsError::LvolUnShare {
+        Pin::new(&mut self.as_bdev())
+            .unshare()
+            .await
+            .map_err(|e| LvsError::LvolUnShare {
                 source: e,
                 name: self.name(),
-            }
-        })?;
+            })?;
 
         self.as_mut().set(PropValue::Shared(false)).await?;
 
@@ -325,8 +299,7 @@ impl Lvol {
 
             // write zero to the first 8MB which wipes the metadata and the
             // first 4MB of the data partition
-            let wipe_size =
-                std::cmp::min(self.as_bdev().size_in_bytes(), WIPE_SUPER_LEN);
+            let wipe_size = std::cmp::min(self.as_bdev().size_in_bytes(), WIPE_SUPER_LEN);
             hdl.write_zeroes_at(0, wipe_size).await.map_err(|e| {
                 error!(?self, ?e);
                 LvsError::RepDestroy {
@@ -346,9 +319,7 @@ impl Lvol {
         errno: i32,
     ) {
         let sender = unsafe {
-            Box::from_raw(
-                sender_ptr as *mut oneshot::Sender<ErrnoResult<*mut spdk_lvol>>,
-            )
+            Box::from_raw(sender_ptr as *mut oneshot::Sender<ErrnoResult<*mut spdk_lvol>>)
         };
         sender
             .send(errno_result_from_i32(lvol_ptr, errno))
@@ -412,8 +383,7 @@ impl Lvol {
                 }
             }
 
-            let sl =
-                std::slice::from_raw_parts(val as *const u8, size as usize);
+            let sl = std::slice::from_raw_parts(val as *const u8, size as usize);
             std::str::from_utf8(sl).map_or_else(
                 |error| {
                     warn!(
@@ -473,18 +443,15 @@ impl Lvol {
         // Sync metadata if requested.
         let (snd, rcv) = oneshot::channel::<i32>();
 
-        unsafe {
-            spdk_blob_sync_md(
-                self.blob_checked(),
-                Some(blob_attr_set_cb),
-                cb_arg(snd),
-            )
-        };
+        unsafe { spdk_blob_sync_md(self.blob_checked(), Some(blob_attr_set_cb), cb_arg(snd)) };
 
         match rcv.await.expect("sync attribute callback disappeared") {
             0 => Ok(()),
             errno => {
-                error!(lvol=self.name(), errno,"Failed to sync blob metadata, properties might be out of sync");
+                error!(
+                    lvol = self.name(),
+                    errno, "Failed to sync blob metadata, properties might be out of sync"
+                );
                 Err(LvsError::SyncProperty {
                     source: BsError::from_i32(errno),
                     name: self.name(),
@@ -563,24 +530,15 @@ pub trait LvsLvol: LogicalVolume + Share {
 
     /// Write the property prop on to the lvol but do not sync the metadata yet.
     /// Returns whether the property was modified or not.
-    async fn set_no_sync(
-        self: Pin<&mut Self>,
-        prop: PropValue,
-    ) -> Result<bool, LvsError>;
+    async fn set_no_sync(self: Pin<&mut Self>, prop: PropValue) -> Result<bool, LvsError>;
 
     /// Write the property prop on to the lvol which is stored on disk.
     /// If the property has been modified the metadata is synced.
-    async fn set(
-        mut self: Pin<&mut Self>,
-        prop: PropValue,
-    ) -> Result<(), LvsError>;
+    async fn set(mut self: Pin<&mut Self>, prop: PropValue) -> Result<(), LvsError>;
 
     /// Write the properties on to the lvol which is stored on disk.
     /// If any of the properties are modified the metadata is synced.
-    async fn set_props(
-        mut self: Pin<&mut Self>,
-        props: Vec<PropValue>,
-    ) -> Result<(), LvsError> {
+    async fn set_props(mut self: Pin<&mut Self>, props: Vec<PropValue>) -> Result<(), LvsError> {
         let mut sync = false;
         for property in props {
             if self.as_mut().set_no_sync(property).await? {
@@ -600,28 +558,18 @@ pub trait LvsLvol: LogicalVolume + Share {
     async fn sync_metadata(self: Pin<&mut Self>) -> Result<(), LvsError>;
 
     /// Callback is executed when blobstore fetching is done using spdk api.
-    extern "C" fn blob_op_complete_cb(
-        arg: *mut c_void,
-        _blob: *mut spdk_blob,
-        errno: i32,
-    );
+    extern "C" fn blob_op_complete_cb(arg: *mut c_void, _blob: *mut spdk_blob, errno: i32);
 
     /// Get the first spdk_blob from the Lvol Blobstor.
     fn bs_iter_first(&self) -> *mut spdk_blob;
 
     /// Get the next spdk_blob from the current blob.
-    async fn bs_iter_next(
-        &self,
-        curr_blob: *mut spdk_blob,
-    ) -> Option<*mut spdk_blob>;
+    async fn bs_iter_next(&self, curr_blob: *mut spdk_blob) -> Option<*mut spdk_blob>;
 
     /// Get the next spdk_blob from the parent blob.
     /// # Safety
     /// TODO
-    unsafe fn bs_iter_parent(
-        &self,
-        curr_blob: *mut spdk_blob,
-    ) -> Option<*mut spdk_blob>;
+    unsafe fn bs_iter_parent(&self, curr_blob: *mut spdk_blob) -> Option<*mut spdk_blob>;
 
     /// Get lvol inner ptr.
     fn as_inner_ptr(&self) -> *mut spdk_lvol;
@@ -692,8 +640,7 @@ impl LogicalVolume for Lvol {
         let bs = self.lvs().blob_store();
         let blob = self.blob_checked();
         let cluster_size = unsafe { spdk_bs_get_cluster_size(bs) };
-        let num_allocated_clusters =
-            unsafe { spdk_blob_calc_used_clusters(blob) };
+        let num_allocated_clusters = unsafe { spdk_blob_calc_used_clusters(blob) };
         cluster_size * num_allocated_clusters
     }
     /// Returns Lvol disk space usage.
@@ -711,16 +658,12 @@ impl LogicalVolume for Lvol {
                 match spdk_blob_get_num_clusters_ancestors(bs, blob, &mut c) {
                     0 => c,
                     errno => {
-                        error!(
-                            ?self,
-                            errno, "Failed to get snapshot space usage"
-                        );
+                        error!(?self, errno, "Failed to get snapshot space usage");
                         0
                     }
                 }
             };
-            let allocated_bytes_snapshots =
-                cluster_size * num_allocated_clusters_snapshots;
+            let allocated_bytes_snapshots = cluster_size * num_allocated_clusters_snapshots;
             LvolSpaceUsage {
                 capacity_bytes: self.size(),
                 allocated_bytes: cluster_size * num_allocated_clusters,
@@ -738,9 +681,7 @@ impl LogicalVolume for Lvol {
                 // for the clone C1. For S5 allocated_bytes_snapshot_from_clone
                 // will consider ancestor value from C1.
                 allocated_bytes_snapshot_from_clone: self
-                    .calculate_clone_source_snap_usage(
-                        allocated_bytes_snapshots,
-                    ),
+                    .calculate_clone_source_snap_usage(allocated_bytes_snapshots),
             }
         }
     }
@@ -769,10 +710,7 @@ impl LogicalVolume for Lvol {
     }
 
     fn snapshot_uuid(&self) -> Option<String> {
-        Lvol::get_blob_xattr(
-            self.blob_checked(),
-            CloneXattrs::SourceUuid.name(),
-        )
+        Lvol::get_blob_xattr(self.blob_checked(), CloneXattrs::SourceUuid.name())
     }
 
     fn share_protocol(&self) -> Protocol {
@@ -804,18 +742,16 @@ impl LvsLvol for Lvol {
     /// Lvol is considered as clone if its sourceuuid attribute is a valid
     /// snapshot. if it is clone, return the snapshot lvol.
     fn is_snapshot_clone(&self) -> Option<Lvol> {
-        if let Some(source_uuid) = Lvol::get_blob_xattr(
-            self.blob_checked(),
-            CloneXattrs::SourceUuid.name(),
-        ) {
-            let snap_lvol =
-                match UntypedBdev::lookup_by_uuid_str(source_uuid.as_str()) {
-                    Some(bdev) => match Lvol::try_from(bdev) {
-                        Ok(l) => l,
-                        _ => return None,
-                    },
-                    None => return None,
-                };
+        if let Some(source_uuid) =
+            Lvol::get_blob_xattr(self.blob_checked(), CloneXattrs::SourceUuid.name())
+        {
+            let snap_lvol = match UntypedBdev::lookup_by_uuid_str(source_uuid.as_str()) {
+                Some(bdev) => match Lvol::try_from(bdev) {
+                    Ok(l) => l,
+                    _ => return None,
+                },
+                None => return None,
+            };
             return Some(snap_lvol);
         }
         None
@@ -849,45 +785,35 @@ impl LvsLvol for Lvol {
         };
 
         match prop {
-            PropName::Shared => {
-                match unsafe { CStr::from_ptr(value).to_str() } {
-                    Ok("true") => Ok(PropValue::Shared(true)),
-                    Ok("false") => Ok(PropValue::Shared(false)),
-                    _ => einval(),
-                }
-            }
-            PropName::AllowedHosts => {
-                match unsafe { CStr::from_ptr(value).to_str() } {
-                    Ok("") => Ok(PropValue::AllowedHosts(vec![])),
-                    Ok(list) => Ok(PropValue::AllowedHosts(
-                        list.split(',')
-                            .map(|s| s.to_string())
-                            .collect::<Vec<_>>(),
-                    )),
-                    _ => einval(),
-                }
-            }
-            PropName::EntityId => {
-                match unsafe { CStr::from_ptr(value).to_str() } {
-                    Ok(id) => Ok(PropValue::EntityId(id.to_string())),
-                    _ => einval(),
-                }
-            }
+            PropName::Shared => match unsafe { CStr::from_ptr(value).to_str() } {
+                Ok("true") => Ok(PropValue::Shared(true)),
+                Ok("false") => Ok(PropValue::Shared(false)),
+                _ => einval(),
+            },
+            PropName::AllowedHosts => match unsafe { CStr::from_ptr(value).to_str() } {
+                Ok("") => Ok(PropValue::AllowedHosts(vec![])),
+                Ok(list) => Ok(PropValue::AllowedHosts(
+                    list.split(',').map(|s| s.to_string()).collect::<Vec<_>>(),
+                )),
+                _ => einval(),
+            },
+            PropName::EntityId => match unsafe { CStr::from_ptr(value).to_str() } {
+                Ok(id) => Ok(PropValue::EntityId(id.to_string())),
+                _ => einval(),
+            },
         }
     }
 
     /// Callback executed after synchronizing the lvols metadata.
     extern "C" fn blob_sync_cb(sender_ptr: *mut c_void, errno: i32) {
-        let sender =
-            unsafe { Box::from_raw(sender_ptr as *mut oneshot::Sender<i32>) };
+        let sender = unsafe { Box::from_raw(sender_ptr as *mut oneshot::Sender<i32>) };
         sender.send(errno).expect("blob cb receiver is gone");
     }
     /// Destroy the lvol.
     async fn destroy(mut self) -> Result<String, LvsError> {
         let event = self.event(EventAction::Delete);
         extern "C" fn destroy_cb(sender: *mut c_void, errno: i32) {
-            let sender =
-                unsafe { Box::from_raw(sender as *mut oneshot::Sender<i32>) };
+            let sender = unsafe { Box::from_raw(sender as *mut oneshot::Sender<i32>) };
             sender.send(errno).unwrap();
         }
         self.reset_snapshot_tree_usage_cache(!self.is_snapshot());
@@ -898,9 +824,7 @@ impl LvsLvol for Lvol {
         let ptpl = self.ptpl();
 
         let (s, r) = pair::<i32>();
-        unsafe {
-            vbdev_lvol_destroy(self.as_inner_ptr(), Some(destroy_cb), cb_arg(s))
-        };
+        unsafe { vbdev_lvol_destroy(self.as_inner_ptr(), Some(destroy_cb), cb_arg(s)) };
 
         r.await
             .expect("lvol destroy callback is gone")
@@ -923,10 +847,7 @@ impl LvsLvol for Lvol {
         Ok(name)
     }
 
-    async fn set_no_sync(
-        self: Pin<&mut Self>,
-        prop: PropValue,
-    ) -> Result<bool, LvsError> {
+    async fn set_no_sync(self: Pin<&mut Self>, prop: PropValue) -> Result<bool, LvsError> {
         let blob = self.blob_checked();
 
         if self.is_snapshot() {
@@ -983,10 +904,7 @@ impl LvsLvol for Lvol {
         Ok(true)
     }
 
-    async fn set(
-        mut self: Pin<&mut Self>,
-        prop: PropValue,
-    ) -> Result<(), LvsError> {
+    async fn set(mut self: Pin<&mut Self>, prop: PropValue) -> Result<(), LvsError> {
         if self.as_mut().set_no_sync(prop).await? {
             self.sync_metadata().await?;
         }
@@ -1008,24 +926,18 @@ impl LvsLvol for Lvol {
             spdk_blob_sync_md(blob, Some(Self::blob_sync_cb), cb_arg(s));
         };
 
-        r.await.expect("sync callback is gone").to_result(|e| {
-            LvsError::SyncProperty {
+        r.await
+            .expect("sync callback is gone")
+            .to_result(|e| LvsError::SyncProperty {
                 source: BsError::from_i32(e),
                 name: self.name(),
-            }
-        })?;
+            })?;
 
         Ok(())
     }
     /// Blobstore Common Callback function.
-    extern "C" fn blob_op_complete_cb(
-        arg: *mut c_void,
-        blob: *mut spdk_blob,
-        errno: i32,
-    ) {
-        let s = unsafe {
-            Box::from_raw(arg as *mut oneshot::Sender<(*mut spdk_blob, i32)>)
-        };
+    extern "C" fn blob_op_complete_cb(arg: *mut c_void, blob: *mut spdk_blob, errno: i32) {
+        let s = unsafe { Box::from_raw(arg as *mut oneshot::Sender<(*mut spdk_blob, i32)>) };
         if errno != 0 {
             error!("Blobstore Operation failed, errno {errno}");
         }
@@ -1038,10 +950,7 @@ impl LvsLvol for Lvol {
     }
 
     /// Get the next spdk_blob from the current blob.
-    async fn bs_iter_next(
-        &self,
-        curr_blob: *mut spdk_blob,
-    ) -> Option<*mut spdk_blob> {
+    async fn bs_iter_next(&self, curr_blob: *mut spdk_blob) -> Option<*mut spdk_blob> {
         let (s, r) = oneshot::channel::<(*mut spdk_blob, i32)>();
         unsafe {
             spdk_bs_iter_next(
@@ -1060,10 +969,7 @@ impl LvsLvol for Lvol {
     /// Get the parent spdk_blob from the current blob.
     /// # Safety
     /// TODO
-    unsafe fn bs_iter_parent(
-        &self,
-        curr_blob: *mut spdk_blob,
-    ) -> Option<*mut spdk_blob> {
+    unsafe fn bs_iter_parent(&self, curr_blob: *mut spdk_blob) -> Option<*mut spdk_blob> {
         let parent_blob = spdk_bs_get_parent_blob(curr_blob);
         if parent_blob.is_null() {
             None
@@ -1144,12 +1050,9 @@ impl LvsLvol for Lvol {
 extern "C" fn lvol_resize_cb(cb_arg: *mut c_void, errno: i32) {
     let mut retcode = errno;
     let ctx = cb_arg as *mut ResizeCbCtx;
-    let (lvol, req_size) =
-        unsafe { (Lvol::from_inner_ptr((*ctx).lvol), (*ctx).req_size) };
+    let (lvol, req_size) = unsafe { (Lvol::from_inner_ptr((*ctx).lvol), (*ctx).req_size) };
     let sender = unsafe {
-        Box::from_raw(
-            (*ctx).sender as *mut oneshot::Sender<ErrnoResult<*mut spdk_lvol>>,
-        )
+        Box::from_raw((*ctx).sender as *mut oneshot::Sender<ErrnoResult<*mut spdk_lvol>>)
     };
 
     if retcode == 0 && (lvol.size() < req_size) {

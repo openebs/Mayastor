@@ -1,8 +1,6 @@
 use crate::{
     context::{Context, OutputFormat},
-    parse_size,
-    ClientError,
-    GrpcStatus,
+    parse_size, ClientError, GrpcStatus,
 };
 use byte_unit::Byte;
 use clap::{Arg, ArgMatches, Command};
@@ -150,16 +148,12 @@ pub async fn handler(ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
         ("features", args) => features(ctx, args).await,
         ("wipe", args) => wipe(ctx, args).await,
         (cmd, _) => {
-            Err(Status::not_found(format!("command {cmd} does not exist")))
-                .context(GrpcStatus)
+            Err(Status::not_found(format!("command {cmd} does not exist"))).context(GrpcStatus)
         }
     }
 }
 
-async fn features(
-    mut ctx: Context,
-    _matches: &ArgMatches,
-) -> crate::Result<()> {
+async fn features(mut ctx: Context, _matches: &ArgMatches) -> crate::Result<()> {
     let response = ctx.v1.test.get_features(()).await.context(GrpcStatus)?;
     let features = response.into_inner();
     match ctx.output {
@@ -188,10 +182,7 @@ async fn wipe(ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     }
 }
 
-async fn replica_wipe(
-    mut ctx: Context,
-    matches: &ArgMatches,
-) -> crate::Result<()> {
+async fn replica_wipe(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     let uuid = matches
         .get_one::<String>("uuid")
         .ok_or_else(|| ClientError::MissingValue {
@@ -203,16 +194,17 @@ async fn replica_wipe(
         Some(uuid) => Some(v1_rpc::test::wipe_replica_request::Pool::PoolUuid(
             uuid.to_string(),
         )),
-        None => matches.get_one::<String>("pool-name").map(|name| {
-            v1_rpc::test::wipe_replica_request::Pool::PoolName(name.to_string())
-        }),
+        None => matches
+            .get_one::<String>("pool-name")
+            .map(|name| v1_rpc::test::wipe_replica_request::Pool::PoolName(name.to_string())),
     };
 
-    let method_str = matches.get_one::<String>("method").ok_or_else(|| {
-        ClientError::MissingValue {
-            field: "method".to_string(),
-        }
-    })?;
+    let method_str =
+        matches
+            .get_one::<String>("method")
+            .ok_or_else(|| ClientError::MissingValue {
+                field: "method".to_string(),
+            })?;
     let method = WipeMethod::from_str(method_str)
         .map_err(|e| Status::invalid_argument(e.to_string()))
         .context(GrpcStatus)?;
@@ -234,14 +226,9 @@ async fn replica_wipe(
             pool,
             wipe_options: Some(v1_rpc::test::StreamWipeOptions {
                 options: Some(v1_rpc::test::WipeOptions {
-                    wipe_method: v1_rpc::test::wipe_options::WipeMethod::from(
-                        method,
-                    ) as i32,
+                    wipe_method: v1_rpc::test::wipe_options::WipeMethod::from(method) as i32,
                     write_pattern: None,
-                    cksum_alg:
-                        v1_rpc::test::wipe_options::CheckSumAlgorithm::from(
-                            method,
-                        ) as i32,
+                    cksum_alg: v1_rpc::test::wipe_options::CheckSumAlgorithm::from(method) as i32,
                 }),
                 chunk_size: chunk_size.as_u64(),
             }),
@@ -253,9 +240,7 @@ async fn replica_wipe(
 
     fn bandwidth(response: &v1_rpc::test::WipeReplicaResponse) -> String {
         let unknown = String::new();
-        let Some(Ok(elapsed)) =
-            response.since.map(TryInto::<std::time::Duration>::try_into)
-        else {
+        let Some(Ok(elapsed)) = response.since.map(TryInto::<std::time::Duration>::try_into) else {
             return unknown;
         };
         let elapsed_f = elapsed.as_secs_f64();
@@ -266,8 +251,7 @@ async fn replica_wipe(
         let bandwidth = (response.wiped_bytes as f64 / elapsed_f) as u64;
         format!(
             "{:.2}/s",
-            Byte::from_u64(bandwidth)
-                .get_appropriate_unit(byte_unit::UnitType::Binary)
+            Byte::from_u64(bandwidth).get_appropriate_unit(byte_unit::UnitType::Binary)
         )
     }
 
@@ -315,8 +299,7 @@ async fn replica_wipe(
                     let response = response.map(|response| {
                         // back fill with spaces with ensure checksum aligns
                         // with its header
-                        let bandwidth =
-                            format!("{: <12}", bandwidth(&response));
+                        let bandwidth = format!("{: <12}", bandwidth(&response));
                         let checksum = checksum(&response);
                         vec![
                             response.uuid,
@@ -349,10 +332,7 @@ fn adjust_bytes(bytes: u64) -> String {
     format!("{adjusted_byte:.2}")
 }
 
-async fn injections(
-    mut ctx: Context,
-    matches: &ArgMatches,
-) -> crate::Result<()> {
+async fn injections(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     let inj_add = matches.get_many::<String>("add");
     let inj_remove = matches.get_many::<String>("remove");
     if inj_add.is_none() && inj_remove.is_none() {
@@ -377,11 +357,9 @@ async fn injections(
             println!("Removing injected fault: {uri}");
             ctx.v1
                 .test
-                .remove_fault_injection(
-                    v1_rpc::test::RemoveFaultInjectionRequest {
-                        uri: uri.to_owned(),
-                    },
-                )
+                .remove_fault_injection(v1_rpc::test::RemoveFaultInjectionRequest {
+                    uri: uri.to_owned(),
+                })
                 .await
                 .context(GrpcStatus)?;
         }

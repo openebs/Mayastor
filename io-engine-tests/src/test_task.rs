@@ -34,10 +34,7 @@ where
         sc
     });
 
-    let task = TestTask {
-        sx,
-        f: Box::new(f),
-    };
+    let task = TestTask { sx, f: Box::new(f) };
     sc.send(task).unwrap();
 
     rx.await.unwrap();

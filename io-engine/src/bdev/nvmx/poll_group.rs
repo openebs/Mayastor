@@ -1,11 +1,8 @@
 use std::{os::raw::c_void, ptr::NonNull};
 
 use spdk_rs::libspdk::{
-    spdk_nvme_poll_group,
-    spdk_nvme_poll_group_add,
-    spdk_nvme_poll_group_create,
-    spdk_nvme_poll_group_destroy,
-    spdk_nvme_poll_group_remove,
+    spdk_nvme_poll_group, spdk_nvme_poll_group_add, spdk_nvme_poll_group_create,
+    spdk_nvme_poll_group_destroy, spdk_nvme_poll_group_remove,
 };
 
 use crate::core::CoreError;
@@ -17,10 +14,7 @@ pub(super) struct PollGroup(NonNull<spdk_nvme_poll_group>);
 
 impl PollGroup {
     /// Creates a poll group.
-    pub(super) fn create(
-        ctx: *mut c_void,
-        ctrlr_name: &str,
-    ) -> Result<Self, CoreError> {
+    pub(super) fn create(ctx: *mut c_void, ctrlr_name: &str) -> Result<Self, CoreError> {
         let poll_group: *mut spdk_nvme_poll_group =
             unsafe { spdk_nvme_poll_group_create(ctx, std::ptr::null_mut()) };
 

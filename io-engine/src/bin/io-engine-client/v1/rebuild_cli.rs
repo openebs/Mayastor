@@ -3,8 +3,7 @@
 
 use crate::{
     context::{Context, OutputFormat},
-    ClientError,
-    GrpcStatus,
+    ClientError, GrpcStatus,
 };
 use clap::{Arg, ArgMatches, Command};
 use colored_json::ToColoredJson;
@@ -24,8 +23,7 @@ pub async fn handler(ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
         ("progress", args) => progress(ctx, args).await,
         ("history", args) => history(ctx, args).await,
         (cmd, _) => {
-            Err(Status::not_found(format!("command {cmd} does not exist")))
-                .context(GrpcStatus)
+            Err(Status::not_found(format!("command {cmd} does not exist"))).context(GrpcStatus)
         }
     }
 }
@@ -359,10 +357,7 @@ async fn state(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
             );
         }
         OutputFormat::Default => {
-            ctx.print_list(
-                vec!["state"],
-                vec![vec![response.get_ref().state.clone()]],
-            );
+            ctx.print_list(vec!["state"], vec![vec![response.get_ref().state.clone()]]);
         }
     };
 
@@ -379,9 +374,7 @@ async fn history(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     let response = ctx
         .v1
         .nexus
-        .get_rebuild_history(v1::nexus::RebuildHistoryRequest {
-            uuid: uuid.clone(),
-        })
+        .get_rebuild_history(v1::nexus::RebuildHistoryRequest { uuid: uuid.clone() })
         .await
         .context(GrpcStatus)?;
 

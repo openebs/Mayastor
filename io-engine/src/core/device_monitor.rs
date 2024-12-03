@@ -55,14 +55,12 @@ pub async fn device_monitor_loop() {
                         let child_device = child_device.clone();
                         async move {
                             if let Some(n) = nexus_lookup(&nexus_name) {
-                                if let Err(e) =
-                                    n.close_child(&child_device).await
-                                {
+                                if let Err(e) = n.close_child(&child_device).await {
                                     error!(
-                                    "Nexus '{nexus_name}': failed to close \
+                                        "Nexus '{nexus_name}': failed to close \
                                     retired child '{child_device}': {e}",
-                                    e = e.verbose()
-                                );
+                                        e = e.verbose()
+                                    );
                                 }
                             }
                         }

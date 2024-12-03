@@ -6,15 +6,12 @@ use crate::{
     core::{
         lock::ProtectedSubsystems,
         snapshot::{SnapshotDescriptor, SnapshotParams},
-        ResourceLockManager,
-        UntypedBdev,
+        ResourceLockManager, UntypedBdev,
     },
     grpc::{
         rpc_submit,
         v1::{nexus::nexus_lookup, replica::ReplicaGrpc},
-        GrpcClientContext,
-        GrpcResult,
-        RWSerializer,
+        GrpcClientContext, GrpcResult, RWSerializer,
     },
 };
 use ::function_name::named;
@@ -35,9 +32,7 @@ pub struct SnapshotService {
     replica_svc: super::replica::ReplicaService,
 }
 
-impl From<NexusCreateSnapshotReplicaDescriptor>
-    for NexusReplicaSnapshotDescriptor
-{
+impl From<NexusCreateSnapshotReplicaDescriptor> for NexusReplicaSnapshotDescriptor {
     fn from(descr: NexusCreateSnapshotReplicaDescriptor) -> Self {
         NexusReplicaSnapshotDescriptor {
             replica_uuid: descr.replica_uuid,
@@ -146,10 +141,11 @@ impl SnapshotService {
             let _global_guard = if global_operation {
                 match lock_manager.lock(Some(ctx.timeout), false).await {
                     Some(g) => Some(g),
-                    None => return Err(Status::deadline_exceeded(
-                        "Failed to acquire access to object within given timeout"
-                        .to_string()
-                    )),
+                    None => {
+                        return Err(Status::deadline_exceeded(
+                            "Failed to acquire access to object within given timeout".to_string(),
+                        ))
+                    }
                 }
             } else {
                 None
@@ -159,13 +155,15 @@ impl SnapshotService {
             let _resource_guard = match lock_manager
                 .get_subsystem(ProtectedSubsystems::NEXUS)
                 .lock_resource(nexus_uuid, Some(ctx.timeout), false)
-                .await {
-                    Some(g) => g,
-                    None => return Err(Status::deadline_exceeded(
-                        "Failed to acquire access to object within given timeout"
-                        .to_string()
-                    )),
-                };
+                .await
+            {
+                Some(g) => g,
+                None => {
+                    return Err(Status::deadline_exceeded(
+                        "Failed to acquire access to object within given timeout".to_string(),
+                    ))
+                }
+            };
             let r = fut.await;
 
             match r {
@@ -179,9 +177,10 @@ impl SnapshotService {
                 }
             }
         })
-        .await {
+        .await
+        {
             Ok(r) => r,
-            Err(_) => Err(Status::cancelled("gRPC call cancelled"))
+            Err(_) => Err(Status::cancelled("gRPC call cancelled")),
         }
     }
 }
@@ -207,13 +206,13 @@ fn filter_snapshots_by_snapshot_query_type(
                 // ... add other fields here as needed
             ];
 
-            query_fields.iter().all(|(query_field, snapshot_field)| {
-                match query_field {
+            query_fields
+                .iter()
+                .all(|(query_field, snapshot_field)| match query_field {
                     Some(true) => *snapshot_field,
                     Some(false) => !(*snapshot_field),
                     None => true,
-                }
-            })
+                })
         })
         .collect()
 }
@@ -222,11 +221,7 @@ use crate::{
     core::snapshot::ISnapshotDescriptor,
     grpc::v1::{pool::PoolGrpc, replica::GrpcReplicaFactory},
     replica_backend::{
-        FindReplicaArgs,
-        FindSnapshotArgs,
-        ListCloneArgs,
-        ListSnapshotArgs,
-        ReplicaFactory,
+        FindReplicaArgs, FindSnapshotArgs, ListCloneArgs, ListSnapshotArgs, ReplicaFactory,
         SnapshotOps,
     },
 };
@@ -276,9 +271,7 @@ impl ReplicaGrpc {
                 })
             }
             Err(error) => {
-                error!(
-                    "Create Snapshot Failed for lvol: {replica:?} with Error: {error:?}"
-                );
+                error!("Create Snapshot Failed for lvol: {replica:?} with Error: {error:?}");
                 Err(error.into())
             }
         }
@@ -302,16 +295,12 @@ impl SnapshotGrpc {
                 }
             }
         }
-        Err(error.unwrap_or_else(|| {
-            Status::not_found(format!("Snapshot {args:?} not found"))
-        }))
+        Err(error.unwrap_or_else(|| Status::not_found(format!("Snapshot {args:?} not found"))))
     }
     fn verify_pool(&self, pool: &PoolGrpc) -> Result<(), Status> {
         let snapshot = &self.0;
         let pool = pool.as_ops();
-        if pool.name() != snapshot.pool_name()
-            || pool.uuid() != snapshot.pool_uuid()
-        {
+        if pool.name() != snapshot.pool_name() || pool.uuid() != snapshot.pool_uuid() {
             let msg = format!(
                 "Specified pool: {pool:?} does not match the target snapshot's pool: {snapshot:?}!"
             );
@@ -394,8 +383,7 @@ impl SnapshotRpc for SnapshotService {
                     info!("{:?}", args);
 
                     let probe = FindReplicaArgs::new(&args.replica_uuid);
-                    let mut replica =
-                        GrpcReplicaFactory::finder(&probe).await?;
+                    let mut replica = GrpcReplicaFactory::finder(&probe).await?;
                     replica.create_snapshot(args).await
                 })
             },
@@ -417,16 +405,13 @@ impl SnapshotRpc for SnapshotService {
                     let fargs = ListSnapshotArgs::from(args.clone());
                     let mut snapshots = vec![];
                     for factory in GrpcReplicaFactory::factories() {
-                        if let Ok(fsnapshots) = factory.list_snaps(&fargs).await
-                        {
+                        if let Ok(fsnapshots) = factory.list_snaps(&fargs).await {
                             snapshots.extend(fsnapshots);
                         }
                     }
 
                     Ok(ListSnapshotsResponse {
-                        snapshots: filter_snapshots_by_snapshot_query_type(
-                            snapshots, args.query,
-                        ),
+                        snapshots: filter_snapshots_by_snapshot_query_type(snapshots, args.query),
                     })
                 })
             },
@@ -435,10 +420,7 @@ impl SnapshotRpc for SnapshotService {
     }
 
     #[named]
-    async fn destroy_snapshot(
-        &self,
-        request: Request<DestroySnapshotRequest>,
-    ) -> GrpcResult<()> {
+    async fn destroy_snapshot(&self, request: Request<DestroySnapshotRequest>) -> GrpcResult<()> {
         self.locked(
             GrpcClientContext::new(&request, function_name!()),
             async move {
@@ -446,9 +428,7 @@ impl SnapshotRpc for SnapshotService {
                 info!("{:?}", args);
                 crate::spdk_submit!(async move {
                     let pool = match &args.pool {
-                        Some(pool) => {
-                            Some(GrpcReplicaFactory::pool_finder(pool).await?)
-                        }
+                        Some(pool) => Some(GrpcReplicaFactory::pool_finder(pool).await?),
                         None => None,
                     };
                     let probe = FindSnapshotArgs::new(args.snapshot_uuid);
@@ -477,11 +457,13 @@ impl SnapshotRpc for SnapshotService {
                 info!("{:?}", args);
                 crate::spdk_submit!(async move {
                     if UntypedBdev::lookup_by_uuid_str(&args.clone_uuid).is_some() {
-                        return Err(tonic::Status::already_exists(format!("clone uuid {} already exist", args.clone_uuid)));
+                        return Err(tonic::Status::already_exists(format!(
+                            "clone uuid {} already exist",
+                            args.clone_uuid
+                        )));
                     }
                     let probe = FindSnapshotArgs::new(args.snapshot_uuid.clone());
-                    let snapshot =
-                        SnapshotGrpc::finder(&probe).await?.0;
+                    let snapshot = SnapshotGrpc::finder(&probe).await?.0;
 
                     // reject clone creation if "discardedSnapshot" xattr is marked as true.
                     // todo: should be part of create_clone?
@@ -492,19 +474,17 @@ impl SnapshotRpc for SnapshotService {
                         )));
                     }
 
-                    let clone_config =
-                        match snapshot.prepare_clone_config(
-                            &args.clone_name,
-                            &args.clone_uuid,
-                            &args.snapshot_uuid
-                        ) {
-                            Some(clone_config) => Ok(clone_config),
-                            None => Err(tonic::Status::invalid_argument(format!(
-                                "Invalid parameters clone_uuid: {}, clone_name: {}",
-                                args.clone_uuid,
-                                args.clone_name
-                            )))
-                        }?;
+                    let clone_config = match snapshot.prepare_clone_config(
+                        &args.clone_name,
+                        &args.clone_uuid,
+                        &args.snapshot_uuid,
+                    ) {
+                        Some(clone_config) => Ok(clone_config),
+                        None => Err(tonic::Status::invalid_argument(format!(
+                            "Invalid parameters clone_uuid: {}, clone_name: {}",
+                            args.clone_uuid, args.clone_name
+                        ))),
+                    }?;
                     match snapshot.create_clone(clone_config).await {
                         Ok(clone_lvol) => {
                             info!("Create Clone Success for {snapshot:?}, {clone_lvol:?}");
@@ -541,9 +521,7 @@ impl SnapshotRpc for SnapshotService {
                             replicas.extend(clones);
                         }
                     }
-                    Ok(ListSnapshotCloneResponse {
-                        replicas,
-                    })
+                    Ok(ListSnapshotCloneResponse { replicas })
                 })
             },
         )

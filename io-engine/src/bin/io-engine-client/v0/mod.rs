@@ -28,14 +28,16 @@ pub(super) async fn main_() -> crate::Result<()> {
                 .default_value("http://127.0.0.1:10124")
                 .value_name("HOST")
                 .help("The URI of mayastor instance")
-                .global(true))
+                .global(true),
+        )
         .arg(
             Arg::new("quiet")
                 .short('q')
                 .long("quiet")
                 .action(clap::ArgAction::SetTrue)
                 .global(true)
-                .help("Do not print any output except for list records"))
+                .help("Do not print any output except for list records"),
+        )
         .arg(
             Arg::new("verbose")
                 .short('v')
@@ -43,7 +45,8 @@ pub(super) async fn main_() -> crate::Result<()> {
                 .action(clap::ArgAction::Count)
                 .help("Verbose output")
                 .conflicts_with("quiet")
-                .global(true))
+                .global(true),
+        )
         .arg(
             Arg::new("units")
                 .short('u')
@@ -52,7 +55,8 @@ pub(super) async fn main_() -> crate::Result<()> {
                 .value_parser(["i", "d"])
                 .hide_possible_values(true)
                 .next_line_help(true)
-                .help("Output with large units: i for kiB, etc. or d for kB, etc."))
+                .help("Output with large units: i for kiB, etc. or d for kB, etc."),
+        )
         .arg(
             Arg::new("output")
                 .short('o')
@@ -61,7 +65,7 @@ pub(super) async fn main_() -> crate::Result<()> {
                 .default_value("default")
                 .value_parser(["default", "json"])
                 .global(true)
-                .help("Output format.")
+                .help("Output format."),
         )
         .subcommand(pool_cli::subcommands())
         .subcommand(nexus_cli::subcommands())
@@ -73,7 +77,8 @@ pub(super) async fn main_() -> crate::Result<()> {
         .subcommand(snapshot_cli::subcommands())
         .subcommand(jsonrpc_cli::subcommands())
         .subcommand(controller_cli::subcommands())
-        .subcommand_required(true).arg_required_else_help(true)
+        .subcommand_required(true)
+        .arg_required_else_help(true)
         .get_matches();
 
     let ctx = context::Context::new(&matches)

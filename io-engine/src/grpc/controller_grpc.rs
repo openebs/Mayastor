@@ -29,12 +29,9 @@ impl NvmeController<'_> {
 }
 
 /// Returns the IO stats of the given NVMe Controller
-pub async fn controller_stats(
-    controller_name: &str,
-) -> Result<BlockDeviceIoStats, CoreError> {
+pub async fn controller_stats(controller_name: &str) -> Result<BlockDeviceIoStats, CoreError> {
     if let Some(ctrlr) = NVME_CONTROLLERS.lookup_by_name(controller_name) {
-        let (s, r) =
-            oneshot::channel::<Result<BlockDeviceIoStats, CoreError>>();
+        let (s, r) = oneshot::channel::<Result<BlockDeviceIoStats, CoreError>>();
         {
             let ctrlr = ctrlr.lock();
             if let Err(e) = ctrlr.get_io_stats(

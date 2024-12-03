@@ -3,8 +3,7 @@ use super::{
     compose::rpc::v1::{
         pool::{CreatePoolRequest, GrowPoolRequest, ListPoolOptions},
         replica::{ListReplicaOptions, Replica},
-        SharedRpcHandle,
-        Status,
+        SharedRpcHandle, Status,
     },
     generate_uuid,
 };
@@ -135,9 +134,7 @@ impl PoolBuilderOpts {
         size_mb: u64,
         blk_size: u64,
     ) -> &mut Self {
-        let bdev = format!(
-            "malloc:///{bdev_name}?size_mb={size_mb}&blk_size={blk_size}"
-        );
+        let bdev = format!("malloc:///{bdev_name}?size_mb={size_mb}&blk_size={blk_size}");
         self.with_bdev(&bdev)
     }
 
@@ -180,12 +177,7 @@ impl PoolBuilderRpc {
         self
     }
 
-    pub fn with_malloc_blk_size(
-        mut self,
-        bdev_name: &str,
-        size_mb: u64,
-        blk_size: u64,
-    ) -> Self {
+    pub fn with_malloc_blk_size(mut self, bdev_name: &str, size_mb: u64, blk_size: u64) -> Self {
         self.builder
             .with_malloc_blk_size(bdev_name, size_mb, blk_size);
         self
@@ -230,9 +222,7 @@ impl PoolBuilderRpc {
             .await?
             .into_iter()
             .find(|p| p.uuid == uuid)
-            .ok_or_else(|| {
-                Status::new(Code::NotFound, format!("Pool '{uuid}' not found"))
-            })
+            .ok_or_else(|| Status::new(Code::NotFound, format!("Pool '{uuid}' not found")))
     }
 
     pub async fn get_replicas(&self) -> Result<Vec<Replica>, Status> {
@@ -256,9 +246,7 @@ impl PoolBuilderRpc {
 impl PoolBuilderLocal {
     pub async fn malloc(name: &str, size_mb: u64) -> Result<PoolLocal, Status> {
         let lvs = PoolBuilderLocal::default()
-            .with_builder(|b| {
-                b.with_name(name).with_new_uuid().with_malloc(name, size_mb)
-            })
+            .with_builder(|b| b.with_name(name).with_new_uuid().with_malloc(name, size_mb))
             .create()
             .await?;
         Ok(PoolLocal {
@@ -296,9 +284,8 @@ impl PoolBuilderLocal {
 
     pub async fn get_pool(&self) -> Result<lvs::Lvs, Status> {
         let uuid = self.uuid();
-        lvs::Lvs::lookup_by_uuid(&uuid).ok_or_else(|| {
-            Status::new(Code::NotFound, format!("Pool '{uuid}' not found"))
-        })
+        lvs::Lvs::lookup_by_uuid(&uuid)
+            .ok_or_else(|| Status::new(Code::NotFound, format!("Pool '{uuid}' not found")))
     }
 }
 

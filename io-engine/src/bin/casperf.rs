@@ -6,30 +6,18 @@ use rand::Rng;
 use io_engine::{
     bdev_api::bdev_create,
     core::{
-        mayastor_env_stop,
-        Cores,
-        MayastorCliArgs,
-        MayastorEnvironment,
-        Mthread,
-        Reactors,
-        UntypedBdev,
-        UntypedDescriptorGuard,
+        mayastor_env_stop, Cores, MayastorCliArgs, MayastorEnvironment, Mthread, Reactors,
+        UntypedBdev, UntypedDescriptorGuard,
     },
     logger,
     subsys::Config,
 };
 use spdk_rs::{
     libspdk::{
-        spdk_bdev_free_io,
-        spdk_bdev_io,
-        spdk_bdev_read,
-        spdk_bdev_write,
-        spdk_poller,
-        spdk_poller_register,
-        spdk_poller_unregister,
+        spdk_bdev_free_io, spdk_bdev_io, spdk_bdev_read, spdk_bdev_write, spdk_poller,
+        spdk_poller_register, spdk_poller_unregister,
     },
-    DmaBuf,
-    IoChannelGuard,
+    DmaBuf, IoChannelGuard,
 };
 use version_info::version_info_str;
 
@@ -102,11 +90,7 @@ impl Job {
         let job = unsafe { ioq.job.as_mut() };
 
         if !success {
-            eprintln!(
-                "IO error for bdev {}, LBA {}",
-                job.bdev.name(),
-                ioq.offset
-            );
+            eprintln!("IO error for bdev {}, LBA {}", job.bdev.name(), ioq.offset);
         }
 
         job.n_io += 1;
@@ -130,7 +114,7 @@ impl Job {
             return;
         }
 
-        let offset = job.rng.gen_range(0 .. job.io_blocks) * job.io_size;
+        let offset = job.rng.gen_range(0..job.io_blocks) * job.io_size;
         ioq.next(offset);
     }
 
@@ -155,7 +139,7 @@ impl Job {
 
         let mut queue = Vec::new();
 
-        (0 ..= qd).for_each(|offset| {
+        (0..=qd).for_each(|offset| {
             queue.push(Io {
                 buf: DmaBuf::new(size, bdev.alignment()).unwrap(),
                 iot: io_type,
@@ -379,9 +363,7 @@ fn main() {
         .collect::<Vec<_>>();
 
     let io_size = match matches.get_one::<String>("io-size") {
-        Some(io_size) => {
-            byte_unit::Byte::parse_str(io_size, true).unwrap().as_u64()
-        }
+        Some(io_size) => byte_unit::Byte::parse_str(io_size, true).unwrap().as_u64(),
         None => IO_SIZE,
     };
     let io_type = match matches
@@ -414,9 +396,7 @@ fn main() {
 
         for j in jobs {
             let job = j.await;
-            let thread =
-                Mthread::new(job.bdev.name().to_string(), Cores::current())
-                    .unwrap();
+            let thread = Mthread::new(job.bdev.name().to_string(), Cores::current()).unwrap();
             thread.send_msg(job, |job| {
                 job.run();
             });

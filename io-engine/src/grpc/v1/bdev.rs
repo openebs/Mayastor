@@ -5,16 +5,8 @@ use crate::{
     grpc::{rpc_submit, GrpcResult},
 };
 use io_engine_api::v1::bdev::{
-    Bdev,
-    BdevRpc,
-    BdevShareRequest,
-    BdevShareResponse,
-    BdevUnshareRequest,
-    CreateBdevRequest,
-    CreateBdevResponse,
-    DestroyBdevRequest,
-    ListBdevOptions,
-    ListBdevResponse,
+    Bdev, BdevRpc, BdevShareRequest, BdevShareResponse, BdevUnshareRequest, CreateBdevRequest,
+    CreateBdevResponse, DestroyBdevRequest, ListBdevOptions, ListBdevResponse,
 };
 use std::{convert::TryFrom, pin::Pin};
 use tonic::{Request, Response, Status};
@@ -61,10 +53,7 @@ impl Default for BdevService {
 #[tonic::async_trait]
 impl BdevRpc for BdevService {
     #[tracing::instrument(skip(self))]
-    async fn list(
-        &self,
-        request: Request<ListBdevOptions>,
-    ) -> GrpcResult<ListBdevResponse> {
+    async fn list(&self, request: Request<ListBdevOptions>) -> GrpcResult<ListBdevResponse> {
         let rx = rpc_submit::<_, _, BdevError>(async {
             let mut bdevs = Vec::new();
             let args = request.into_inner();
@@ -76,9 +65,7 @@ impl BdevRpc for BdevService {
                 bdev.into_iter().for_each(|bdev| bdevs.push(bdev.into()))
             }
 
-            Ok(ListBdevResponse {
-                bdevs,
-            })
+            Ok(ListBdevResponse { bdevs })
         })?;
 
         rx.await
@@ -102,9 +89,7 @@ impl BdevRpc for BdevService {
                     bdev: Some(bdev.into()),
                 }))
             } else {
-                Err(BdevError::BdevNotFound {
-                    name,
-                })
+                Err(BdevError::BdevNotFound { name })
             }
         })?;
 
@@ -114,10 +99,7 @@ impl BdevRpc for BdevService {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn destroy(
-        &self,
-        request: Request<DestroyBdevRequest>,
-    ) -> GrpcResult<()> {
+    async fn destroy(&self, request: Request<DestroyBdevRequest>) -> GrpcResult<()> {
         let uri = request.into_inner().uri;
 
         let rx = rpc_submit(async move { bdev_destroy(&uri).await })?;
@@ -138,16 +120,13 @@ impl BdevRpc for BdevService {
         let protocol = r.protocol;
 
         let rx = match Protocol::try_from(protocol) {
-            Ok(Protocol::Nvmf) => {
-                rpc_submit::<_, Bdev, CoreError>(async move {
-                    let mut bdev = core::UntypedBdev::get_by_name(&bdev_name)?;
-                    let props = NvmfShareProps::new()
-                        .with_allowed_hosts(r.allowed_hosts);
-                    Pin::new(&mut bdev).share_nvmf(Some(props)).await?;
-                    let bdev = core::UntypedBdev::get_by_name(&bdev_name)?;
-                    Ok(bdev.into())
-                })
-            }
+            Ok(Protocol::Nvmf) => rpc_submit::<_, Bdev, CoreError>(async move {
+                let mut bdev = core::UntypedBdev::get_by_name(&bdev_name)?;
+                let props = NvmfShareProps::new().with_allowed_hosts(r.allowed_hosts);
+                Pin::new(&mut bdev).share_nvmf(Some(props)).await?;
+                let bdev = core::UntypedBdev::get_by_name(&bdev_name)?;
+                Ok(bdev.into())
+            }),
 
             _ => return Err(Status::invalid_argument(protocol.to_string())),
         }?;
@@ -155,23 +134,14 @@ impl BdevRpc for BdevService {
         rx.await
             .map_err(|_| Status::cancelled("cancelled"))?
             .map_err(|e| match e {
-                CoreError::BdevNotFound {
-                    name,
-                } => Status::not_found(name),
+                CoreError::BdevNotFound { name } => Status::not_found(name),
                 e => Status::internal(e.to_string()),
             })
-            .map(|bdev| {
-                Ok(Response::new(BdevShareResponse {
-                    bdev: Some(bdev),
-                }))
-            })?
+            .map(|bdev| Ok(Response::new(BdevShareResponse { bdev: Some(bdev) })))?
     }
 
     #[tracing::instrument(skip(self))]
-    async fn unshare(
-        &self,
-        request: Request<BdevUnshareRequest>,
-    ) -> GrpcResult<()> {
+    async fn unshare(&self, request: Request<BdevUnshareRequest>) -> GrpcResult<()> {
         let rx = rpc_submit::<_, _, CoreError>(async {
             let name = request.into_inner().name;
             if let Some(mut bdev) = core::UntypedBdev::lookup_by_name(&name) {

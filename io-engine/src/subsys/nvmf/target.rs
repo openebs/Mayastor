@@ -8,22 +8,11 @@ use std::{
 use nix::errno::Errno;
 
 use spdk_rs::libspdk::{
-    spdk_env_get_core_count,
-    spdk_nvmf_listen_opts,
-    spdk_nvmf_listen_opts_init,
-    spdk_nvmf_poll_group_destroy,
-    spdk_nvmf_subsystem_create,
-    spdk_nvmf_subsystem_set_mn,
-    spdk_nvmf_target_opts,
-    spdk_nvmf_tgt,
-    spdk_nvmf_tgt_create,
-    spdk_nvmf_tgt_destroy,
-    spdk_nvmf_tgt_listen_ext,
-    spdk_nvmf_tgt_stop_listen,
-    spdk_subsystem_fini_next,
-    spdk_subsystem_init_next,
-    SPDK_NVMF_DISCOVERY_NQN,
-    SPDK_NVMF_SUBTYPE_DISCOVERY,
+    spdk_env_get_core_count, spdk_nvmf_listen_opts, spdk_nvmf_listen_opts_init,
+    spdk_nvmf_poll_group_destroy, spdk_nvmf_subsystem_create, spdk_nvmf_subsystem_set_mn,
+    spdk_nvmf_target_opts, spdk_nvmf_tgt, spdk_nvmf_tgt_create, spdk_nvmf_tgt_destroy,
+    spdk_nvmf_tgt_listen_ext, spdk_nvmf_tgt_stop_listen, spdk_subsystem_fini_next,
+    spdk_subsystem_init_next, SPDK_NVMF_DISCOVERY_NQN, SPDK_NVMF_SUBTYPE_DISCOVERY,
 };
 
 use crate::{
@@ -36,8 +25,7 @@ use crate::{
             poll_groups::PollGroup,
             subsystem::NvmfSubsystem,
             transport::{self, get_ipv4_address, TransportId},
-            Error,
-            NVMF_PGS,
+            Error, NVMF_PGS,
         },
         Config,
     },
@@ -114,11 +102,9 @@ impl Target {
     /// initialize the target and advance states
     fn init(&mut self) -> Result<()> {
         let cfg = Config::get();
-        let tgt_ptr: Box<spdk_nvmf_target_opts> =
-            cfg.nvmf_tgt_conf.clone().into();
+        let tgt_ptr: Box<spdk_nvmf_target_opts> = cfg.nvmf_tgt_conf.clone().into();
 
-        let tgt =
-            unsafe { spdk_nvmf_tgt_create(&*tgt_ptr as *const _ as *mut _) };
+        let tgt = unsafe { spdk_nvmf_tgt_create(&*tgt_ptr as *const _ as *mut _) };
         if tgt.is_null() {
             return Err(Error::CreateTarget {
                 msg: "tgt pointer is None".to_string(),
@@ -195,10 +181,9 @@ impl Target {
     /// init the poll groups per core
     fn init_poll_groups(&self) {
         Reactors::iter().for_each(|r| {
-            if let Some(t) = Mthread::new(
-                format!("mayastor_nvmf_tcp_pg_core_{}", r.core()),
-                r.core(),
-            ) {
+            if let Some(t) =
+                Mthread::new(format!("mayastor_nvmf_tcp_pg_core_{}", r.core()), r.core())
+            {
                 r.send_future(Self::create_poll_group(self.tgt.as_ptr(), t));
             }
         });
@@ -214,9 +199,7 @@ impl Target {
                     let mut tgt = tgt.borrow_mut();
                     NVMF_PGS.with(|p| p.borrow_mut().push(pg));
                     tgt.poll_group_count += 1;
-                    if tgt.poll_group_count
-                        == unsafe { spdk_env_get_core_count() as u16 }
-                    {
+                    if tgt.poll_group_count == unsafe { spdk_env_get_core_count() as u16 } {
                         Reactors::master().send_future(async {
                             NVMF_TGT.with(|tgt| {
                                 tgt.borrow_mut().next_state();
@@ -232,10 +215,7 @@ impl Target {
     /// replica port i.e. NVMF_PORT_REPLICA.
     fn listen(&mut self) -> Result<()> {
         let cfg = Config::get();
-        let trid_nexus = TransportId::new(
-            cfg.nexus_opts.nvmf_nexus_port,
-            NvmfTgtTransport::Tcp,
-        );
+        let trid_nexus = TransportId::new(cfg.nexus_opts.nvmf_nexus_port, NvmfTgtTransport::Tcp);
         let mut opts = spdk_nvmf_listen_opts {
             opts_size: 0,
             transport_specific: null(),
@@ -249,13 +229,8 @@ impl Target {
                 std::mem::size_of::<spdk_nvmf_listen_opts>() as u64,
             );
         }
-        let rc = unsafe {
-            spdk_nvmf_tgt_listen_ext(
-                self.tgt.as_ptr(),
-                trid_nexus.as_ptr(),
-                &mut opts,
-            )
-        };
+        let rc =
+            unsafe { spdk_nvmf_tgt_listen_ext(self.tgt.as_ptr(), trid_nexus.as_ptr(), &mut opts) };
 
         if rc != 0 {
             return Err(Error::CreateTarget {
@@ -263,16 +238,10 @@ impl Target {
             });
         }
 
-        let trid_replica = TransportId::new(
-            cfg.nexus_opts.nvmf_replica_port,
-            NvmfTgtTransport::Tcp,
-        );
+        let trid_replica =
+            TransportId::new(cfg.nexus_opts.nvmf_replica_port, NvmfTgtTransport::Tcp);
         let rc = unsafe {
-            spdk_nvmf_tgt_listen_ext(
-                self.tgt.as_ptr(),
-                trid_replica.as_ptr(),
-                &mut opts,
-            )
+            spdk_nvmf_tgt_listen_ext(self.tgt.as_ptr(), trid_replica.as_ptr(), &mut opts)
         };
 
         if rc != 0 {
@@ -311,10 +280,7 @@ impl Target {
     /// replica port i.e. NVMF_PORT_REPLICA.
     fn listen_rdma(&mut self) -> Result<()> {
         let cfg = Config::get();
-        let trid_nexus = TransportId::new(
-            cfg.nexus_opts.nvmf_nexus_port,
-            NvmfTgtTransport::Rdma,
-        );
+        let trid_nexus = TransportId::new(cfg.nexus_opts.nvmf_nexus_port, NvmfTgtTransport::Rdma);
         let mut opts = spdk_nvmf_listen_opts {
             opts_size: 0,
             transport_specific: null(),
@@ -328,13 +294,8 @@ impl Target {
                 std::mem::size_of::<spdk_nvmf_listen_opts>() as u64,
             );
         }
-        let rc = unsafe {
-            spdk_nvmf_tgt_listen_ext(
-                self.tgt.as_ptr(),
-                trid_nexus.as_ptr(),
-                &mut opts,
-            )
-        };
+        let rc =
+            unsafe { spdk_nvmf_tgt_listen_ext(self.tgt.as_ptr(), trid_nexus.as_ptr(), &mut opts) };
 
         if rc != 0 {
             return Err(Error::CreateTarget {
@@ -342,16 +303,10 @@ impl Target {
             });
         }
 
-        let trid_replica = TransportId::new(
-            cfg.nexus_opts.nvmf_replica_port,
-            NvmfTgtTransport::Rdma,
-        );
+        let trid_replica =
+            TransportId::new(cfg.nexus_opts.nvmf_replica_port, NvmfTgtTransport::Rdma);
         let rc = unsafe {
-            spdk_nvmf_tgt_listen_ext(
-                self.tgt.as_ptr(),
-                trid_replica.as_ptr(),
-                &mut opts,
-            )
+            spdk_nvmf_tgt_listen_ext(self.tgt.as_ptr(), trid_replica.as_ptr(), &mut opts)
         };
 
         if rc != 0 {
@@ -382,15 +337,13 @@ impl Target {
         };
 
         let mn = CString::new(NVME_CONTROLLER_MODEL_ID).unwrap();
-        unsafe {
-            spdk_nvmf_subsystem_set_mn(discovery.0.as_ptr(), mn.as_ptr())
-        }
-        .to_result(|e| Error::Subsystem {
-            source: Errno::from_raw(e),
-            nqn: "discovery".into(),
-            msg: "failed to set serial".into(),
-        })
-        .unwrap();
+        unsafe { spdk_nvmf_subsystem_set_mn(discovery.0.as_ptr(), mn.as_ptr()) }
+            .to_result(|e| Error::Subsystem {
+                source: Errno::from_raw(e),
+                nqn: "discovery".into(),
+                msg: "failed to set serial".into(),
+            })
+            .unwrap();
 
         discovery.allow_any(true);
         discovery
@@ -436,10 +389,8 @@ impl Target {
             t.borrow().iter().for_each(|pg| {
                 trace!("destroying pg: {:?}", pg);
                 unsafe {
-                    pg.thread.send_msg_unsafe(
-                        pg_destroy,
-                        Box::into_raw(Box::new(pg.clone())) as *mut _,
-                    );
+                    pg.thread
+                        .send_msg_unsafe(pg_destroy, Box::into_raw(Box::new(pg.clone())) as *mut _);
                 }
             });
         })
@@ -481,14 +432,10 @@ impl Target {
             );
         } else {
             let cfg = Config::get();
-            let trid_nexus = TransportId::new(
-                cfg.nexus_opts.nvmf_nexus_port,
-                NvmfTgtTransport::Tcp,
-            );
-            let trid_replica = TransportId::new(
-                cfg.nexus_opts.nvmf_replica_port,
-                NvmfTgtTransport::Tcp,
-            );
+            let trid_nexus =
+                TransportId::new(cfg.nexus_opts.nvmf_nexus_port, NvmfTgtTransport::Tcp);
+            let trid_replica =
+                TransportId::new(cfg.nexus_opts.nvmf_replica_port, NvmfTgtTransport::Tcp);
             let mut trid_vec = vec![trid_nexus, trid_replica];
             // todo: handle by fetching current listeners dynamically here.
             // Since this is shutdown path we're good this way for
@@ -505,19 +452,11 @@ impl Target {
             }
 
             for trid in trid_vec {
-                unsafe {
-                    spdk_nvmf_tgt_stop_listen(self.tgt.as_ptr(), trid.as_ptr())
-                };
+                unsafe { spdk_nvmf_tgt_stop_listen(self.tgt.as_ptr(), trid.as_ptr()) };
             }
         }
 
-        unsafe {
-            spdk_nvmf_tgt_destroy(
-                self.tgt.as_ptr(),
-                Some(destroy_cb),
-                std::ptr::null_mut(),
-            )
-        }
+        unsafe { spdk_nvmf_tgt_destroy(self.tgt.as_ptr(), Some(destroy_cb), std::ptr::null_mut()) }
     }
 
     /// start the shutdown of the target and subsystems

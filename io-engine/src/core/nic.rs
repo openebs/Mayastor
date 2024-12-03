@@ -61,12 +61,7 @@ impl fmt::Display for MacAddr {
         write!(
             f,
             "{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
-            self.addr[0],
-            self.addr[1],
-            self.addr[2],
-            self.addr[3],
-            self.addr[4],
-            self.addr[5]
+            self.addr[0], self.addr[1], self.addr[2], self.addr[3], self.addr[4], self.addr[5]
         )
     }
 }
@@ -84,9 +79,7 @@ impl FromStr for MacAddr {
 impl MacAddr {
     /// Creates a new MAC address instance from address bytes.
     pub fn new(addr: [u8; 6]) -> Self {
-        Self {
-            addr,
-        }
+        Self { addr }
     }
 
     /// Parses MAC address string: six 2-digit hex numbers separated by commas.

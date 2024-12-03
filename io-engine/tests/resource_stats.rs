@@ -2,8 +2,7 @@ pub mod common;
 use common::{
     compose::{
         rpc::v1::{stats::*, GrpcConnect},
-        Binary,
-        Builder,
+        Binary, Builder,
     },
     fio::{FioBuilder, FioJobBuilder},
     nexus::{test_fio_to_nexus, NexusBuilder},
@@ -118,9 +117,7 @@ async fn test_resource_stats() {
         .lock()
         .await
         .stats
-        .get_pool_io_stats(ListStatsOption {
-            name: None,
-        })
+        .get_pool_io_stats(ListStatsOption { name: None })
         .await
         .unwrap();
 
@@ -128,9 +125,7 @@ async fn test_resource_stats() {
         .lock()
         .await
         .stats
-        .get_pool_io_stats(ListStatsOption {
-            name: None,
-        })
+        .get_pool_io_stats(ListStatsOption { name: None })
         .await
         .unwrap();
 
@@ -138,9 +133,7 @@ async fn test_resource_stats() {
         .lock()
         .await
         .stats
-        .get_nexus_io_stats(ListStatsOption {
-            name: None,
-        })
+        .get_nexus_io_stats(ListStatsOption { name: None })
         .await
         .unwrap();
 
@@ -148,9 +141,7 @@ async fn test_resource_stats() {
         .lock()
         .await
         .stats
-        .get_replica_io_stats(ListStatsOption {
-            name: None,
-        })
+        .get_replica_io_stats(ListStatsOption { name: None })
         .await
         .unwrap();
 
@@ -158,9 +149,7 @@ async fn test_resource_stats() {
         .lock()
         .await
         .stats
-        .get_replica_io_stats(ListStatsOption {
-            name: None,
-        })
+        .get_replica_io_stats(ListStatsOption { name: None })
         .await
         .unwrap();
 
@@ -168,9 +157,7 @@ async fn test_resource_stats() {
         .lock()
         .await
         .stats
-        .get_replica_io_stats(ListStatsOption {
-            name: None,
-        })
+        .get_replica_io_stats(ListStatsOption { name: None })
         .await
         .unwrap();
 
@@ -225,9 +212,7 @@ async fn test_resource_stats() {
         .lock()
         .await
         .stats
-        .get_pool_io_stats(ListStatsOption {
-            name: None,
-        })
+        .get_pool_io_stats(ListStatsOption { name: None })
         .await
         .unwrap();
 
@@ -235,9 +220,7 @@ async fn test_resource_stats() {
         .lock()
         .await
         .stats
-        .get_replica_io_stats(ListStatsOption {
-            name: None,
-        })
+        .get_replica_io_stats(ListStatsOption { name: None })
         .await
         .unwrap();
 
@@ -245,9 +228,7 @@ async fn test_resource_stats() {
         .lock()
         .await
         .stats
-        .get_replica_io_stats(ListStatsOption {
-            name: None,
-        })
+        .get_replica_io_stats(ListStatsOption { name: None })
         .await
         .unwrap();
 
@@ -255,9 +236,7 @@ async fn test_resource_stats() {
         .lock()
         .await
         .stats
-        .get_replica_io_stats(ListStatsOption {
-            name: None,
-        })
+        .get_replica_io_stats(ListStatsOption { name: None })
         .await
         .unwrap();
 
@@ -265,9 +244,7 @@ async fn test_resource_stats() {
         .lock()
         .await
         .stats
-        .get_pool_io_stats(ListStatsOption {
-            name: None,
-        })
+        .get_pool_io_stats(ListStatsOption { name: None })
         .await
         .unwrap();
 
@@ -275,9 +252,7 @@ async fn test_resource_stats() {
         .lock()
         .await
         .stats
-        .get_pool_io_stats(ListStatsOption {
-            name: None,
-        })
+        .get_pool_io_stats(ListStatsOption { name: None })
         .await
         .unwrap();
 
@@ -285,9 +260,7 @@ async fn test_resource_stats() {
         .lock()
         .await
         .stats
-        .get_nexus_io_stats(ListStatsOption {
-            name: None,
-        })
+        .get_nexus_io_stats(ListStatsOption { name: None })
         .await
         .unwrap();
 
@@ -318,9 +291,8 @@ async fn test_resource_stats() {
     assert_ne!(repl_nex_stat.num_write_ops, 0);
 
     // Validate num_read_ops of nexus and replica.
-    let replica_num_read_ops = repl_0_stat.num_read_ops
-        + repl_1_stat.num_read_ops
-        + repl_nex_stat.num_read_ops;
+    let replica_num_read_ops =
+        repl_0_stat.num_read_ops + repl_1_stat.num_read_ops + repl_nex_stat.num_read_ops;
     assert_eq!(nexus_stat.num_read_ops, replica_num_read_ops);
 
     // Validate num_read_ops of pool and replica.

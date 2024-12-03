@@ -12,12 +12,7 @@ use url::Url;
 use crate::core::IoCompletionStatus;
 
 use super::{
-    FaultDomain,
-    FaultInjectionError,
-    FaultIoOperation,
-    FaultIoStage,
-    FaultMethod,
-    InjectIoCtx,
+    FaultDomain, FaultInjectionError, FaultIoOperation, FaultIoStage, FaultMethod, InjectIoCtx,
     InjectionState,
 };
 
@@ -54,14 +49,13 @@ pub struct Injection {
 impl InjectionBuilder {
     /// TODO
     pub fn with_offset(&mut self, offset: u64, num_blocks: u64) -> &mut Self {
-        self.block_range = Some(offset .. offset + num_blocks);
+        self.block_range = Some(offset..offset + num_blocks);
         self
     }
 
     /// TODO
     pub fn with_method_nvme_error(&mut self, err: NvmeStatus) -> &mut Self {
-        self.method =
-            Some(FaultMethod::Status(IoCompletionStatus::NvmeError(err)));
+        self.method = Some(FaultMethod::Status(IoCompletionStatus::NvmeError(err)));
         self
     }
 
@@ -126,8 +120,7 @@ impl Debug for Injection {
                 ft = self.method,
             );
 
-            let timed = if !self.time_range.start.is_zero()
-                || self.time_range.end != Duration::MAX
+            let timed = if !self.time_range.start.is_zero() || self.time_range.end != Duration::MAX
             {
                 format!(
                     " for period {b} -> {e} ({t})",
@@ -139,9 +132,7 @@ impl Debug for Injection {
                 String::default()
             };
 
-            let range = if self.block_range.start != 0
-                || self.block_range.end != u64::MAX
-            {
+            let range = if self.block_range.start != 0 || self.block_range.end != u64::MAX {
                 format!(
                     " at blocks {rs}..{re}",
                     rs = self.block_range.start,
@@ -179,8 +170,8 @@ impl Default for Injection {
             io_operation: FaultIoOperation::ReadWrite,
             io_stage: FaultIoStage::Submission,
             method: FaultMethod::DATA_TRANSFER_ERROR,
-            time_range: Duration::ZERO .. Duration::MAX,
-            block_range: 0 .. u64::MAX,
+            time_range: Duration::ZERO..Duration::MAX,
+            block_range: 0..u64::MAX,
             retries: u64::MAX,
             state: Default::default(),
         }
@@ -196,11 +187,10 @@ impl Injection {
             });
         }
 
-        let p =
-            Url::parse(uri).map_err(|e| FaultInjectionError::InvalidUri {
-                source: e,
-                uri: uri.to_owned(),
-            })?;
+        let p = Url::parse(uri).map_err(|e| FaultInjectionError::InvalidUri {
+            source: e,
+            uri: uri.to_owned(),
+        })?;
 
         let mut r = Self {
             uri: Some(uri.to_owned()),
@@ -226,9 +216,7 @@ impl Injection {
                 "begin_at" => r.time_range.start = parse_timer(&k, &v)?,
                 "end_at" => r.time_range.end = parse_timer(&k, &v)?,
                 "offset" => r.block_range.start = parse_num(&k, &v)?,
-                "num_blk" | "num_blocks" => {
-                    r.block_range.end = parse_num(&k, &v)?
-                }
+                "num_blk" | "num_blocks" => r.block_range.end = parse_num(&k, &v)?,
                 "retries" => r.retries = parse_num(&k, &v)?,
                 _ => {
                     return Err(FaultInjectionError::UnknownParameter {
@@ -239,8 +227,7 @@ impl Injection {
             };
         }
 
-        r.block_range.end =
-            r.block_range.start.saturating_add(r.block_range.end);
+        r.block_range.end = r.block_range.start.saturating_add(r.block_range.end);
 
         if r.time_range.start > r.time_range.end {
             return Err(FaultInjectionError::BadDurations {
@@ -276,10 +263,7 @@ impl Injection {
         }
 
         if self.time_range.start != d.time_range.start {
-            opts.push(format!(
-                "begin_at={:?}",
-                self.time_range.start.as_millis()
-            ));
+            opts.push(format!("begin_at={:?}", self.time_range.start.as_millis()));
         }
 
         if self.time_range.end != d.time_range.end {
@@ -331,11 +315,7 @@ impl Injection {
     /// Otherwise, returns an operation status to be returned by the calling I/O
     /// routine.
     #[inline]
-    pub fn inject(
-        &self,
-        stage: FaultIoStage,
-        ctx: &InjectIoCtx,
-    ) -> Option<IoCompletionStatus> {
+    pub fn inject(&self, stage: FaultIoStage, ctx: &InjectIoCtx) -> Option<IoCompletionStatus> {
         if !ctx.is_valid()
             || !ctx.domain_ok(self.domain)
             || stage != self.io_stage
@@ -374,10 +354,7 @@ fn parse_domain(k: &str, v: &str) -> Result<FaultDomain, FaultInjectionError> {
 }
 
 /// TODO
-fn parse_fault_io_type(
-    k: &str,
-    v: &str,
-) -> Result<FaultIoOperation, FaultInjectionError> {
+fn parse_fault_io_type(k: &str, v: &str) -> Result<FaultIoOperation, FaultInjectionError> {
     let res = match v {
         "read" | "r" | "Read" => FaultIoOperation::Read,
         "write" | "w" | "Write" => FaultIoOperation::Write,
@@ -393,14 +370,9 @@ fn parse_fault_io_type(
 }
 
 /// TODO
-fn parse_fault_io_stage(
-    k: &str,
-    v: &str,
-) -> Result<FaultIoStage, FaultInjectionError> {
+fn parse_fault_io_stage(k: &str, v: &str) -> Result<FaultIoStage, FaultInjectionError> {
     let res = match v {
-        "submit" | "s" | "submission" | "Submission" => {
-            FaultIoStage::Submission
-        }
+        "submit" | "s" | "submission" | "Submission" => FaultIoStage::Submission,
         "compl" | "c" | "completion" | "Completion" => FaultIoStage::Completion,
         _ => {
             return Err(FaultInjectionError::UnknownParameter {
@@ -418,23 +390,21 @@ fn parse_method(k: &str, v: &str) -> Result<FaultMethod, FaultInjectionError> {
         "status" | "Status" => Ok(FaultMethod::DATA_TRANSFER_ERROR),
         // TODO: add data corruption methods.
         "data" | "Data" => Ok(FaultMethod::Data),
-        _ => FaultMethod::parse(v).ok_or_else(|| {
-            FaultInjectionError::UnknownParameter {
-                name: k.to_string(),
-                value: v.to_string(),
-            }
+        _ => FaultMethod::parse(v).ok_or_else(|| FaultInjectionError::UnknownParameter {
+            name: k.to_string(),
+            value: v.to_string(),
         }),
     }
 }
 
 /// TODO
 fn parse_timer(k: &str, v: &str) -> Result<Duration, FaultInjectionError> {
-    let b = v.parse::<u64>().map_err(|_| {
-        FaultInjectionError::BadParameterValue {
+    let b = v
+        .parse::<u64>()
+        .map_err(|_| FaultInjectionError::BadParameterValue {
             name: k.to_string(),
             value: v.to_string(),
-        }
-    })?;
+        })?;
 
     Ok(Duration::from_millis(b))
 }

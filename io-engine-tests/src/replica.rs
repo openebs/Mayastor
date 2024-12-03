@@ -6,13 +6,8 @@ use super::{
 };
 use io_engine::{constants::NVME_NQN_PREFIX, subsys::make_subsystem_serial};
 use io_engine_api::v1::replica::{
-    destroy_replica_request,
-    CreateReplicaRequest,
-    DestroyReplicaRequest,
-    ListReplicaOptions,
-    Replica,
-    ResizeReplicaRequest,
-    ShareReplicaRequest,
+    destroy_replica_request, CreateReplicaRequest, DestroyReplicaRequest, ListReplicaOptions,
+    Replica, ResizeReplicaRequest, ShareReplicaRequest,
 };
 
 use tonic::{Code, Status};
@@ -212,18 +207,11 @@ impl ReplicaBuilder {
             .await?
             .into_iter()
             .find(|p| p.uuid == uuid)
-            .ok_or_else(|| {
-                Status::new(
-                    Code::NotFound,
-                    format!("Replica '{uuid}' not found"),
-                )
-            })
+            .ok_or_else(|| Status::new(Code::NotFound, format!("Replica '{uuid}' not found")))
     }
 }
 
-pub async fn list_replicas(
-    rpc: SharedRpcHandle,
-) -> Result<Vec<Replica>, Status> {
+pub async fn list_replicas(rpc: SharedRpcHandle) -> Result<Vec<Replica>, Status> {
     rpc.lock()
         .await
         .replica
@@ -239,10 +227,7 @@ pub async fn list_replicas(
         .map(|r| r.into_inner().replicas)
 }
 
-pub async fn find_replica_by_uuid(
-    rpc: SharedRpcHandle,
-    uuid: &str,
-) -> Result<Replica, Status> {
+pub async fn find_replica_by_uuid(rpc: SharedRpcHandle, uuid: &str) -> Result<Replica, Status> {
     rpc.lock()
         .await
         .replica
@@ -258,14 +243,11 @@ pub async fn find_replica_by_uuid(
         .map(|r| r.into_inner().replicas)?
         .into_iter()
         .find(|n| n.uuid == uuid)
-        .ok_or_else(|| {
-            Status::new(Code::NotFound, format!("Replica '{uuid}' not found"))
-        })
+        .ok_or_else(|| Status::new(Code::NotFound, format!("Replica '{uuid}' not found")))
 }
 
 /// Reads all given replicas and checks if all them contain the same data.
 pub async fn validate_replicas(replicas: &[ReplicaBuilder]) {
-    let ls: Vec<NvmfLocation> =
-        replicas.iter().map(|r| r.nvmf_location()).collect();
+    let ls: Vec<NvmfLocation> = replicas.iter().map(|r| r.nvmf_location()).collect();
     test_devices_identical(&ls).await.unwrap();
 }

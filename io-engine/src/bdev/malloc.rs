@@ -17,11 +17,7 @@ use url::Url;
 
 use spdk_rs::{
     libspdk::{
-        create_malloc_disk,
-        delete_malloc_disk,
-        malloc_bdev_opts,
-        resize_malloc_disk,
-        spdk_bdev,
+        create_malloc_disk, delete_malloc_disk, malloc_bdev_opts, resize_malloc_disk, spdk_bdev,
         SPDK_DIF_DISABLE,
     },
     UntypedBdev,
@@ -68,8 +64,7 @@ impl TryFrom<&Url> for Malloc {
             });
         }
 
-        let mut parameters: HashMap<String, String> =
-            uri.query_pairs().into_owned().collect();
+        let mut parameters: HashMap<String, String> = uri.query_pairs().into_owned().collect();
 
         let blk_size: u32 = if let Some(value) = parameters.remove("blk_size") {
             value.parse().context(bdev_api::IntParamParseFailed {
@@ -91,22 +86,20 @@ impl TryFrom<&Url> for Malloc {
             0
         };
 
-        let num_blocks: u32 =
-            if let Some(value) = parameters.remove("num_blocks") {
-                value.parse().context(bdev_api::IntParamParseFailed {
-                    uri: uri.to_string(),
-                    parameter: String::from("num_blocks"),
-                    value: value.clone(),
-                })?
-            } else {
-                0
-            };
-
-        let uuid = uri::uuid(parameters.remove("uuid")).context(
-            bdev_api::UuidParamParseFailed {
+        let num_blocks: u32 = if let Some(value) = parameters.remove("num_blocks") {
+            value.parse().context(bdev_api::IntParamParseFailed {
                 uri: uri.to_string(),
-            },
-        )?;
+                parameter: String::from("num_blocks"),
+                value: value.clone(),
+            })?
+        } else {
+            0
+        };
+
+        let uuid =
+            uri::uuid(parameters.remove("uuid")).context(bdev_api::UuidParamParseFailed {
+                uri: uri.to_string(),
+            })?;
 
         let resizing = parameters.remove("resize").is_some();
 
@@ -123,21 +116,19 @@ impl TryFrom<&Url> for Malloc {
         if size != 0 && num_blocks != 0 {
             return Err(BdevError::InvalidUri {
                 uri: uri.to_string(),
-                message: "'num_blocks' and 'size_mb' are mutually exclusive"
-                    .to_string(),
+                message: "'num_blocks' and 'size_mb' are mutually exclusive".to_string(),
             });
         }
 
         if size == 0 && num_blocks == 0 {
             return Err(BdevError::InvalidUri {
                 uri: uri.to_string(),
-                message: "either 'num_blocks' or 'size_mb' must be specified"
-                    .to_string(),
+                message: "either 'num_blocks' or 'size_mb' must be specified".to_string(),
             });
         }
 
         Ok(Self {
-            name: uri.path()[1 ..].into(),
+            name: uri.path()[1..].into(),
             alias: uri.to_string(),
             num_blocks: if num_blocks != 0 {
                 num_blocks
@@ -245,13 +236,9 @@ impl CreateDestroy for Malloc {
                 .context(bdev_api::BdevCommandCanceled {
                     name: self.name.clone(),
                 })?
-                .context(bdev_api::DestroyBdevFailed {
-                    name: self.name,
-                })
+                .context(bdev_api::DestroyBdevFailed { name: self.name })
         } else {
-            Err(BdevError::BdevNotFound {
-                name: self.name,
-            })
+            Err(BdevError::BdevNotFound { name: self.name })
         }
     }
 }
@@ -263,12 +250,8 @@ impl Malloc {
         let cname = self.name.clone().into_cstring();
         let new_sz_mb = self.num_blocks * self.blk_size as u64 / (1024 * 1024);
 
-        let errno = unsafe {
-            resize_malloc_disk(
-                cname.as_ptr() as *mut std::os::raw::c_char,
-                new_sz_mb,
-            )
-        };
+        let errno =
+            unsafe { resize_malloc_disk(cname.as_ptr() as *mut std::os::raw::c_char, new_sz_mb) };
 
         if errno != 0 {
             let err = BdevError::ResizeBdevFailed {

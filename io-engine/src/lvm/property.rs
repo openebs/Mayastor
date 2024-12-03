@@ -102,9 +102,7 @@ impl Property {
         match self {
             Property::Lvm => None,
             Property::LvName(name) => Some(name.to_owned()),
-            Property::LvShare(protocol) => {
-                Some(protocol.value_str().to_owned())
-            }
+            Property::LvShare(protocol) => Some(protocol.value_str().to_owned()),
             Property::LvAllowedHosts(hosts) => Some(hosts.join(",").to_owned()),
             Property::LvEntityId(entity_id) => Some(entity_id.to_owned()),
             Property::Unknown(_, value) => Some(value.to_owned()),
@@ -141,9 +139,7 @@ impl Property {
         match PropertyType::from_str(key).ok()? {
             PropertyType::Lvm => Some(Self::Lvm),
             PropertyType::LvName => Some(Self::LvName(value.to_owned())),
-            PropertyType::LvShare => {
-                Some(Self::LvShare(Protocol::from_value(value)))
-            }
+            PropertyType::LvShare => Some(Self::LvShare(Protocol::from_value(value))),
             PropertyType::LvAllowedHosts => Some(Self::LvAllowedHosts(
                 value
                     .split(',')
@@ -151,9 +147,7 @@ impl Property {
                     .map(|s| s.to_owned())
                     .collect::<Vec<_>>(),
             )),
-            PropertyType::LvEntityId => {
-                Some(Self::LvEntityId(value.to_owned()))
-            }
+            PropertyType::LvEntityId => Some(Self::LvEntityId(value.to_owned())),
             _ => None,
         }
     }
@@ -163,13 +157,10 @@ impl Property {
     /// If the pair is not valid then nothing is returned.
     pub(super) fn new(tag: &str) -> Self {
         if let [key, value] = tag.split('=').collect::<Vec<_>>()[..] {
-            Self::new_known(key, value).unwrap_or(Property::Unknown(
-                key.to_string(),
-                value.to_string(),
-            ))
+            Self::new_known(key, value)
+                .unwrap_or(Property::Unknown(key.to_string(), value.to_string()))
         } else {
-            Self::new_known(tag, "")
-                .unwrap_or(Property::Unknown(tag.to_string(), "".to_string()))
+            Self::new_known(tag, "").unwrap_or(Property::Unknown(tag.to_string(), "".to_string()))
         }
     }
 }

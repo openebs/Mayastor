@@ -88,11 +88,9 @@ impl<'n> NexusChannel<'n> {
     pub(crate) fn new(nexus: Pin<&mut Nexus<'n>>) -> Self {
         debug!("{nexus:?}: new channel on core {c}", c = Cores::current());
 
-        let b_init_thrd_hdls =
-            super::ENABLE_IO_ALL_THRD_NX_CHAN.load(Ordering::SeqCst);
+        let b_init_thrd_hdls = super::ENABLE_IO_ALL_THRD_NX_CHAN.load(Ordering::SeqCst);
 
-        let is_io_chan =
-            Thread::current().unwrap() != Thread::primary() || b_init_thrd_hdls;
+        let is_io_chan = Thread::current().unwrap() != Thread::primary() || b_init_thrd_hdls;
 
         if !is_io_chan {
             // If we are here, this means the nexus channel being created is not
@@ -374,9 +372,9 @@ impl<'n> NexusChannel<'n> {
         child_device: &str,
         reason: FaultReason,
     ) -> Option<IOLogChannel> {
-        let io_log =
-            self.nexus_mut()
-                .retire_child_device(child_device, reason, true)?;
+        let io_log = self
+            .nexus_mut()
+            .retire_child_device(child_device, reason, true)?;
         self.reconnect_io_logs();
         Some(io_log)
     }
@@ -450,20 +448,13 @@ impl<'n> NexusChannel<'n> {
             )
         });
 
-        fn dbg_devs(
-            prefix: &str,
-            name: &str,
-            devs: &Vec<Box<dyn BlockDeviceHandle>>,
-        ) {
+        fn dbg_devs(prefix: &str, name: &str, devs: &[Box<dyn BlockDeviceHandle>]) {
             if devs.is_empty() {
                 debug!("{prefix}: no {name}");
             } else {
                 debug!("{prefix}: {n} {name}:", n = devs.len());
                 devs.iter().for_each(|dev| {
-                    debug!(
-                        "{prefix}:    {d}",
-                        d = dev.get_device().device_name()
-                    );
+                    debug!("{prefix}:    {d}", d = dev.get_device().device_name());
                 });
             }
         }

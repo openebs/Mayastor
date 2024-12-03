@@ -57,15 +57,10 @@ pub struct RpcHandle {
 
 impl RpcHandle {
     /// connect to the containers and construct a handle
-    pub(super) async fn connect(
-        name: String,
-        endpoint: SocketAddr,
-    ) -> Result<Self, String> {
+    pub(super) async fn connect(name: String, endpoint: SocketAddr) -> Result<Self, String> {
         let mut attempts = 40;
         loop {
-            if TcpStream::connect_timeout(&endpoint, Duration::from_millis(100))
-                .is_ok()
-            {
+            if TcpStream::connect_timeout(&endpoint, Duration::from_millis(100)).is_ok() {
                 break;
             } else {
                 thread::sleep(Duration::from_millis(101));
@@ -88,29 +83,25 @@ impl RpcHandle {
             .await
             .unwrap();
 
-        let replica =
-            replica::ReplicaRpcClient::connect(format!("http://{endpoint}"))
-                .await
-                .unwrap();
+        let replica = replica::ReplicaRpcClient::connect(format!("http://{endpoint}"))
+            .await
+            .unwrap();
 
         let host = host::HostRpcClient::connect(format!("http://{endpoint}"))
             .await
             .unwrap();
 
-        let nexus =
-            nexus::NexusRpcClient::connect(format!("http://{endpoint}"))
-                .await
-                .unwrap();
+        let nexus = nexus::NexusRpcClient::connect(format!("http://{endpoint}"))
+            .await
+            .unwrap();
 
-        let snapshot =
-            snapshot::SnapshotRpcClient::connect(format!("http://{endpoint}"))
-                .await
-                .unwrap();
+        let snapshot = snapshot::SnapshotRpcClient::connect(format!("http://{endpoint}"))
+            .await
+            .unwrap();
 
-        let stats =
-            stats::StatsRpcClient::connect(format!("http://{endpoint}"))
-                .await
-                .unwrap();
+        let stats = stats::StatsRpcClient::connect(format!("http://{endpoint}"))
+            .await
+            .unwrap();
 
         let test = test::TestRpcClient::connect(format!("http://{endpoint}"))
             .await
@@ -139,9 +130,7 @@ pub struct GrpcConnect<'a> {
 impl<'a> GrpcConnect<'a> {
     /// create new gRPC connect object
     pub fn new(comp: &'a ComposeTest) -> Self {
-        Self {
-            ct: comp,
-        }
+        Self { ct: comp }
     }
 
     /// return grpc handles to the containers
@@ -176,10 +165,7 @@ impl<'a> GrpcConnect<'a> {
         }
     }
 
-    pub async fn grpc_handle_shared(
-        &self,
-        name: &str,
-    ) -> Result<SharedRpcHandle, String> {
+    pub async fn grpc_handle_shared(&self, name: &str) -> Result<SharedRpcHandle, String> {
         self.grpc_handle(name).await.map(|rpc| {
             let name = rpc.name.clone();
             let endpoint = rpc.endpoint;

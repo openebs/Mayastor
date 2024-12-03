@@ -5,12 +5,7 @@ use once_cell::sync::{Lazy, OnceCell};
 use tracing::error;
 
 use io_engine::{
-    bdev::{
-        device_create,
-        device_destroy,
-        device_open,
-        nexus::nexus_lookup_mut,
-    },
+    bdev::{device_create, device_destroy, device_open, nexus::nexus_lookup_mut},
     core::{MayastorCliArgs, Mthread, Protocol},
     rebuild::{BdevRebuildJob, NexusRebuildJob, RebuildState},
 };
@@ -47,14 +42,14 @@ fn test_ini(name: &'static str) {
     *NEXUS_NAME.lock().unwrap() = name;
     get_err_bdev().clear();
 
-    for i in 0 .. MAX_CHILDREN {
+    for i in 0..MAX_CHILDREN {
         common::delete_file(&[get_disk(i)]);
         common::truncate_file_bytes(&get_disk(i), NEXUS_SIZE + META_SIZE);
     }
 }
 
 fn test_fini() {
-    for i in 0 .. MAX_CHILDREN {
+    for i in 0..MAX_CHILDREN {
         common::delete_file(&[get_disk(i)]);
     }
 }
@@ -82,7 +77,7 @@ fn get_dev(number: u64) -> String {
 
 async fn nexus_create(size: u64, children: u64, fill_random: bool) {
     let mut ch = Vec::new();
-    for i in 0 .. children {
+    for i in 0..children {
         ch.push(get_dev(i));
     }
 
@@ -94,9 +89,7 @@ async fn nexus_create(size: u64, children: u64, fill_random: bool) {
         let device = nexus_share().await;
         let nexus_device = device.clone();
         let (s, r) = unbounded::<i32>();
-        Mthread::spawn_unaffinitized(move || {
-            s.send(common::dd_urandom_blkdev(&nexus_device))
-        });
+        Mthread::spawn_unaffinitized(move || s.send(common::dd_urandom_blkdev(&nexus_device)));
         let dd_result: i32;
         reactor_poll!(r, dd_result);
         assert_eq!(dd_result, 0, "Failed to fill nexus with random data");
@@ -111,9 +104,7 @@ async fn nexus_create(size: u64, children: u64, fill_random: bool) {
 
 async fn nexus_share() -> String {
     let nexus = nexus_lookup_mut(nexus_name()).unwrap();
-    let device = common::device_path_from_uri(
-        &nexus.share(Protocol::Off, None).await.unwrap(),
-    );
+    let device = common::device_path_from_uri(&nexus.share(Protocol::Off, None).await.unwrap());
     reactor_poll!(200);
     device
 }
@@ -221,9 +212,8 @@ async fn rebuild_replica() {
             .await
             .unwrap();
 
-        for child in 0 .. NUM_CHILDREN {
-            NexusRebuildJob::lookup(&get_dev(child))
-                .expect_err("Should not exist");
+        for child in 0..NUM_CHILDREN {
+            NexusRebuildJob::lookup(&get_dev(child)).expect_err("Should not exist");
 
             NexusRebuildJob::lookup_src(&get_dev(child))
                 .iter()
@@ -238,16 +228,15 @@ async fn rebuild_replica() {
 
         let _ = nexus.start_rebuild(&get_dev(NUM_CHILDREN)).await;
 
-        for child in 0 .. NUM_CHILDREN {
-            NexusRebuildJob::lookup(&get_dev(child))
-                .expect_err("rebuild job not created yet");
+        for child in 0..NUM_CHILDREN {
+            NexusRebuildJob::lookup(&get_dev(child)).expect_err("rebuild job not created yet");
         }
         let src = NexusRebuildJob::lookup(&get_dev(NUM_CHILDREN))
             .expect("now the job should exist")
             .src_uri()
             .to_string();
 
-        for child in 0 .. NUM_CHILDREN {
+        for child in 0..NUM_CHILDREN {
             if get_dev(child) != src {
                 NexusRebuildJob::lookup_src(&get_dev(child))
                     .iter()
@@ -370,8 +359,7 @@ async fn rebuild_bdev_partial() {
             let size = 100 * 1024 * 1024;
             let seg_size = Self::seg_size();
             let blk_size = Self::blk_size();
-            let rebuild_map =
-                SegmentMap::new(size / blk_size, blk_size, seg_size);
+            let rebuild_map = SegmentMap::new(size / blk_size, blk_size, seg_size);
             Self(rebuild_map)
         }
         fn blk_size() -> u64 {
@@ -416,11 +404,7 @@ async fn rebuild_bdev_partial() {
                 .unwrap();
             let chan = job.start().await.unwrap();
             let state = chan.await.unwrap();
-            assert_eq!(
-                state,
-                RebuildState::Completed,
-                "Rebuild should succeed"
-            );
+            assert_eq!(state, RebuildState::Completed, "Rebuild should succeed");
             let stats = job.stats().await;
             assert_eq!(
                 stats.blocks_transferred, dirty_blks,

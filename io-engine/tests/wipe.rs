@@ -2,9 +2,7 @@ use futures::StreamExt;
 use io_engine_tests::{
     compose::{
         rpc::v1::{GrpcConnect, RpcHandle},
-        Binary,
-        Builder,
-        ComposeTest,
+        Binary, Builder, ComposeTest,
     },
     dd_urandom_blkdev,
     nvme::{list_mayastor_nvme_devices, NmveConnectGuard},
@@ -93,9 +91,7 @@ async fn replica_wipe() {
             wipe_method: WipeMethod::None,
             chunk_size: 500 * 1024 * 1024 + 512,
             expected_chunk_size: 500 * 1024 * 1024 + 512,
-            expected_last_chunk_size: 24 * 1024 * 1024
-                - 2 * 512
-                - gpt_backup_size,
+            expected_last_chunk_size: 24 * 1024 * 1024 - 2 * 512 - gpt_backup_size,
             expected_notifications: 4,
             expected_successes: 4,
         },
@@ -132,8 +128,7 @@ async fn replica_wipe() {
         .await
         .unwrap();
 
-    let _nvme_guard =
-        NmveConnectGuard::connect_addr(&nvmf_location.addr, &nvmf_location.nqn);
+    let _nvme_guard = NmveConnectGuard::connect_addr(&nvmf_location.addr, &nvmf_location.nqn);
     let device = nvme_device();
 
     // already zeroed up to 8MiB after creation!
@@ -173,8 +168,7 @@ async fn wipe_replica(
     wipe_method: WipeMethod,
     chunk_size: u64,
 ) {
-    let response =
-        issue_wipe_replica(ms, replica, wipe_method, chunk_size).await;
+    let response = issue_wipe_replica(ms, replica, wipe_method, chunk_size).await;
     let stream = response.into_inner();
     let responses = collect_stream(stream).await;
     let last = responses.last();
@@ -183,14 +177,8 @@ async fn wipe_replica(
     assert_eq!(last.unwrap().as_ref().unwrap().remaining_bytes, 0);
 }
 
-async fn validate_wipe_replica(
-    ms: &mut RpcHandle,
-    replica: &Replica,
-    wipe: TestWipeReplica,
-) {
-    let response =
-        issue_wipe_replica(ms, replica, wipe.wipe_method, wipe.chunk_size)
-            .await;
+async fn validate_wipe_replica(ms: &mut RpcHandle, replica: &Replica, wipe: TestWipeReplica) {
+    let response = issue_wipe_replica(ms, replica, wipe.wipe_method, wipe.chunk_size).await;
     let stream = response.into_inner();
     let responses = collect_stream(stream).await;
     let oks = responses
@@ -254,8 +242,7 @@ async fn validate_wipe_replica(
         assert_eq!(ok.remaining_bytes, 0, "{wipe:#?}");
         assert_eq!(
             ok.wiped_bytes,
-            (expected_chunks - 1) * wipe.expected_chunk_size
-                + wipe.expected_last_chunk_size,
+            (expected_chunks - 1) * wipe.expected_chunk_size + wipe.expected_last_chunk_size,
             "{wipe:#?}"
         );
     }

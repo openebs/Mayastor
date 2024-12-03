@@ -63,8 +63,7 @@ impl TryFrom<&Url> for Nexus {
             });
         }
 
-        let mut parameters: HashMap<String, String> =
-            uri.query_pairs().into_owned().collect();
+        let mut parameters: HashMap<String, String> = uri.query_pairs().into_owned().collect();
 
         let size: u64 = if let Some(value) = parameters.remove("size") {
             byte_unit::Byte::parse_str(&value, true)
@@ -80,20 +79,19 @@ impl TryFrom<&Url> for Nexus {
             });
         };
 
-        let children: Vec<String> =
-            if let Some(value) = parameters.remove("children") {
-                value.split(',').map(|s| s.to_string()).collect::<Vec<_>>()
-            } else {
-                return Err(BdevError::InvalidUri {
-                    uri: uri.to_string(),
-                    message: "'children' must be specified".to_string(),
-                });
-            };
+        let children: Vec<String> = if let Some(value) = parameters.remove("children") {
+            value.split(',').map(|s| s.to_string()).collect::<Vec<_>>()
+        } else {
+            return Err(BdevError::InvalidUri {
+                uri: uri.to_string(),
+                message: "'children' must be specified".to_string(),
+            });
+        };
 
         reject_unknown_parameters(uri, parameters)?;
 
         Ok(Self {
-            name: uri.path()[1 ..].into(),
+            name: uri.path()[1..].into(),
             size,
             children,
         })
@@ -111,25 +109,19 @@ impl CreateDestroy for Nexus {
     type Error = BdevError;
 
     async fn create(&self) -> Result<String, Self::Error> {
-        crate::bdev::nexus::nexus_create(
-            &self.name,
-            self.size,
-            None,
-            &self.children,
-        )
-        .await
-        .map_err(|error| BdevError::CreateBdevFailedStr {
-            error: error.to_string(),
-            name: self.name.to_owned(),
-        })?;
+        crate::bdev::nexus::nexus_create(&self.name, self.size, None, &self.children)
+            .await
+            .map_err(|error| BdevError::CreateBdevFailedStr {
+                error: error.to_string(),
+                name: self.name.to_owned(),
+            })?;
 
         Ok(self.name.to_owned())
     }
 
     async fn destroy(self: Box<Self>) -> Result<(), Self::Error> {
         debug!("{:?}: deleting", self);
-        let Some(nexus) = crate::bdev::nexus::nexus_lookup_mut(&self.name)
-        else {
+        let Some(nexus) = crate::bdev::nexus::nexus_lookup_mut(&self.name) else {
             return Err(BdevError::BdevNotFound {
                 name: self.name.to_owned(),
             });

@@ -44,8 +44,7 @@ impl TryFrom<&Url> for Null {
             });
         }
 
-        let mut parameters: HashMap<String, String> =
-            uri.query_pairs().into_owned().collect();
+        let mut parameters: HashMap<String, String> = uri.query_pairs().into_owned().collect();
 
         let blk_size: u32 = if let Some(value) = parameters.remove("blk_size") {
             value.parse().context(bdev_api::IntParamParseFailed {
@@ -60,9 +59,7 @@ impl TryFrom<&Url> for Null {
         if blk_size != 512 && blk_size != 4096 {
             return Err(BdevError::InvalidUri {
                 uri: uri.to_string(),
-                message:
-                    "invalid blk_size specified must be one of 512 or 4096"
-                        .to_string(),
+                message: "invalid blk_size specified must be one of 512 or 4096".to_string(),
             });
         }
 
@@ -76,16 +73,15 @@ impl TryFrom<&Url> for Null {
             0
         };
 
-        let num_blocks: u64 =
-            if let Some(value) = parameters.remove("num_blocks") {
-                value.parse().context(bdev_api::IntParamParseFailed {
-                    uri: uri.to_string(),
-                    parameter: String::from("blk_size"),
-                    value: value.clone(),
-                })?
-            } else {
-                0
-            };
+        let num_blocks: u64 = if let Some(value) = parameters.remove("num_blocks") {
+            value.parse().context(bdev_api::IntParamParseFailed {
+                uri: uri.to_string(),
+                parameter: String::from("blk_size"),
+                value: value.clone(),
+            })?
+        } else {
+            0
+        };
 
         if size != 0 && num_blocks != 0 {
             return Err(BdevError::InvalidUri {
@@ -95,16 +91,15 @@ impl TryFrom<&Url> for Null {
             });
         }
 
-        let uuid = uri::uuid(parameters.remove("uuid")).context(
-            bdev_api::UuidParamParseFailed {
+        let uuid =
+            uri::uuid(parameters.remove("uuid")).context(bdev_api::UuidParamParseFailed {
                 uri: uri.to_string(),
-            },
-        )?;
+            })?;
 
         reject_unknown_parameters(uri, parameters)?;
 
         Ok(Self {
-            name: uri.path()[1 ..].into(),
+            name: uri.path()[1..].into(),
             alias: uri.to_string(),
             num_blocks: if num_blocks != 0 {
                 num_blocks
@@ -150,8 +145,7 @@ impl CreateDestroy for Null {
         };
 
         let errno = unsafe {
-            let mut bdev: *mut spdk_rs::libspdk::spdk_bdev =
-                std::ptr::null_mut();
+            let mut bdev: *mut spdk_rs::libspdk::spdk_bdev = std::ptr::null_mut();
             spdk_rs::libspdk::bdev_null_create(&mut bdev, &opts)
         };
 
@@ -199,13 +193,9 @@ impl CreateDestroy for Null {
                 .context(bdev_api::BdevCommandCanceled {
                     name: self.name.clone(),
                 })?
-                .context(bdev_api::DestroyBdevFailed {
-                    name: self.name,
-                })
+                .context(bdev_api::DestroyBdevFailed { name: self.name })
         } else {
-            Err(BdevError::BdevNotFound {
-                name: self.name,
-            })
+            Err(BdevError::BdevNotFound { name: self.name })
         }
     }
 }

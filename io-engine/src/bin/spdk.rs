@@ -18,11 +18,7 @@ use std::{
 
 use io_engine::delay;
 use spdk_rs::libspdk::{
-    spdk_app_fini,
-    spdk_app_opts,
-    spdk_app_opts_init,
-    spdk_app_parse_args,
-    spdk_app_start,
+    spdk_app_fini, spdk_app_opts, spdk_app_opts_init, spdk_app_parse_args, spdk_app_start,
     spdk_app_stop,
 };
 
@@ -54,10 +50,7 @@ fn main() -> Result<(), std::io::Error> {
             None,       // usage
         ) != spdk_rs::libspdk::SPDK_APP_PARSE_ARGS_SUCCESS
         {
-            return Err(Error::new(
-                ErrorKind::Other,
-                "Parsing arguments failed",
-            ));
+            return Err(Error::new(ErrorKind::Other, "Parsing arguments failed"));
         }
     }
 

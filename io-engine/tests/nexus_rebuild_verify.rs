@@ -6,11 +6,9 @@ use common::{
     compose::{
         rpc::v1::{
             nexus::{ChildState, ChildStateReason, RebuildJobState},
-            GrpcConnect,
-            SharedRpcHandle,
+            GrpcConnect, SharedRpcHandle,
         },
-        Binary,
-        Builder,
+        Binary, Builder,
     },
     nexus::NexusBuilder,
     pool::PoolBuilder,
@@ -19,11 +17,7 @@ use common::{
 };
 
 use io_engine::core::fault_injection::{
-    FaultDomain,
-    FaultIoOperation,
-    FaultIoStage,
-    FaultMethod,
-    InjectionBuilder,
+    FaultDomain, FaultIoOperation, FaultIoStage, FaultMethod, InjectionBuilder,
 };
 use std::time::Duration;
 

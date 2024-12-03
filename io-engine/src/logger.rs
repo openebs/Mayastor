@@ -23,8 +23,7 @@ use tracing_subscriber::{
     filter::{filter_fn, Targets},
     fmt::{
         format::{FmtSpan, FormatEvent, FormatFields, Writer},
-        FmtContext,
-        FormattedFields,
+        FmtContext, FormattedFields,
     },
     layer::{Layer, SubscriberExt},
     registry::LookupSpan,
@@ -78,8 +77,7 @@ pub extern "C" fn log_impl(
         return;
     }
 
-    let arg =
-        unsafe { CStr::from_ptr(buf).to_string_lossy().trim_end().to_string() };
+    let arg = unsafe { CStr::from_ptr(buf).to_string_lossy().trim_end().to_string() };
     let filename = unsafe { CStr::from_ptr(file).to_str().unwrap() };
 
     log::logger().log(
@@ -101,10 +99,7 @@ struct FormatLevel<'a> {
 
 impl<'a> FormatLevel<'a> {
     fn new(level: &'a Level, ansi: bool) -> Self {
-        Self {
-            level,
-            ansi,
-        }
+        Self { level, ansi }
     }
 
     fn short(&self) -> &str {
@@ -253,9 +248,7 @@ struct Location<'a> {
 
 impl<'a> Location<'a> {
     fn new(meta: &'a Metadata<'a>) -> Self {
-        Self {
-            meta,
-        }
+        Self { meta }
     }
 }
 
@@ -348,7 +341,7 @@ fn ellipsis(s: &str, w: usize) -> String {
     if w < 8 || s.len() <= w {
         s.to_owned()
     } else {
-        format!("{}...", &s[.. w - 3])
+        format!("{}...", &s[..w - 3])
     }
 }
 
@@ -374,9 +367,7 @@ impl Visit for StringVisitor<'_> {
 
 impl<'a> StringVisitor<'a> {
     pub fn new(string: &'a mut String) -> Self {
-        Self {
-            string,
-        }
+        Self { string }
     }
 }
 
@@ -448,10 +439,9 @@ impl LogFormat {
             fmt.short(),
         )?;
 
-        let ctx =
-            CustomContext::new(context, event.parent(), false).to_string();
+        let ctx = CustomContext::new(context, event.parent(), false).to_string();
         if ctx.len() > 1 {
-            write!(buf, "{}: ", &ctx[1 ..])?;
+            write!(buf, "{}: ", &ctx[1..])?;
         }
 
         fmt.fmt_line(writer.by_ref(), &buf)?;
@@ -540,8 +530,7 @@ pub fn init_ex(level: &str, format: LogFormat, events_url: Option<url::Url>) {
     // Get the optional eventing layer.
     let events_layer = match events_url {
         Some(url) => {
-            let events_filter =
-                Targets::new().with_target(EVENTING_TARGET, Level::INFO);
+            let events_filter = Targets::new().with_target(EVENTING_TARGET, Level::INFO);
             Some(
                 EventHandle::init_ext(url.to_string(), SERVICE_NAME, spawn)
                     .with_filter(events_filter),
@@ -555,8 +544,7 @@ pub fn init_ex(level: &str, format: LogFormat, events_url: Option<url::Url>) {
         .with(Some(builder))
         .with(events_layer);
 
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("failed to set default subscriber");
+    tracing::subscriber::set_global_default(subscriber).expect("failed to set default subscriber");
 }
 
 pub fn init(level: &str) {

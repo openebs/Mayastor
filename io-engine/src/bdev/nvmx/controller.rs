@@ -19,51 +19,29 @@ use once_cell::sync::OnceCell;
 use spdk_rs::{
     cpu_cores::{Cores, RoundRobinCoreSelector},
     libspdk::{
-        spdk_nvme_async_event_completion,
-        spdk_nvme_cpl,
-        spdk_nvme_ctrlr,
-        spdk_nvme_ctrlr_fail,
-        spdk_nvme_ctrlr_get_ns,
-        spdk_nvme_ctrlr_is_active_ns,
-        spdk_nvme_ctrlr_register_aer_callback,
-        spdk_nvme_detach,
+        spdk_nvme_async_event_completion, spdk_nvme_cpl, spdk_nvme_ctrlr, spdk_nvme_ctrlr_fail,
+        spdk_nvme_ctrlr_get_ns, spdk_nvme_ctrlr_is_active_ns,
+        spdk_nvme_ctrlr_register_aer_callback, spdk_nvme_detach,
     },
-    Poller,
-    PollerBuilder,
+    Poller, PollerBuilder,
 };
 
 use crate::{
     bdev::nvmx::{
         channel::{NvmeControllerIoChannel, NvmeIoChannel, NvmeIoChannelInner},
         controller_inner::{SpdkNvmeController, TimeoutConfig},
-        controller_state::{
-            ControllerFailureReason,
-            ControllerFlag,
-            ControllerStateMachine,
-        },
+        controller_state::{ControllerFailureReason, ControllerFlag, ControllerStateMachine},
         nvme_bdev_running_config,
         uri::NvmeControllerContext,
-        utils::{
-            nvme_cpl_succeeded,
-            NvmeAerInfoNotice,
-            NvmeAerInfoNvmCommandSet,
-            NvmeAerType,
-        },
+        utils::{nvme_cpl_succeeded, NvmeAerInfoNotice, NvmeAerInfoNvmCommandSet, NvmeAerType},
         NvmeControllerState,
         NvmeControllerState::*,
-        NvmeNamespace,
-        NVME_CONTROLLERS,
+        NvmeNamespace, NVME_CONTROLLERS,
     },
     bdev_api::BdevError,
     core::{
-        BlockDeviceIoStats,
-        CoreError,
-        DeviceEventDispatcher,
-        DeviceEventSink,
-        DeviceEventType,
-        IoDevice,
-        OpCompletionCallback,
-        OpCompletionCallbackArg,
+        BlockDeviceIoStats, CoreError, DeviceEventDispatcher, DeviceEventSink, DeviceEventType,
+        IoDevice, OpCompletionCallback, OpCompletionCallbackArg,
     },
     ffihelper::{cb_arg, done_cb},
     sleep::mayastor_sleep,
@@ -86,15 +64,10 @@ struct ShutdownCtx {
 }
 
 /// CPU core selector for adminq pollers.
-static ADMINQ_CORE_SELECTOR: OnceCell<Mutex<RoundRobinCoreSelector>> =
-    OnceCell::new();
+static ADMINQ_CORE_SELECTOR: OnceCell<Mutex<RoundRobinCoreSelector>> = OnceCell::new();
 
 impl NvmeControllerInner<'_> {
-    fn new(
-        ctrlr: SpdkNvmeController,
-        name: String,
-        cfg: NonNull<TimeoutConfig>,
-    ) -> Self {
+    fn new(ctrlr: SpdkNvmeController, name: String, cfg: NonNull<TimeoutConfig>) -> Self {
         let io_device = Arc::new(IoDevice::new::<NvmeIoChannel>(
             NonNull::new(ctrlr.as_ptr().cast()).unwrap(),
             &name,
@@ -179,10 +152,8 @@ impl NvmeController<'_> {
             state_machine: ControllerStateMachine::new(name),
             inner: None,
             event_dispatcher: DeviceEventDispatcher::new(),
-            timeout_config: NonNull::new(Box::into_raw(Box::new(
-                TimeoutConfig::new(name),
-            )))
-            .expect("failed to box timeout context"),
+            timeout_config: NonNull::new(Box::into_raw(Box::new(TimeoutConfig::new(name))))
+                .expect("failed to box timeout context"),
         };
 
         debug!("{}: new NVMe controller created", l.name);
@@ -248,11 +219,7 @@ impl NvmeController<'_> {
         let ctrlr = self.ctrlr_as_ptr();
 
         unsafe {
-            spdk_nvme_ctrlr_register_aer_callback(
-                ctrlr,
-                Some(aer_cb),
-                ctrlr as *mut c_void,
-            );
+            spdk_nvme_ctrlr_register_aer_callback(ctrlr, Some(aer_cb), ctrlr as *mut c_void);
         };
     }
 
@@ -285,8 +252,7 @@ impl NvmeController<'_> {
 
         // Fault the controller in case of inactive namespace.
         if !ns_active {
-            self
-                .state_machine
+            self.state_machine
                 .transition(Faulted(ControllerFailureReason::NamespaceInit))
                 .expect("failed to fault controller in response to ns enumeration failure");
         }
@@ -353,9 +319,7 @@ impl NvmeController<'_> {
             name: self.name.clone(),
             cb,
             cb_arg,
-            spdk_handle: self
-                .controller()
-                .expect("controller is may not be NULL"),
+            spdk_handle: self.controller().expect("controller is may not be NULL"),
             io_device,
             shutdown_in_progress: false,
         };
@@ -372,20 +336,14 @@ impl NvmeController<'_> {
         Ok(())
     }
 
-    fn _shutdown_channels(
-        channel: &mut NvmeIoChannelInner,
-        ctx: &mut ShutdownCtx,
-    ) -> i32 {
+    fn _shutdown_channels(channel: &mut NvmeIoChannelInner, ctx: &mut ShutdownCtx) -> i32 {
         debug!(?ctx.name, "shutting down I/O channel");
         let rc = channel.shutdown();
 
         if rc == 0 {
             debug!("{} I/O channel successfully shutdown", ctx.name);
         } else {
-            error!(
-                "{} failed to shutdown I/O channel, reset aborted",
-                ctx.name
-            );
+            error!("{} failed to shutdown I/O channel, reset aborted", ctx.name);
         }
         rc
     }
@@ -401,7 +359,10 @@ impl NvmeController<'_> {
         // In case I/O channels didn't shutdown successfully, mark
         // the controller as Faulted.
         if result != 0 {
-            error!("{} failed to shutdown I/O channels, rc = {}. Shutdown aborted.", ctx.name, result);
+            error!(
+                "{} failed to shutdown I/O channels, rc = {}. Shutdown aborted.",
+                ctx.name, result
+            );
             controller
                 .state_machine
                 .transition(Faulted(ControllerFailureReason::Shutdown))
@@ -445,11 +406,7 @@ impl NvmeController<'_> {
     }
 
     /// Get I/O statistics for all I/O channels of the controller.
-    pub fn get_io_stats<T: 'static + Sized, F>(
-        &self,
-        cb: F,
-        cb_arg: T,
-    ) -> Result<(), CoreError>
+    pub fn get_io_stats<T: 'static + Sized, F>(&self, cb: F, cb_arg: T) -> Result<(), CoreError>
     where
         F: Fn(Result<BlockDeviceIoStats, CoreError>, T) + 'static,
     {
@@ -571,10 +528,9 @@ impl NvmeController<'_> {
                 // Transition controller into Faulted state, but only if the
                 // controller is in Running state, as concurrent
                 // shutdown might be in place.
-                let _ = controller.state_machine.transition_checked(
-                    Running,
-                    Faulted(ControllerFailureReason::Reset),
-                );
+                let _ = controller
+                    .state_machine
+                    .transition_checked(Running, Faulted(ControllerFailureReason::Reset));
             }
 
             // Unlock the controller before calling the callback to avoid
@@ -585,10 +541,7 @@ impl NvmeController<'_> {
         (reset_ctx.cb)(status == 0, reset_ctx.cb_arg);
     }
 
-    fn _reset_destroy_channels(
-        channel: &mut NvmeIoChannelInner,
-        ctx: &mut ResetCtx,
-    ) -> i32 {
+    fn _reset_destroy_channels(channel: &mut NvmeIoChannelInner, ctx: &mut ResetCtx) -> i32 {
         debug!(?channel, "resetting");
 
         // Bail out preliminary if shutdown is active.
@@ -682,10 +635,7 @@ impl NvmeController<'_> {
         );
     }
 
-    fn _reset_create_channels(
-        channel: &mut NvmeIoChannelInner,
-        reset_ctx: &mut ResetCtx,
-    ) -> i32 {
+    fn _reset_create_channels(channel: &mut NvmeIoChannelInner, reset_ctx: &mut ResetCtx) -> i32 {
         // Make sure no concurrent shutdown takes place.
         if channel.is_shutdown() {
             return 0;
@@ -721,10 +671,7 @@ impl NvmeController<'_> {
     }
 
     /// Register listener to monitor device events related to this controller.
-    pub fn register_device_listener(
-        &self,
-        listener: DeviceEventSink,
-    ) -> Result<(), CoreError> {
+    pub fn register_device_listener(&self, listener: DeviceEventSink) -> Result<(), CoreError> {
         self.event_dispatcher.add_listener(listener);
         debug!("{} added event listener", self.name);
         Ok(())
@@ -787,9 +734,8 @@ extern "C" fn aer_cb(ctx: *mut c_void, cpl: *const spdk_nvme_cpl) {
 
     event.raw = unsafe { (*cpl).cdw0 };
 
-    let (event_type, event_info) = unsafe {
-        (event.bits.async_event_type(), event.bits.async_event_info())
-    };
+    let (event_type, event_info) =
+        unsafe { (event.bits.async_event_type(), event.bits.async_event_info()) };
 
     info!(
         "Received AER event: event_type={:?}, event_info={:?}",
@@ -828,8 +774,8 @@ extern "C" fn aer_cb(ctx: *mut c_void, cpl: *const spdk_nvme_cpl) {
 /// Poll to process qpair completions on admin queue
 /// Returns: 0 (SPDK_POLLER_IDLE) or 1 (SPDK_POLLER_BUSY)
 pub extern "C" fn nvme_poll_adminq(ctx: *mut c_void) -> i32 {
-    let mut context = NonNull::<TimeoutConfig>::new(ctx.cast())
-        .expect("ctx pointer may never be null");
+    let mut context =
+        NonNull::<TimeoutConfig>::new(ctx.cast()).expect("ctx pointer may never be null");
     let context = unsafe { context.as_mut() };
 
     // returns number of completions processed (maybe 0) or the negated error,
@@ -857,9 +803,8 @@ pub extern "C" fn nvme_poll_adminq(ctx: *mut c_void) -> i32 {
                 "notifying listeners of admin command completion failure"
             );
             let controller = carc.lock();
-            let num_listeners = controller.notify_listeners(
-                DeviceEventType::AdminCommandCompletionFailed,
-            );
+            let num_listeners =
+                controller.notify_listeners(DeviceEventType::AdminCommandCompletionFailed);
             debug!(
                 ?dev_name,
                 ?num_listeners,
@@ -883,16 +828,15 @@ pub extern "C" fn nvme_poll_adminq(ctx: *mut c_void) -> i32 {
 
 /// Destroy target controller and notify all listeners about device removal.
 pub(crate) async fn destroy_device(name: String) -> Result<(), BdevError> {
-    let carc = NVME_CONTROLLERS.lookup_by_name(&name).ok_or(
-        BdevError::BdevNotFound {
+    let carc = NVME_CONTROLLERS
+        .lookup_by_name(&name)
+        .ok_or(BdevError::BdevNotFound {
             name: String::from(&name),
-        },
-    )?;
+        })?;
 
     // 1. Initiate controller shutdown, which shuts down all I/O resources
     // of the controller.
-    let (s, r) = oneshot::channel::<bool>();
-    {
+    let rcv = {
         let mut controller = carc.lock();
 
         // Skip not-fully initialized controllers.
@@ -901,23 +845,27 @@ pub(crate) async fn destroy_device(name: String) -> Result<(), BdevError> {
                 done_cb(ctx, success);
             }
 
-            controller.shutdown(_shutdown_callback, cb_arg(s)).map_err(
-                |_| BdevError::DestroyBdevFailed {
+            let (s, r) = oneshot::channel::<bool>();
+
+            controller
+                .shutdown(_shutdown_callback, cb_arg(s))
+                .map_err(|_| BdevError::DestroyBdevFailed {
                     name: String::from(&name),
                     source: Errno::EAGAIN,
-                },
-            )?;
+                })?;
 
-            // Release the lock before waiting for controller shutdown.
-            drop(controller);
-
-            if !r.await.expect("Failed awaiting at shutdown()") {
-                error!(?name, "failed to shutdown controller");
-                return Err(BdevError::DestroyBdevFailed {
-                    name: String::from(&name),
-                    source: Errno::EAGAIN,
-                });
-            }
+            Some(r)
+        } else {
+            None
+        }
+    };
+    if let Some(rcv) = rcv {
+        if !rcv.await.expect("Failed awaiting at shutdown()") {
+            error!(?name, "failed to shutdown controller");
+            return Err(BdevError::DestroyBdevFailed {
+                name: String::from(&name),
+                source: Errno::EAGAIN,
+            });
         }
     }
 
@@ -936,8 +884,7 @@ pub(crate) async fn destroy_device(name: String) -> Result<(), BdevError> {
     debug!(?name, "notifying listeners about device removal");
     {
         let controller = carc.lock();
-        let num_listeners =
-            controller.notify_listeners(DeviceEventType::DeviceRemoved);
+        let num_listeners = controller.notify_listeners(DeviceEventType::DeviceRemoved);
         debug!(
             ?name,
             ?num_listeners,
@@ -966,10 +913,7 @@ pub(crate) async fn destroy_device(name: String) -> Result<(), BdevError> {
     Ok(())
 }
 
-pub(crate) fn connected_attached_cb(
-    ctx: &mut NvmeControllerContext,
-    ctrlr: SpdkNvmeController,
-) {
+pub(crate) fn connected_attached_cb(ctx: &mut NvmeControllerContext, ctrlr: SpdkNvmeController) {
     // we use the ctrlr address as the controller id in the global table
     let cid = ctrlr.as_ptr() as u64;
 
@@ -1026,10 +970,7 @@ pub(crate) mod options {
     use spdk_rs::ffihelper::copy_str_with_null;
     use std::mem::{size_of, zeroed};
 
-    use spdk_rs::libspdk::{
-        spdk_nvme_ctrlr_get_default_ctrlr_opts,
-        spdk_nvme_ctrlr_opts,
-    };
+    use spdk_rs::libspdk::{spdk_nvme_ctrlr_get_default_ctrlr_opts, spdk_nvme_ctrlr_opts};
 
     /// structure that holds the default NVMe controller options. This is
     /// different from ['NvmeBdevOpts'] as it exposes more control over
@@ -1077,10 +1018,7 @@ pub(crate) mod options {
             self.admin_timeout_ms = Some(timeout);
             self
         }
-        pub fn with_fabrics_connect_timeout_us<T: Into<Option<u64>>>(
-            mut self,
-            timeout: T,
-        ) -> Self {
+        pub fn with_fabrics_connect_timeout_us<T: Into<Option<u64>>>(mut self, timeout: T) -> Self {
             self.fabrics_connect_timeout_us = timeout.into();
             self
         }
@@ -1166,10 +1104,7 @@ pub(crate) mod options {
 pub(crate) mod transport {
     use std::{ffi::CStr, fmt::Debug};
 
-    use spdk_rs::{
-        ffihelper::copy_str_with_null,
-        libspdk::spdk_nvme_transport_id,
-    };
+    use spdk_rs::{ffihelper::copy_str_with_null, libspdk::spdk_nvme_transport_id};
 
     pub struct NvmeTransportId(spdk_nvme_transport_id);
 

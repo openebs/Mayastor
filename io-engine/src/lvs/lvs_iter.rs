@@ -1,8 +1,4 @@
-use spdk_rs::libspdk::{
-    lvol_store_bdev,
-    vbdev_lvol_store_first,
-    vbdev_lvol_store_next,
-};
+use spdk_rs::libspdk::{lvol_store_bdev, vbdev_lvol_store_first, vbdev_lvol_store_next};
 
 use super::{Lvs, LvsBdev};
 

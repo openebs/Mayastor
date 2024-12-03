@@ -14,12 +14,8 @@ use spdk_rs::{
     bdevs::bdev_nvme_delete_async,
     ffihelper::copy_str_with_null,
     libspdk::{
-        bdev_nvme_create,
-        spdk_nvme_transport_id,
-        SPDK_NVME_IO_FLAGS_PRCHK_GUARD,
-        SPDK_NVME_IO_FLAGS_PRCHK_REFTAG,
-        SPDK_NVME_TRANSPORT_TCP,
-        SPDK_NVMF_ADRFAM_IPV4,
+        bdev_nvme_create, spdk_nvme_transport_id, SPDK_NVME_IO_FLAGS_PRCHK_GUARD,
+        SPDK_NVME_IO_FLAGS_PRCHK_REFTAG, SPDK_NVME_TRANSPORT_TCP, SPDK_NVMF_ADRFAM_IPV4,
     },
 };
 
@@ -77,46 +73,39 @@ impl TryFrom<&Url> for Nvmf {
             });
         }
 
-        let mut parameters: HashMap<String, String> =
-            url.query_pairs().into_owned().collect();
+        let mut parameters: HashMap<String, String> = url.query_pairs().into_owned().collect();
 
         let mut prchk_flags: u32 = 0;
 
         if let Some(value) = parameters.remove("reftag") {
-            if uri::boolean(&value, true).context(
-                bdev_api::BoolParamParseFailed {
-                    uri: url.to_string(),
-                    parameter: String::from("reftag"),
-                    value: value.to_string(),
-                },
-            )? {
+            if uri::boolean(&value, true).context(bdev_api::BoolParamParseFailed {
+                uri: url.to_string(),
+                parameter: String::from("reftag"),
+                value: value.to_string(),
+            })? {
                 prchk_flags |= SPDK_NVME_IO_FLAGS_PRCHK_REFTAG;
             }
         }
 
         if let Some(value) = parameters.remove("guard") {
-            if uri::boolean(&value, true).context(
-                bdev_api::BoolParamParseFailed {
-                    uri: url.to_string(),
-                    parameter: String::from("guard"),
-                    value: value.to_string(),
-                },
-            )? {
+            if uri::boolean(&value, true).context(bdev_api::BoolParamParseFailed {
+                uri: url.to_string(),
+                parameter: String::from("guard"),
+                value: value.to_string(),
+            })? {
                 prchk_flags |= SPDK_NVME_IO_FLAGS_PRCHK_GUARD;
             }
         }
 
-        let uuid = uri::uuid(parameters.remove("uuid")).context(
-            bdev_api::UuidParamParseFailed {
+        let uuid =
+            uri::uuid(parameters.remove("uuid")).context(bdev_api::UuidParamParseFailed {
                 uri: url.to_string(),
-            },
-        )?;
+            })?;
 
         reject_unknown_parameters(url, parameters)?;
 
         Ok(Nvmf {
-            name: url[url::Position::BeforeHost .. url::Position::AfterPath]
-                .into(),
+            name: url[url::Position::BeforeHost..url::Position::AfterPath].into(),
             alias: url.to_string(),
             host: host.to_string(),
             port: url.port().unwrap_or(DEFAULT_NVMF_PORT),
@@ -147,14 +136,8 @@ impl CreateDestroy for Nvmf {
             });
         }
 
-        extern "C" fn done_nvme_create_cb(
-            arg: *mut c_void,
-            bdev_count: c_ulong,
-            errno: c_int,
-        ) {
-            let sender = unsafe {
-                Box::from_raw(arg as *mut oneshot::Sender<ErrnoResult<usize>>)
-            };
+        extern "C" fn done_nvme_create_cb(arg: *mut c_void, bdev_count: c_ulong, errno: c_int) {
+            let sender = unsafe { Box::from_raw(arg as *mut oneshot::Sender<ErrnoResult<usize>>) };
 
             sender
                 .send(errno_result_from_i32(bdev_count as usize, errno))
@@ -180,11 +163,9 @@ impl CreateDestroy for Nvmf {
             )
         };
 
-        errno_result_from_i32((), errno).context(
-            bdev_api::CreateBdevInvalidParams {
-                name: self.name.clone(),
-            },
-        )?;
+        errno_result_from_i32((), errno).context(bdev_api::CreateBdevInvalidParams {
+            name: self.name.clone(),
+        })?;
 
         let bdev_count = receiver
             .await

@@ -16,20 +16,11 @@ use nix::errno::Errno;
 use serde::{Deserialize, Serialize};
 
 use spdk_rs::libspdk::{
-    spdk_json_val,
-    spdk_json_write_val_raw,
-    spdk_jsonrpc_begin_result,
-    spdk_jsonrpc_end_result,
-    spdk_jsonrpc_request,
-    spdk_jsonrpc_send_error_response,
-    spdk_rpc_register_method,
-    SPDK_JSONRPC_ERROR_INTERNAL_ERROR,
-    SPDK_JSONRPC_ERROR_INVALID_PARAMS,
-    SPDK_JSONRPC_ERROR_INVALID_REQUEST,
-    SPDK_JSONRPC_ERROR_METHOD_NOT_FOUND,
-    SPDK_JSONRPC_ERROR_PARSE_ERROR,
-    SPDK_JSON_VAL_OBJECT_BEGIN,
-    SPDK_RPC_RUNTIME,
+    spdk_json_val, spdk_json_write_val_raw, spdk_jsonrpc_begin_result, spdk_jsonrpc_end_result,
+    spdk_jsonrpc_request, spdk_jsonrpc_send_error_response, spdk_rpc_register_method,
+    SPDK_JSONRPC_ERROR_INTERNAL_ERROR, SPDK_JSONRPC_ERROR_INVALID_PARAMS,
+    SPDK_JSONRPC_ERROR_INVALID_REQUEST, SPDK_JSONRPC_ERROR_METHOD_NOT_FOUND,
+    SPDK_JSONRPC_ERROR_PARSE_ERROR, SPDK_JSON_VAL_OBJECT_BEGIN, SPDK_RPC_RUNTIME,
 };
 
 use crate::core::Reactors;
@@ -129,9 +120,7 @@ pub fn print_error_chain(err: &dyn std::error::Error) -> String {
 
 /// Extract JSON object from text, trim any pending characters which follow
 /// the closing bracket of the object.
-fn extract_json_object(
-    params: &spdk_json_val,
-) -> std::result::Result<String, String> {
+fn extract_json_object(params: &spdk_json_val) -> std::result::Result<String, String> {
     if params.type_ != SPDK_JSON_VAL_OBJECT_BEGIN {
         return Err("JSON parameters must be an object".to_owned());
     }
@@ -148,7 +137,7 @@ fn extract_json_object(
         } else if c == '}' {
             level -= 1;
             if level == 0 {
-                return Ok(text[0 ..= i].to_string());
+                return Ok(text[0..=i].to_string());
             }
         }
     }
@@ -164,8 +153,7 @@ unsafe extern "C" fn jsonrpc_handler<H, P, R, E>(
     params: *const spdk_json_val,
     arg: *mut c_void,
 ) where
-    H: 'static
-        + Fn(P) -> Pin<Box<dyn Future<Output = std::result::Result<R, E>>>>,
+    H: 'static + Fn(P) -> Pin<Box<dyn Future<Output = std::result::Result<R, E>>>>,
     P: 'static + for<'de> Deserialize<'de>,
     R: Serialize,
     E: RpcErrorCode + std::error::Error,
@@ -206,9 +194,7 @@ unsafe extern "C" fn jsonrpc_handler<H, P, R, E>(
                             return;
                         }
                         // serialize result to string
-                        let data =
-                            CString::new(serde_json::to_string(&val).unwrap())
-                                .unwrap();
+                        let data = CString::new(serde_json::to_string(&val).unwrap()).unwrap();
                         spdk_json_write_val_raw(
                             w_ctx,
                             data.as_ptr() as *const c_void,
@@ -221,11 +207,7 @@ unsafe extern "C" fn jsonrpc_handler<H, P, R, E>(
                         let msg = print_error_chain(&err);
                         error!("{}", msg);
                         let cerr = CString::new(msg).unwrap();
-                        spdk_jsonrpc_send_error_response(
-                            request,
-                            code.into(),
-                            cerr.as_ptr(),
-                        );
+                        spdk_jsonrpc_send_error_response(request, code.into(), cerr.as_ptr());
                     }
                 }
             };

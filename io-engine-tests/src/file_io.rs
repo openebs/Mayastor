@@ -113,17 +113,17 @@ pub async fn test_write_to_file(
     f.seek(SeekFrom::Start(offset.bytes())).await?;
 
     // Write.
-    for _i in 0 .. count {
+    for _i in 0..count {
         f.write_all(&src_buf).await?;
     }
 
     // Validate.
     f.seek(SeekFrom::Start(offset.bytes())).await?;
     let mut pos: u64 = offset.bytes();
-    for _i in 0 .. count {
+    for _i in 0..count {
         f.read_exact(&mut dst_buf).await?;
 
-        for k in 0 .. src_buf.len() {
+        for k in 0..src_buf.len() {
             if src_buf[k] != dst_buf[k] {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::Other,
@@ -143,9 +143,7 @@ pub async fn test_write_to_file(
     Ok(())
 }
 
-pub async fn compute_file_checksum(
-    path: impl AsRef<Path>,
-) -> std::io::Result<String> {
+pub async fn compute_file_checksum(path: impl AsRef<Path>) -> std::io::Result<String> {
     let mut f = OpenOptions::new()
         .write(false)
         .read(true)
@@ -162,7 +160,7 @@ pub async fn compute_file_checksum(
         if n == 0 {
             break;
         }
-        hasher.consume(&buf[.. n]);
+        hasher.consume(&buf[..n]);
     }
 
     Ok(hex::encode(hasher.compute().0))
@@ -213,7 +211,7 @@ pub async fn compare_files(
             break;
         }
 
-        for i in 0 .. na {
+        for i in 0..na {
             if buf_a[i] != buf_b[i] {
                 return Err(Error::new(
                     ErrorKind::Other,

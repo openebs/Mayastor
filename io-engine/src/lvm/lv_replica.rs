@@ -2,14 +2,7 @@ use super::{cli::de, error::Error, vg_pool::VolumeGroup, CmnQueryArgs};
 use crate::{
     bdev::PtplFileOps,
     bdev_api::{bdev_create, BdevError},
-    core::{
-        NvmfShareProps,
-        Protocol,
-        PtplProps,
-        Share,
-        UntypedBdev,
-        UpdateProps,
-    },
+    core::{NvmfShareProps, Protocol, PtplProps, Share, UntypedBdev, UpdateProps},
     lvm::{
         cli::LvmCmd,
         property::{Property, PropertyType},
@@ -47,10 +40,7 @@ impl QueryArgs {
     }
     /// Add the LV query args.
     pub(crate) fn with_lv(self, lv: CmnQueryArgs) -> Self {
-        Self {
-            lv,
-            ..self
-        }
+        Self { lv, ..self }
     }
     /// Get a comma-separated list of query selection args.
     /// todo: should be Display trait?
@@ -213,8 +203,7 @@ impl LogicalVolume {
         entity_id: &Option<String>,
         share: Protocol,
     ) -> Result<LogicalVolume, Error> {
-        let pool =
-            VolumeGroup::lookup(CmnQueryArgs::ours().uuid(vg_uuid)).await?;
+        let pool = VolumeGroup::lookup(CmnQueryArgs::ours().uuid(vg_uuid)).await?;
         pool.create_lvol(name, size, uuid, thin, entity_id, share)
             .await?;
         Self::lookup(
@@ -235,9 +224,7 @@ impl LogicalVolume {
 
     /// List logical volumes using the provided options as query criteria.
     /// All lv's are imported and all imports must succeed.
-    pub(crate) async fn list(
-        opts: &QueryArgs,
-    ) -> Result<Vec<LogicalVolume>, Error> {
+    pub(crate) async fn list(opts: &QueryArgs) -> Result<Vec<LogicalVolume>, Error> {
         let mut g_error = Ok(());
         let mut lvs = Self::fetch(opts).await?;
         for lv in &mut lvs {
@@ -337,13 +324,8 @@ impl LogicalVolume {
 
             let bdev = crate::bdev::uri::parse(&uri).unwrap();
             match bdev.destroy().await {
-                Ok(())
-                | Err(BdevError::BdevNotFound {
-                    ..
-                }) => Ok(()),
-                Err(source) => Err(Error::BdevExport {
-                    source,
-                }),
+                Ok(()) | Err(BdevError::BdevNotFound { .. }) => Ok(()),
+                Err(source) => Err(Error::BdevExport { source }),
             }
         })?;
         self.bdev = None;
@@ -372,12 +354,8 @@ impl LogicalVolume {
         {
             Ok(()) => Ok(()),
             // not great, but not sure how else to map the error otherwise...
-            Err(Error::LvmBinErr {
-                error, ..
-            }) if error.starts_with("Insufficient free space") => {
-                Err(Error::NoSpace {
-                    error,
-                })
+            Err(Error::LvmBinErr { error, .. }) if error.starts_with("Insufficient free space") => {
+                Err(Error::NoSpace { error })
             }
             Err(error) => Err(error),
         }
@@ -395,12 +373,8 @@ impl LogicalVolume {
             let blk_cnt = size / bdev.block_len() as u64;
 
             use spdk_rs::libspdk::spdk_bdev_notify_blockcnt_change;
-            let rc = unsafe {
-                spdk_bdev_notify_blockcnt_change(
-                    bdev.unsafe_inner_mut_ptr(),
-                    blk_cnt,
-                )
-            };
+            let rc =
+                unsafe { spdk_bdev_notify_blockcnt_change(bdev.unsafe_inner_mut_ptr(), blk_cnt) };
             Ok((rc, bdev.size_in_bytes()))
         })?;
         if rc != 0 {
@@ -422,18 +396,12 @@ impl LogicalVolume {
 
         self.set_properties(properties).await
     }
-    async fn sync_share_protocol(
-        &mut self,
-        protocol: Protocol,
-    ) -> Result<(), Error> {
+    async fn sync_share_protocol(&mut self, protocol: Protocol) -> Result<(), Error> {
         self.set_property(Property::LvShare(protocol)).await?;
         self.share = protocol;
         Ok(())
     }
-    async fn build_set_properties_args(
-        &self,
-        properties: Vec<Property>,
-    ) -> Vec<String> {
+    async fn build_set_properties_args(&self, properties: Vec<Property>) -> Vec<String> {
         let mut args = Vec::new();
         for property in properties {
             args.extend(self.build_set_property_args(property).await);
@@ -458,10 +426,7 @@ impl LogicalVolume {
         }
         args
     }
-    async fn set_properties(
-        &mut self,
-        properties: Vec<Property>,
-    ) -> Result<(), Error> {
+    async fn set_properties(&mut self, properties: Vec<Property>) -> Result<(), Error> {
         let args = self.build_set_properties_args(properties).await;
         if args.is_empty() {
             return Ok(());
@@ -472,10 +437,7 @@ impl LogicalVolume {
         }
         result
     }
-    pub(crate) async fn set_property(
-        &mut self,
-        property: Property,
-    ) -> Result<(), Error> {
+    pub(crate) async fn set_property(&mut self, property: Property) -> Result<(), Error> {
         self.set_properties(vec![property]).await
     }
 
@@ -489,12 +451,10 @@ impl LogicalVolume {
             Protocol::Nvmf => {
                 let props = NvmfShareProps::new()
                     .with_allowed_hosts(allowed_hosts)
-                    .with_ptpl(ptpl.create().map_err(|source| {
-                        Error::BdevShare {
-                            source: crate::core::CoreError::Ptpl {
-                                reason: source.to_string(),
-                            },
-                        }
+                    .with_ptpl(ptpl.create().map_err(|source| Error::BdevShare {
+                        source: crate::core::CoreError::Ptpl {
+                            reason: source.to_string(),
+                        },
                     })?);
                 Self::bdev_share_nvmf(bdev, Some(props)).await?;
             }
@@ -522,16 +482,13 @@ impl LogicalVolume {
 
         let bdev = crate::spdk_run!(async move {
             if crate::core::UntypedBdev::lookup_by_name(&disk_uri).is_none() {
-                bdev_create(&disk_uri).await.map_err(|source| {
-                    Error::BdevImport {
-                        source,
-                    }
-                })?;
+                bdev_create(&disk_uri)
+                    .await
+                    .map_err(|source| Error::BdevImport { source })?;
             }
 
             let mut bdev = Self::bdev(&disk_uri)?;
-            Self::bdev_sync_props(&mut bdev, share, ptpl, allowed_hosts)
-                .await?;
+            Self::bdev_sync_props(&mut bdev, share, ptpl, allowed_hosts).await?;
 
             Ok(BdevOpts::from(bdev))
         })?;
@@ -667,31 +624,23 @@ impl LogicalVolume {
                 bdev.as_mut()
                     .update_properties(props.map(Into::into))
                     .await
-                    .map_err(|source| Error::BdevShare {
-                        source,
-                    })?;
+                    .map_err(|source| Error::BdevShare { source })?;
                 bdev.share_uri().ok_or(Error::BdevShareUri {})
             }
-            Some(Protocol::Off) | None => {
-                bdev.share_nvmf(props).await.map_err(|source| {
-                    Error::BdevShare {
-                        source,
-                    }
-                })
-            }
+            Some(Protocol::Off) | None => bdev
+                .share_nvmf(props)
+                .await
+                .map_err(|source| Error::BdevShare { source }),
         }
     }
-    async fn bdev_unshare(
-        bdev: &mut UntypedBdev,
-    ) -> Result<Option<String>, Error> {
+    async fn bdev_unshare(bdev: &mut UntypedBdev) -> Result<Option<String>, Error> {
         let mut bdev = Pin::new(bdev);
         match bdev.shared() {
             Some(Protocol::Nvmf) => {
-                bdev.as_mut().unshare().await.map_err(|source| {
-                    Error::BdevUnshare {
-                        source,
-                    }
-                })?;
+                bdev.as_mut()
+                    .unshare()
+                    .await
+                    .map_err(|source| Error::BdevUnshare { source })?;
             }
             Some(Protocol::Off) | None => {}
         }
@@ -734,12 +683,13 @@ impl LogicalVolume {
         let props = props.into();
         let bdev_opts = crate::spdk_run!(async move {
             let mut bdev = Self::bdev(&uri)?;
-            Pin::new(&mut bdev).update_properties(props).await.map_err(
-                |e| Error::UpdateProps {
+            Pin::new(&mut bdev)
+                .update_properties(props)
+                .await
+                .map_err(|e| Error::UpdateProps {
                     source: e,
                     name: bdev.name().to_string(),
-                },
-            )?;
+                })?;
             Ok(BdevOpts::from(bdev))
         })?;
         bdev.update_from(bdev_opts);

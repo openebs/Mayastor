@@ -12,11 +12,7 @@ use common::{
     test::add_fault_injection,
 };
 
-use io_engine::core::fault_injection::{
-    FaultDomain,
-    FaultIoStage,
-    InjectionBuilder,
-};
+use io_engine::core::fault_injection::{FaultDomain, FaultIoStage, InjectionBuilder};
 
 use spdk_rs::NvmeStatus;
 
@@ -32,11 +28,7 @@ async fn replica_thin_nospc() {
         .unwrap()
         .add_container_bin(
             "ms_0",
-            Binary::from_dbg("io-engine").with_args(vec![
-                "-l",
-                "1",
-                "-Fcompact,color,nodate",
-            ]),
+            Binary::from_dbg("io-engine").with_args(vec!["-l", "1", "-Fcompact,color,nodate"]),
         )
         .with_clean(true)
         .build()
@@ -107,11 +99,7 @@ async fn replica_nospc_inject() {
         .unwrap()
         .add_container_bin(
             "ms_0",
-            Binary::from_dbg("io-engine").with_args(vec![
-                "-l",
-                "1",
-                "-Fcompact,color,nodate",
-            ]),
+            Binary::from_dbg("io-engine").with_args(vec!["-l", "1", "-Fcompact,color,nodate"]),
         )
         .with_clean(true)
         .build()

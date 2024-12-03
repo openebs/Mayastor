@@ -17,8 +17,7 @@ const TEST_SUBSYSTEM: &str = "items";
 const TEST_RESOURCE: &str = "item1";
 
 fn get_lock_manager() -> &'static ResourceLockManager {
-    let cfg =
-        ResourceLockManagerConfig::default().with_subsystem(TEST_SUBSYSTEM, 8);
+    let cfg = ResourceLockManagerConfig::default().with_subsystem(TEST_SUBSYSTEM, 8);
     ResourceLockManager::initialize(cfg);
     ResourceLockManager::get_instance()
 }

@@ -3,8 +3,7 @@
 
 use crate::{
     context::{Context, OutputFormat},
-    ClientError,
-    GrpcStatus,
+    ClientError, GrpcStatus,
 };
 use clap::{Arg, ArgMatches, Command};
 use colored_json::ToColoredJson;
@@ -18,8 +17,7 @@ pub async fn handler(ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
         ("destroy", args) => destroy(ctx, args).await,
         ("list", args) => list(ctx, args).await,
         (cmd, _) => {
-            Err(Status::not_found(format!("command {cmd} does not exist")))
-                .context(GrpcStatus)
+            Err(Status::not_found(format!("command {cmd} does not exist"))).context(GrpcStatus)
         }
     }
 }
@@ -84,19 +82,17 @@ async fn create(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     let response = ctx
         .v1
         .snapshot_rebuild
-        .create_snapshot_rebuild(
-            v1::snapshot_rebuild::CreateSnapshotRebuildRequest {
-                replica_uuid: uuid.to_string(),
-                uuid,
-                snapshot_uuid: "".to_string(),
-                replica_uri: "".to_string(),
-                snapshot_uri: uri,
-                resume: false,
-                bitmap: None,
-                use_bitmap: false,
-                error_policy: None,
-            },
-        )
+        .create_snapshot_rebuild(v1::snapshot_rebuild::CreateSnapshotRebuildRequest {
+            replica_uuid: uuid.to_string(),
+            uuid,
+            snapshot_uuid: "".to_string(),
+            replica_uri: "".to_string(),
+            snapshot_uri: uri,
+            resume: false,
+            bitmap: None,
+            use_bitmap: false,
+            error_policy: None,
+        })
         .await
         .context(GrpcStatus)?;
     match ctx.output {
@@ -129,11 +125,9 @@ async fn destroy(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     let _response = ctx
         .v1
         .snapshot_rebuild
-        .destroy_snapshot_rebuild(
-            v1::snapshot_rebuild::DestroySnapshotRebuildRequest {
-                uuid: uuid.to_string(),
-            },
-        )
+        .destroy_snapshot_rebuild(v1::snapshot_rebuild::DestroySnapshotRebuildRequest {
+            uuid: uuid.to_string(),
+        })
         .await
         .context(GrpcStatus)?;
     println!("Snapshot Rebuild {uuid} deleted");
@@ -147,13 +141,11 @@ async fn list(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     let response = ctx
         .v1
         .snapshot_rebuild
-        .list_snapshot_rebuild(
-            v1::snapshot_rebuild::ListSnapshotRebuildRequest {
-                uuid: replica_uuid,
-                replica_uuid: None,
-                snapshot_uuid: None,
-            },
-        )
+        .list_snapshot_rebuild(v1::snapshot_rebuild::ListSnapshotRebuildRequest {
+            uuid: replica_uuid,
+            replica_uuid: None,
+            snapshot_uuid: None,
+        })
         .await
         .context(GrpcStatus)?;
     match ctx.output {
@@ -183,12 +175,8 @@ async fn list(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
                         r.total.to_string(),
                         r.rebuilt.to_string(),
                         r.remaining.to_string(),
-                        r.start_timestamp
-                            .map(|s| s.to_string())
-                            .unwrap_or_default(),
-                        r.end_timestamp
-                            .map(|s| s.to_string())
-                            .unwrap_or_default(),
+                        r.start_timestamp.map(|s| s.to_string()).unwrap_or_default(),
+                        r.end_timestamp.map(|s| s.to_string()).unwrap_or_default(),
                     ]
                 })
                 .collect();

@@ -55,17 +55,14 @@ impl TryFrom<&Url> for Aio {
             .ok()
             .map_or(false, |meta| meta.file_type().is_block_device());
 
-        let mut parameters: HashMap<String, String> =
-            url.query_pairs().into_owned().collect();
+        let mut parameters: HashMap<String, String> = url.query_pairs().into_owned().collect();
 
         let blk_size: u32 = match parameters.remove("blk_size") {
-            Some(value) => {
-                value.parse().context(bdev_api::IntParamParseFailed {
-                    uri: url.to_string(),
-                    parameter: String::from("blk_size"),
-                    value: value.clone(),
-                })?
-            }
+            Some(value) => value.parse().context(bdev_api::IntParamParseFailed {
+                uri: url.to_string(),
+                parameter: String::from("blk_size"),
+                value: value.clone(),
+            })?,
             None => {
                 if path_is_blockdev {
                     0
@@ -74,11 +71,10 @@ impl TryFrom<&Url> for Aio {
                 }
             }
         };
-        let uuid = uri::uuid(parameters.remove("uuid")).context(
-            bdev_api::UuidParamParseFailed {
+        let uuid =
+            uri::uuid(parameters.remove("uuid")).context(bdev_api::UuidParamParseFailed {
                 uri: url.to_string(),
-            },
-        )?;
+            })?;
 
         let rescan = parameters.remove("rescan").is_some();
 
@@ -120,15 +116,8 @@ impl CreateDestroy for Aio {
 
         let cname = CString::new(self.get_name()).unwrap();
 
-        let errno = unsafe {
-            create_aio_bdev(
-                cname.as_ptr(),
-                cname.as_ptr(),
-                self.blk_size,
-                false,
-                false,
-            )
-        };
+        let errno =
+            unsafe { create_aio_bdev(cname.as_ptr(), cname.as_ptr(), self.blk_size, false, false) };
 
         if errno != 0 {
             let err = BdevError::CreateBdevFailed {
@@ -190,19 +179,14 @@ impl CreateDestroy for Aio {
 }
 
 impl Aio {
-    fn try_rescan(
-        &self,
-        bdev: UntypedBdev,
-    ) -> Result<String, <Self as CreateDestroy>::Error> {
+    fn try_rescan(&self, bdev: UntypedBdev) -> Result<String, <Self as CreateDestroy>::Error> {
         let before = bdev.num_blocks();
 
         debug!("{self:?}: rescanning existing AIO bdev ({before} blocks) ...");
 
         let cname = self.name.clone().into_cstring();
 
-        let errno = unsafe {
-            bdev_aio_rescan(cname.as_ptr() as *mut std::os::raw::c_char)
-        };
+        let errno = unsafe { bdev_aio_rescan(cname.as_ptr() as *mut std::os::raw::c_char) };
 
         if errno != 0 {
             let err = BdevError::ResizeBdevFailed {
@@ -217,9 +201,7 @@ impl Aio {
 
         let after = bdev.num_blocks();
 
-        debug!(
-            "{self:?}: rescanning existing AIO bdev okay: {before} -> {after} blocks"
-        );
+        debug!("{self:?}: rescanning existing AIO bdev okay: {before} -> {after} blocks");
 
         Ok(self.name.clone())
     }

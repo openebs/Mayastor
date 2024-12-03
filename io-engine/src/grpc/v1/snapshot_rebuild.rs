@@ -1,22 +1,12 @@
 use crate::{
     grpc::GrpcResult,
-    rebuild::{
-        RebuildError,
-        RebuildState,
-        RebuildStats,
-        SnapshotRebuildError,
-        SnapshotRebuildJob,
-    },
+    rebuild::{RebuildError, RebuildState, RebuildStats, SnapshotRebuildError, SnapshotRebuildJob},
 };
 use io_engine_api::v1::{
     snapshot_rebuild,
     snapshot_rebuild::{
-        CreateSnapshotRebuildRequest,
-        DestroySnapshotRebuildRequest,
-        ListSnapshotRebuildRequest,
-        ListSnapshotRebuildResponse,
-        SnapshotRebuild,
-        SnapshotRebuildRpc,
+        CreateSnapshotRebuildRequest, DestroySnapshotRebuildRequest, ListSnapshotRebuildRequest,
+        ListSnapshotRebuildResponse, SnapshotRebuild, SnapshotRebuildRpc,
     },
 };
 use std::sync::Arc;
@@ -51,9 +41,7 @@ impl SnapshotRebuildRpc for SnapshotRebuildService {
             info!("{:?}", request);
 
             let None = request.bitmap else {
-                return Err(tonic::Status::invalid_argument(
-                    "BitMap not supported",
-                ));
+                return Err(tonic::Status::invalid_argument("BitMap not supported"));
             };
             if let Ok(job) = SnapshotRebuildJob::lookup(&request.uuid) {
                 return Ok(SnapshotRebuild::from(SnapRebuild::from(job).await));
@@ -87,9 +75,7 @@ impl SnapshotRebuildRpc for SnapshotRebuildService {
                     for job in jobs {
                         rebuilds.push(SnapRebuild::from(job).await.into());
                     }
-                    Ok(ListSnapshotRebuildResponse {
-                        rebuilds,
-                    })
+                    Ok(ListSnapshotRebuildResponse { rebuilds })
                 }
                 Some(uuid) => {
                     let job = SnapRebuild::lookup(&uuid).await?;
@@ -128,10 +114,7 @@ struct SnapRebuild {
 impl SnapRebuild {
     async fn from(job: Arc<SnapshotRebuildJob>) -> Self {
         let stats = job.stats().await;
-        Self {
-            stats,
-            job,
-        }
+        Self { stats, job }
     }
     async fn lookup(uuid: &str) -> Result<Self, tonic::Status> {
         let job = SnapshotRebuildJob::lookup(uuid)?;
@@ -183,52 +166,24 @@ impl From<RebuildError> for tonic::Status {
     fn from(value: RebuildError) -> Self {
         let message = value.to_string();
         match value {
-            RebuildError::JobAlreadyExists {
-                ..
-            } => tonic::Status::already_exists(message),
-            RebuildError::NoCopyBuffer {
-                ..
-            } => tonic::Status::internal(message),
-            RebuildError::InvalidSrcDstRange {
-                ..
-            } => tonic::Status::out_of_range(message),
-            RebuildError::InvalidMapRange {
-                ..
-            } => tonic::Status::out_of_range(message),
-            RebuildError::SameBdev {
-                ..
-            } => tonic::Status::invalid_argument(message),
-            RebuildError::NoBdevHandle {
-                ..
-            } => tonic::Status::failed_precondition(message),
-            RebuildError::BdevNotFound {
-                ..
-            } => tonic::Status::failed_precondition(message),
-            RebuildError::JobNotFound {
-                ..
-            } => tonic::Status::not_found(message),
-            RebuildError::BdevInvalidUri {
-                ..
-            } => tonic::Status::invalid_argument(message),
-            RebuildError::RebuildTasksChannel {
-                ..
-            } => tonic::Status::resource_exhausted(message),
-            RebuildError::SnapshotRebuild {
-                source,
-            } => match source {
-                SnapshotRebuildError::LocalBdevNotFound {
-                    ..
-                } => tonic::Status::not_found(message),
-                SnapshotRebuildError::RemoteNoUri {
-                    ..
-                } => tonic::Status::internal(message),
-                SnapshotRebuildError::NotAReplica {
-                    ..
-                } => tonic::Status::invalid_argument(message),
+            RebuildError::JobAlreadyExists { .. } => tonic::Status::already_exists(message),
+            RebuildError::NoCopyBuffer { .. } => tonic::Status::internal(message),
+            RebuildError::InvalidSrcDstRange { .. } => tonic::Status::out_of_range(message),
+            RebuildError::InvalidMapRange { .. } => tonic::Status::out_of_range(message),
+            RebuildError::SameBdev { .. } => tonic::Status::invalid_argument(message),
+            RebuildError::NoBdevHandle { .. } => tonic::Status::failed_precondition(message),
+            RebuildError::BdevNotFound { .. } => tonic::Status::failed_precondition(message),
+            RebuildError::JobNotFound { .. } => tonic::Status::not_found(message),
+            RebuildError::BdevInvalidUri { .. } => tonic::Status::invalid_argument(message),
+            RebuildError::RebuildTasksChannel { .. } => tonic::Status::resource_exhausted(message),
+            RebuildError::SnapshotRebuild { source } => match source {
+                SnapshotRebuildError::LocalBdevNotFound { .. } => tonic::Status::not_found(message),
+                SnapshotRebuildError::RemoteNoUri { .. } => tonic::Status::internal(message),
+                SnapshotRebuildError::NotAReplica { .. } => {
+                    tonic::Status::invalid_argument(message)
+                }
                 // todo better error check here, what if bdev uri is invalid?
-                SnapshotRebuildError::UriBdevOpen {
-                    ..
-                } => tonic::Status::not_found(message),
+                SnapshotRebuildError::UriBdevOpen { .. } => tonic::Status::not_found(message),
             },
             _ => tonic::Status::internal(message),
         }

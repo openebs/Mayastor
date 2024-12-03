@@ -43,15 +43,11 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     let opt = Opt::parse();
 
     let fut = match opt.cmd {
-        Sub::Raw {
-            method,
-            arg,
-        } => {
+        Sub::Raw { method, arg } => {
             if let Some(arg) = arg {
                 let args: serde_json::Value = serde_json::from_str(&arg)?;
 
-                let out: serde_json::Value =
-                    call(&opt.socket, &method, Some(args)).await?;
+                let out: serde_json::Value = call(&opt.socket, &method, Some(args)).await?;
                 // we don't always get valid json back which is a bug in the RPC
                 // method really.
                 if let Ok(json) = serde_json::to_string_pretty(&out) {
@@ -62,8 +58,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
                 }
             } else {
                 serde_json::to_string_pretty(
-                    &call::<(), serde_json::Value>(&opt.socket, &method, None)
-                        .await?,
+                    &call::<(), serde_json::Value>(&opt.socket, &method, None).await?,
                 )?
             }
         }

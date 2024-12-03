@@ -1,10 +1,4 @@
-use events_api::event::{
-    EventAction,
-    EventCategory,
-    EventMessage,
-    EventMeta,
-    EventSource,
-};
+use events_api::event::{EventAction, EventCategory, EventMessage, EventMeta, EventSource};
 
 use crate::{
     core::{snapshot::CloneParams, MayastorEnvironment},
@@ -13,13 +7,11 @@ use crate::{
 
 impl Event for CloneParams {
     fn event(&self, event_action: EventAction) -> EventMessage {
-        let event_source = EventSource::new(
-            MayastorEnvironment::global_or_default().node_name,
-        )
-        .with_clone_data(
-            self.source_uuid().unwrap_or_default(),
-            self.clone_create_time().unwrap_or_default(),
-        );
+        let event_source = EventSource::new(MayastorEnvironment::global_or_default().node_name)
+            .with_clone_data(
+                self.source_uuid().unwrap_or_default(),
+                self.clone_create_time().unwrap_or_default(),
+            );
 
         EventMessage {
             category: EventCategory::Clone as i32,

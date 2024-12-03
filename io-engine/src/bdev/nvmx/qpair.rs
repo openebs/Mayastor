@@ -9,16 +9,10 @@ use std::{
 use futures::channel::oneshot;
 
 use spdk_rs::libspdk::{
-    nvme_qpair_abort_all_queued_reqs,
-    nvme_transport_qpair_abort_reqs,
-    spdk_nvme_ctrlr,
-    spdk_nvme_ctrlr_alloc_io_qpair,
-    spdk_nvme_ctrlr_connect_io_qpair,
-    spdk_nvme_ctrlr_disconnect_io_qpair,
-    spdk_nvme_ctrlr_free_io_qpair,
-    spdk_nvme_ctrlr_get_default_io_qpair_opts,
-    spdk_nvme_io_qpair_opts,
-    spdk_nvme_qpair,
+    nvme_qpair_abort_all_queued_reqs, nvme_transport_qpair_abort_reqs, spdk_nvme_ctrlr,
+    spdk_nvme_ctrlr_alloc_io_qpair, spdk_nvme_ctrlr_connect_io_qpair,
+    spdk_nvme_ctrlr_disconnect_io_qpair, spdk_nvme_ctrlr_free_io_qpair,
+    spdk_nvme_ctrlr_get_default_io_qpair_opts, spdk_nvme_io_qpair_opts, spdk_nvme_qpair,
     spdk_nvme_qpair_set_abort_dnr,
 };
 
@@ -29,13 +23,10 @@ use std::{os::raw::c_void, time::Duration};
 #[cfg(feature = "spdk-async-qpair-connect")]
 use spdk_rs::{
     libspdk::{
-        spdk_nvme_ctrlr_connect_io_qpair_async,
-        spdk_nvme_ctrlr_io_qpair_connect_poll_async,
+        spdk_nvme_ctrlr_connect_io_qpair_async, spdk_nvme_ctrlr_io_qpair_connect_poll_async,
         spdk_nvme_io_qpair_connect_ctx,
     },
-    Poller,
-    PollerBuilder,
-    UnsafeRef,
+    Poller, PollerBuilder, UnsafeRef,
 };
 
 #[cfg(feature = "spdk-async-qpair-connect")]
@@ -46,9 +37,7 @@ use crate::core::CoreError;
 use super::{nvme_bdev_running_config, SpdkNvmeController};
 
 /// I/O QPair state.
-#[derive(
-    Debug, Serialize, Clone, Copy, PartialEq, PartialOrd, strum_macros::Display,
-)]
+#[derive(Debug, Serialize, Clone, Copy, PartialEq, PartialOrd, strum_macros::Display)]
 pub enum QPairState {
     /// QPair is not connected.
     Disconnected,
@@ -97,9 +86,7 @@ impl Drop for QPair {
 }
 
 /// Returns default qpair options.
-fn get_default_options(
-    ctrlr_handle: SpdkNvmeController,
-) -> spdk_nvme_io_qpair_opts {
+fn get_default_options(ctrlr_handle: SpdkNvmeController) -> spdk_nvme_io_qpair_opts {
     let mut opts: spdk_nvme_io_qpair_opts = unsafe { zeroed() };
     let default_opts = nvme_bdev_running_config();
 
@@ -111,8 +98,7 @@ fn get_default_options(
         )
     };
 
-    opts.io_queue_requests =
-        max(opts.io_queue_requests, default_opts.io_queue_requests);
+    opts.io_queue_requests = max(opts.io_queue_requests, default_opts.io_queue_requests);
     opts.create_only = true;
 
     // Always assume async_mode is enabled instread of
@@ -414,9 +400,7 @@ impl Connection<'_> {
                 // Error occured, so SPDK won't call connection callback.
                 // Notify about failure and stop the poller.
                 let conn = unsafe { Box::from_raw(arg.as_ptr()) };
-                conn.complete(Err(CoreError::OpenBdev {
-                    source: e,
-                }));
+                conn.complete(Err(CoreError::OpenBdev { source: e }));
                 1 // stop the poller
             }
         }
@@ -443,12 +427,7 @@ impl Connection<'_> {
 
         // Poll the probe. In the case of a success or an error, the probe will
         // be freed by SPDK.
-        let res = unsafe {
-            spdk_nvme_ctrlr_io_qpair_connect_poll_async(
-                self.qpair(),
-                self.probe,
-            )
-        };
+        let res = unsafe { spdk_nvme_ctrlr_io_qpair_connect_poll_async(self.qpair(), self.probe) };
 
         match res {
             // Connection is complete, callback has been called and this
@@ -531,10 +510,7 @@ impl Connection<'_> {
 
 /// Async connection callback.
 #[cfg(feature = "spdk-async-qpair-connect")]
-extern "C" fn qpair_connect_cb(
-    _qpair: *mut spdk_nvme_qpair,
-    cb_arg: *mut c_void,
-) {
+extern "C" fn qpair_connect_cb(_qpair: *mut spdk_nvme_qpair, cb_arg: *mut c_void) {
     let ctx = unsafe { Box::from_raw(cb_arg as *mut Connection) };
     ctx.complete(Ok(()));
 }

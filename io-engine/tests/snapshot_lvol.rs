@@ -7,9 +7,7 @@ use common::{
     snapshot::ReplicaSnapshotBuilder,
 };
 use io_engine_tests::{
-    file_io::DataSize,
-    nvmf::test_write_to_nvmf,
-    replica::validate_replicas,
+    file_io::DataSize, nvmf::test_write_to_nvmf, replica::validate_replicas,
     snapshot::SnapshotCloneBuilder,
 };
 
@@ -20,12 +18,7 @@ use common::{bdev_io, compose::MayastorTest};
 use io_engine::{
     bdev::{device_create, device_open},
     core::{
-        CloneParams,
-        CloneXattrs,
-        LogicalVolume,
-        MayastorCliArgs,
-        SnapshotParams,
-        SnapshotXattrs,
+        CloneParams, CloneXattrs, LogicalVolume, MayastorCliArgs, SnapshotParams, SnapshotXattrs,
         UntypedBdev,
     },
     lvs::{Lvol, Lvs, LvsLvol},
@@ -58,11 +51,7 @@ fn get_ms() -> &'static MayastorTest<'static> {
 }
 
 /// Must be called only in Mayastor context !s
-async fn create_test_pool(
-    pool_name: &str,
-    disk: String,
-    cluster_size: Option<u32>,
-) -> Lvs {
+async fn create_test_pool(pool_name: &str, disk: String, cluster_size: Option<u32>) -> Lvs {
     Lvs::create_or_import(PoolArgs {
         name: pool_name.to_string(),
         disks: vec![disk],
@@ -131,9 +120,8 @@ async fn check_clone(clone_lvol: Lvol, params: CloneParams) {
         (CloneXattrs::CloneUuid, params.clone_uuid().unwrap()),
     ];
     for (attr_name, attr_value) in attrs {
-        let v =
-            Lvol::get_blob_xattr(clone_lvol.blob_checked(), attr_name.name())
-                .expect("Failed to get clone attribute");
+        let v = Lvol::get_blob_xattr(clone_lvol.blob_checked(), attr_name.name())
+            .expect("Failed to get clone attribute");
         assert_eq!(v, attr_value, "clone attr doesn't match");
     }
 }
@@ -243,10 +231,7 @@ async fn test_lvol_alloc_after_snapshot(index: u32, thin: bool) {
     .await;
 }
 
-fn check_snapshot_descriptor(
-    params: &SnapshotParams,
-    descr: &LvolSnapshotDescriptor,
-) {
+fn check_snapshot_descriptor(params: &SnapshotParams, descr: &LvolSnapshotDescriptor) {
     let snap_params = descr.snapshot_params();
 
     assert_eq!(
@@ -303,12 +288,7 @@ async fn test_lvol_bdev_snapshot() {
 
     ms.spawn(async move {
         // Create a pool and lvol.
-        let pool = create_test_pool(
-            "pool1",
-            "malloc:///disk0?size_mb=64".to_string(),
-            None,
-        )
-        .await;
+        let pool = create_test_pool("pool1", "malloc:///disk0?size_mb=64".to_string(), None).await;
         let lvol = pool
             .create_lvol(
                 "lvol1",
@@ -361,12 +341,7 @@ async fn test_lvol_handle_snapshot() {
 
     ms.spawn(async move {
         // Create a pool and lvol.
-        let pool = create_test_pool(
-            "pool2",
-            "malloc:///disk1?size_mb=64".to_string(),
-            None,
-        )
-        .await;
+        let pool = create_test_pool("pool2", "malloc:///disk1?size_mb=64".to_string(), None).await;
 
         pool.create_lvol(
             "lvol2",
@@ -379,8 +354,7 @@ async fn test_lvol_handle_snapshot() {
         .expect("Failed to create test lvol");
 
         // Create a snapshot using device handle directly.
-        let descr =
-            device_open("lvol2", false).expect("Failed to open volume device");
+        let descr = device_open("lvol2", false).expect("Failed to open volume device");
         let handle = descr
             .into_handle()
             .expect("Failed to get I/O handle for volume device");
@@ -419,12 +393,7 @@ async fn test_lvol_list_snapshot() {
 
     ms.spawn(async move {
         // Create a pool and lvol.
-        let pool = create_test_pool(
-            "pool3",
-            "malloc:///disk3?size_mb=64".to_string(),
-            None,
-        )
-        .await;
+        let pool = create_test_pool("pool3", "malloc:///disk3?size_mb=64".to_string(), None).await;
         let lvol = pool
             .create_lvol(
                 "lvol3",
@@ -508,12 +477,7 @@ async fn test_list_all_lvol_snapshots() {
 
     ms.spawn(async move {
         // Create a pool and lvol.
-        let pool = create_test_pool(
-            "pool4",
-            "malloc:///disk4?size_mb=128".to_string(),
-            None,
-        )
-        .await;
+        let pool = create_test_pool("pool4", "malloc:///disk4?size_mb=128".to_string(), None).await;
         let lvol = pool
             .create_lvol(
                 "lvol4",
@@ -641,12 +605,7 @@ async fn test_list_pool_snapshots() {
 
     ms.spawn(async move {
         // Create a pool and lvol.
-        let pool = create_test_pool(
-            "pool6",
-            "malloc:///disk6?size_mb=32".to_string(),
-            None,
-        )
-        .await;
+        let pool = create_test_pool("pool6", "malloc:///disk6?size_mb=32".to_string(), None).await;
 
         let lvol = pool
             .create_lvol(
@@ -731,12 +690,7 @@ async fn test_list_all_lvol_snapshots_with_replica_destroy() {
 
     ms.spawn(async move {
         // Create a pool and lvol.
-        let pool = create_test_pool(
-            "pool7",
-            "malloc:///disk7?size_mb=128".to_string(),
-            None,
-        )
-        .await;
+        let pool = create_test_pool("pool7", "malloc:///disk7?size_mb=128".to_string(), None).await;
         let lvol = pool
             .create_lvol(
                 "lvol7",
@@ -1012,12 +966,7 @@ async fn test_snapshot_clone() {
 
     ms.spawn(async move {
         // Create a pool and lvol.
-        let pool = create_test_pool(
-            "pool9",
-            "malloc:///disk5?size_mb=128".to_string(),
-            None,
-        )
-        .await;
+        let pool = create_test_pool("pool9", "malloc:///disk5?size_mb=128".to_string(), None).await;
         let lvol = pool
             .create_lvol(
                 "lvol9",
@@ -1127,12 +1076,8 @@ async fn test_snapshot_volume_provisioning_mode() {
 
     ms.spawn(async move {
         // Create a pool and lvol.
-        let pool = create_test_pool(
-            "pool10",
-            "malloc:///disk10?size_mb=64".to_string(),
-            None,
-        )
-        .await;
+        let pool =
+            create_test_pool("pool10", "malloc:///disk10?size_mb=64".to_string(), None).await;
 
         let lvol = pool
             .create_lvol(
@@ -1157,14 +1102,20 @@ async fn test_snapshot_volume_provisioning_mode() {
         );
 
         // Volume must be reported as thick-provisioned before taking a snapshot.
-        assert!(!lvol.is_thin(), "Volume is reported as thin-provisioned before taking a snapshot");
+        assert!(
+            !lvol.is_thin(),
+            "Volume is reported as thin-provisioned before taking a snapshot"
+        );
 
         lvol.create_snapshot(snapshot_params.clone())
             .await
             .expect("Failed to create the first snapshot for test volume");
 
         // Volume must be reported as thin provisioned after taking a snapshot.
-        assert!(lvol.is_thin(), "Volume is not reported as thin-provisioned after taking a snapshot");
+        assert!(
+            lvol.is_thin(),
+            "Volume is not reported as thin-provisioned after taking a snapshot"
+        );
     })
     .await;
 }
@@ -1189,8 +1140,7 @@ async fn test_snapshot_attr() {
 
     ms.spawn(async move {
         // Create a pool and lvol.
-        let mut pool =
-            create_test_pool("pool20", POOL_DEVICE_NAME.into(), None).await;
+        let mut pool = create_test_pool("pool20", POOL_DEVICE_NAME.into(), None).await;
         let lvol = pool
             .create_lvol(
                 "lvol20",
@@ -1242,18 +1192,13 @@ async fn test_snapshot_attr() {
         let snap_attr_value = String::from("top_secret");
 
         snapshot_lvol
-            .set_blob_attr(
-                snap_attr_name.clone(),
-                snap_attr_value.clone(),
-                true,
-            )
+            .set_blob_attr(snap_attr_name.clone(), snap_attr_value.clone(), true)
             .await
             .expect("Failed to set snapshot attribute");
 
         // Check attribute.
-        let v =
-            Lvol::get_blob_xattr(snapshot_lvol.blob_checked(), &snap_attr_name)
-                .expect("Failed to get snapshot attribute");
+        let v = Lvol::get_blob_xattr(snapshot_lvol.blob_checked(), &snap_attr_name)
+            .expect("Failed to get snapshot attribute");
         assert_eq!(v, snap_attr_value, "Snapshot attribute doesn't match");
 
         // Export pool, then reimport it again and check the attribute again.
@@ -1293,11 +1238,8 @@ async fn test_snapshot_attr() {
         .unwrap();
 
         // Get attribute from imported snapshot and check.
-        let v = Lvol::get_blob_xattr(
-            imported_snapshot_lvol.blob_checked(),
-            &snap_attr_name,
-        )
-        .expect("Failed to get snapshot attribute");
+        let v = Lvol::get_blob_xattr(imported_snapshot_lvol.blob_checked(), &snap_attr_name)
+            .expect("Failed to get snapshot attribute");
         assert_eq!(v, snap_attr_value, "Snapshot attribute doesn't match");
         clean_snapshots(snapshot_list).await;
         pool.destroy().await.expect("Failed to destroy test pool");
@@ -1310,19 +1252,15 @@ async fn test_delete_snapshot_with_valid_clone() {
 
     ms.spawn(async move {
         // Create a pool and lvol.
-        let pool = create_test_pool(
-            "pool13",
-            "malloc:///disk13?size_mb=128".to_string(),
-            None,
-        )
-        .await;
+        let pool =
+            create_test_pool("pool13", "malloc:///disk13?size_mb=128".to_string(), None).await;
         let lvol = pool
             .create_lvol(
                 "lvol13",
                 32 * 1024 * 1024,
                 Some(&Uuid::new_v4().to_string()),
                 false,
-                None
+                None,
             )
             .await
             .expect("Failed to create test lvol");
@@ -1352,7 +1290,8 @@ async fn test_delete_snapshot_with_valid_clone() {
         assert_eq!(1, snapshot_list.len(), "Snapshot Count not matched!!");
 
         let snapshot_lvol = UntypedBdev::lookup_by_uuid_str(
-            snapshot_list.first()
+            snapshot_list
+                .first()
                 .unwrap()
                 .snapshot_params()
                 .snapshot_uuid()
@@ -1395,7 +1334,8 @@ async fn test_delete_snapshot_with_valid_clone() {
         snapshot_lvol.destroy_snapshot().await.ok();
         let snapshot_list = Lvol::list_all_lvol_snapshots(None);
         let snapshot_lvol = UntypedBdev::lookup_by_uuid_str(
-            snapshot_list.first()
+            snapshot_list
+                .first()
                 .unwrap()
                 .snapshot_params()
                 .snapshot_uuid()
@@ -1408,14 +1348,20 @@ async fn test_delete_snapshot_with_valid_clone() {
             snapshot_lvol.is_discarded_snapshot(),
             "Snapshot discardedSnapshotFlag not set properly"
         );
-        clone1.destroy_replica().await.expect("Clone1 Destroy Failed");
+        clone1
+            .destroy_replica()
+            .await
+            .expect("Clone1 Destroy Failed");
         let snapshot_list = Lvol::list_all_lvol_snapshots(None);
         assert_eq!(
             1,
             snapshot_list.len(),
             "Snapshot should not be deleted as part single clone deletion"
         );
-        clone2.destroy_replica().await.expect("Clone2 Destroy Failed");
+        clone2
+            .destroy_replica()
+            .await
+            .expect("Clone2 Destroy Failed");
 
         let snapshot_list = Lvol::list_all_lvol_snapshots(None);
         assert_eq!(
@@ -1433,12 +1379,8 @@ async fn test_delete_snapshot_with_valid_clone_fail_1() {
 
     ms.spawn(async move {
         // Create a pool and lvol.
-        let pool = create_test_pool(
-            "pool14",
-            "malloc:///disk14?size_mb=128".to_string(),
-            None,
-        )
-        .await;
+        let pool =
+            create_test_pool("pool14", "malloc:///disk14?size_mb=128".to_string(), None).await;
         let lvol = pool
             .create_lvol(
                 "lvol14",
@@ -1475,7 +1417,8 @@ async fn test_delete_snapshot_with_valid_clone_fail_1() {
         assert_eq!(1, snapshot_list.len(), "Snapshot Count not matched!!");
 
         let snapshot_lvol = UntypedBdev::lookup_by_uuid_str(
-            snapshot_list.first()
+            snapshot_list
+                .first()
                 .unwrap()
                 .snapshot_params()
                 .snapshot_uuid()
@@ -1503,7 +1446,8 @@ async fn test_delete_snapshot_with_valid_clone_fail_1() {
         snapshot_lvol.destroy_snapshot().await.ok();
         let snapshot_list = Lvol::list_all_lvol_snapshots(None);
         let snapshot_lvol = UntypedBdev::lookup_by_uuid_str(
-            snapshot_list.first()
+            snapshot_list
+                .first()
                 .unwrap()
                 .snapshot_params()
                 .snapshot_uuid()
@@ -1617,12 +1561,8 @@ async fn test_snapshot_parent_usage_post_snapshot_destroy() {
 
     ms.spawn(async move {
         // Create a pool and lvol.
-        let pool = create_test_pool(
-            "pool16",
-            "malloc:///disk16?size_mb=128".to_string(),
-            None,
-        )
-        .await;
+        let pool =
+            create_test_pool("pool16", "malloc:///disk16?size_mb=128".to_string(), None).await;
         let lvol = pool
             .create_lvol(
                 LVOL_NAME,
@@ -1703,12 +1643,8 @@ async fn test_clone_snapshot_usage_post_clone_destroy() {
 
     ms.spawn(async move {
         // Create a pool and lvol.
-        let pool = create_test_pool(
-            "pool17",
-            "malloc:///disk17?size_mb=128".to_string(),
-            None,
-        )
-        .await;
+        let pool =
+            create_test_pool("pool17", "malloc:///disk17?size_mb=128".to_string(), None).await;
         let lvol = pool
             .create_lvol(
                 LVOL_NAME,
@@ -1795,21 +1731,15 @@ async fn test_clone_snapshot_usage_post_clone_destroy() {
         snapshot_params.set_name(String::from("lvol17_clone_1_snap2"));
         snapshot_params.set_snapshot_uuid(Uuid::new_v4().to_string());
         snapshot_params.set_txn_id(Uuid::new_v4().to_string());
-        bdev_io::write_some(
-            "lvol17_snap1_clone_1",
-            3 * cluster_size,
-            16,
-            0xbbu8,
-        )
-        .await
-        .expect("Failed to write data to volume");
+        bdev_io::write_some("lvol17_snap1_clone_1", 3 * cluster_size, 16, 0xbbu8)
+            .await
+            .expect("Failed to write data to volume");
         clone1
             .create_snapshot(snapshot_params.clone())
             .await
             .expect("Failed to create the first snapshot for test volume");
         let snapshots = clone1.list_snapshot_by_source_uuid();
-        let mut clone_snapshot =
-            snapshots.iter().map(|v| v.snapshot()).collect::<Vec<_>>();
+        let mut clone_snapshot = snapshots.iter().map(|v| v.snapshot()).collect::<Vec<_>>();
         lvol.destroy()
             .await
             .expect("Original replica destroy failed");

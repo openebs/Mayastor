@@ -103,11 +103,7 @@ impl CloneParams {
         }
     }
     /// Validate the given arguments and prepare the clone parameters.
-    pub fn prepare(
-        clone_name: &str,
-        clone_uuid: &str,
-        source_uuid: &str,
-    ) -> Option<CloneParams> {
+    pub fn prepare(clone_name: &str, clone_uuid: &str, source_uuid: &str) -> Option<CloneParams> {
         let clone_name = if clone_name.is_empty() {
             return None;
         } else {
@@ -237,10 +233,7 @@ pub struct SnapshotDescriptor {
 
 impl SnapshotDescriptor {
     /// Return a generic SnapshotDescriptor.
-    pub fn new(
-        snapshot: impl SnapshotOps + 'static,
-        info: SnapshotInfo,
-    ) -> Self {
+    pub fn new(snapshot: impl SnapshotOps + 'static, info: SnapshotInfo) -> Self {
         Self {
             snapshot: Box::new(snapshot),
             info,

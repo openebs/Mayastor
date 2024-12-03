@@ -2,13 +2,8 @@
 use common::bdev_io;
 use io_engine::{
     bdev::nexus::{
-        nexus_create,
-        nexus_create_v2,
-        nexus_lookup,
-        nexus_lookup_mut,
-        NexusNvmeParams,
-        NexusPauseState,
-        NvmeAnaState,
+        nexus_create, nexus_create_v2, nexus_lookup, nexus_lookup_mut, NexusNvmeParams,
+        NexusPauseState, NvmeAnaState,
     },
     constants::NVME_NQN_PREFIX,
     core::{MayastorCliArgs, Protocol},
@@ -26,36 +21,19 @@ use common::{
     compose::{
         rpc::v0::{
             mayastor::{
-                CreateNexusRequest,
-                CreateNexusV2Request,
-                CreatePoolRequest,
-                CreateReplicaRequest,
-                DestroyNexusRequest,
-                Null,
-                PublishNexusRequest,
+                CreateNexusRequest, CreateNexusV2Request, CreatePoolRequest, CreateReplicaRequest,
+                DestroyNexusRequest, Null, PublishNexusRequest,
             },
             GrpcConnect,
         },
-        Binary,
-        Builder,
-        ComposeTest,
+        Binary, Builder, ComposeTest,
     },
-    nvme::{
-        get_nvme_resv_report,
-        list_mayastor_nvme_devices,
-        nvme_connect,
-        nvme_disconnect_nqn,
-    },
+    nvme::{get_nvme_resv_report, list_mayastor_nvme_devices, nvme_connect, nvme_disconnect_nqn},
     MayastorTest,
 };
 use io_engine::{
     bdev::nexus::{
-        ChildState,
-        Error,
-        FaultReason,
-        NexusNvmePreemption,
-        NexusStatus,
-        NvmeReservation,
+        ChildState, Error, FaultReason, NexusNvmePreemption, NexusStatus, NvmeReservation,
     },
     core::Mthread,
     grpc::v1::nexus::nexus_destroy,
@@ -204,7 +182,7 @@ async fn nexus_io_multipath() {
 
     // The first attempt will fail with "Duplicate cntlid x with y" error from
     // kernel
-    for i in 0 .. 2 {
+    for i in 0..2 {
         let status_c0 = nvme_connect(&ip0.to_string(), &nqn, "tcp", false);
         if i == 0 && status_c0.success() {
             break;
@@ -448,8 +426,7 @@ async fn nexus_io_resv_acquire() {
             max_cntl_id: 0xffef,
             resv_key: resv_key2,
             preempt_key: 0,
-            children: [format!("nvmf://{ip0}:8420/{HOSTNQN}:{REPL_UUID}")]
-                .to_vec(),
+            children: [format!("nvmf://{ip0}:8420/{HOSTNQN}:{REPL_UUID}")].to_vec(),
             nexus_info_key: "".to_string(),
             resv_type: None,
             preempt_policy: 0,
@@ -642,8 +619,7 @@ async fn nexus_io_resv_preempt() {
             max_cntl_id: 0xffef,
             resv_key: resv_key2,
             preempt_key: 0,
-            children: [format!("nvmf://{ip0}:8420/{HOSTNQN}:{REPL_UUID}")]
-                .to_vec(),
+            children: [format!("nvmf://{ip0}:8420/{HOSTNQN}:{REPL_UUID}")].to_vec(),
             nexus_info_key: "".to_string(),
             resv_type: Some(NvmeReservation::ExclusiveAccess as i32),
             preempt_policy: NexusNvmePreemption::Holder as i32,
@@ -842,12 +818,7 @@ async fn nexus_io_resv_preempt_tabled() {
         .await
         .unwrap();
 
-    async fn test_fn(
-        hdls: &mut [RpcHandle],
-        resv: NvmeReservation,
-        resv_key: u64,
-        local: bool,
-    ) {
+    async fn test_fn(hdls: &mut [RpcHandle], resv: NvmeReservation, resv_key: u64, local: bool) {
         let mayastor = get_ms();
         let ip0 = hdls[0].endpoint.ip();
         println!("Using resv {} and key {}", resv as u8, resv_key);
@@ -884,10 +855,7 @@ async fn nexus_io_resv_preempt_tabled() {
                     max_cntl_id: 0xffef,
                     resv_key,
                     preempt_key: 0,
-                    children: [format!(
-                        "nvmf://{ip0}:8420/{HOSTNQN}:{REPL_UUID}"
-                    )]
-                    .to_vec(),
+                    children: [format!("nvmf://{ip0}:8420/{HOSTNQN}:{REPL_UUID}")].to_vec(),
                     nexus_info_key: "".to_string(),
                     resv_type: Some(resv as i32),
                     preempt_policy: NexusNvmePreemption::Holder as i32,
@@ -912,8 +880,7 @@ async fn nexus_io_resv_preempt_tabled() {
 
         let shared = matches!(
             resv,
-            NvmeReservation::ExclusiveAccessAllRegs
-                | NvmeReservation::WriteExclusiveAllRegs
+            NvmeReservation::ExclusiveAccessAllRegs | NvmeReservation::WriteExclusiveAllRegs
         );
         if shared {
             // we don't currently distinguish between
@@ -924,12 +891,9 @@ async fn nexus_io_resv_preempt_tabled() {
 
         let mut reserved = false;
         let registrants = v["regctl"].as_u64().unwrap() as usize;
-        for i in 0 .. registrants {
+        for i in 0..registrants {
             let entry = &v["regctlext"][i];
-            assert_eq!(
-                entry["cntlid"], 0xffff,
-                "should have dynamic controller ID"
-            );
+            assert_eq!(entry["cntlid"], 0xffff, "should have dynamic controller ID");
             if entry["rcsts"] == 1 && !shared {
                 reserved = true;
 
@@ -1156,10 +1120,7 @@ async fn nexus_io_freeze() {
                 .share(Protocol::Nvmf, None)
                 .await
                 .unwrap();
-            assert_eq!(
-                nexus_pause_state(&name),
-                Some(NexusPauseState::Unpaused)
-            );
+            assert_eq!(nexus_pause_state(&name), Some(NexusPauseState::Unpaused));
         })
         .await;
 
@@ -1285,14 +1246,9 @@ async fn nexus_io_freeze() {
     let (s, r) = unbounded::<()>();
     tokio::spawn(async move {
         let device = get_mayastor_nvme_device();
-        test_write_to_file(
-            device,
-            DataSize::default(),
-            32,
-            DataSize::from_mb(1),
-        )
-        .await
-        .ok();
+        test_write_to_file(device, DataSize::default(), 32, DataSize::from_mb(1))
+            .await
+            .ok();
         s.send(())
     });
     mayastor
@@ -1310,14 +1266,11 @@ async fn nexus_io_freeze() {
     let name = nexus_name.clone();
     mayastor
         .spawn(async move {
-            let enospc = nexus_lookup(&name)
-                .map(|n| n.children().iter().all(|c| c.state().is_enospc()));
+            let enospc =
+                nexus_lookup(&name).map(|n| n.children().iter().all(|c| c.state().is_enospc()));
             assert_eq!(enospc, Some(true));
             // We're not Paused, because the nexus is faulted due to ENOSPC!
-            assert_eq!(
-                nexus_pause_state(&name),
-                Some(NexusPauseState::Unpaused)
-            );
+            assert_eq!(nexus_pause_state(&name), Some(NexusPauseState::Unpaused));
             nexus_lookup_mut(&name).unwrap().destroy().await.unwrap();
         })
         .await;
@@ -1378,9 +1331,7 @@ async fn wait_nexus_faulted(
     while start.elapsed() <= timeout {
         let name = name.to_string();
         let faulted = mayastor
-            .spawn(async move {
-                nexus_lookup(&name).unwrap().status() == NexusStatus::Faulted
-            })
+            .spawn(async move { nexus_lookup(&name).unwrap().status() == NexusStatus::Faulted })
             .await;
         if faulted {
             return Ok(());

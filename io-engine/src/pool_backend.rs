@@ -53,18 +53,14 @@ pub enum GenericError {
 impl From<GenericError> for tonic::Status {
     fn from(e: GenericError) -> Self {
         match e {
-            GenericError::NotFound {
-                message,
-            } => tonic::Status::not_found(message),
+            GenericError::NotFound { message } => tonic::Status::not_found(message),
         }
     }
 }
 impl ToErrno for GenericError {
     fn to_errno(self) -> Errno {
         match self {
-            GenericError::NotFound {
-                ..
-            } => Errno::ENODEV,
+            GenericError::NotFound { .. } => Errno::ENODEV,
         }
     }
 }
@@ -82,52 +78,34 @@ pub enum Error {
 }
 impl From<crate::lvs::LvsError> for Error {
     fn from(source: crate::lvs::LvsError) -> Self {
-        Self::Lvs {
-            source,
-        }
+        Self::Lvs { source }
     }
 }
 impl From<crate::lvm::Error> for Error {
     fn from(source: crate::lvm::Error) -> Self {
-        Self::Lvm {
-            source,
-        }
+        Self::Lvm { source }
     }
 }
 impl From<GenericError> for Error {
     fn from(source: GenericError) -> Self {
-        Self::Gen {
-            source,
-        }
+        Self::Gen { source }
     }
 }
 impl From<Error> for tonic::Status {
     fn from(e: Error) -> Self {
         match e {
-            Error::Lvs {
-                source,
-            } => source.into(),
-            Error::Lvm {
-                source,
-            } => source.into(),
-            Error::Gen {
-                source,
-            } => source.into(),
+            Error::Lvs { source } => source.into(),
+            Error::Lvm { source } => source.into(),
+            Error::Gen { source } => source.into(),
         }
     }
 }
 impl ToErrno for Error {
     fn to_errno(self) -> Errno {
         match self {
-            Error::Lvs {
-                source,
-            } => source.to_errno(),
-            Error::Lvm {
-                source,
-            } => source.to_errno(),
-            Error::Gen {
-                source,
-            } => source.to_errno(),
+            Error::Lvs { source } => source.to_errno(),
+            Error::Lvm { source } => source.to_errno(),
+            Error::Gen { source } => source.to_errno(),
         }
     }
 }
@@ -137,14 +115,9 @@ impl ToErrno for Error {
 /// much as possible, though we can allow for extra pool specific options
 /// to be passed as parameters.
 #[async_trait::async_trait(?Send)]
-pub trait PoolOps:
-    IPoolProps + BdevStater<Stats = BdevStats> + std::fmt::Debug
-{
+pub trait PoolOps: IPoolProps + BdevStater<Stats = BdevStats> + std::fmt::Debug {
     /// Create a replica on this pool with the given arguments.
-    async fn create_repl(
-        &self,
-        args: ReplicaArgs,
-    ) -> Result<Box<dyn ReplicaOps>, Error>;
+    async fn create_repl(&self, args: ReplicaArgs) -> Result<Box<dyn ReplicaOps>, Error>;
 
     /// Destroy the pool itself along with all its replicas.
     async fn destroy(self: Box<Self>) -> Result<(), Error>;
@@ -167,15 +140,9 @@ pub trait IPoolFactory {
     async fn import(&self, args: PoolArgs) -> Result<Box<dyn PoolOps>, Error>;
     /// Find the pool which matches the given arguments.
     /// # Note: the disks are not currently matched.
-    async fn find(
-        &self,
-        args: &FindPoolArgs,
-    ) -> Result<Option<Box<dyn PoolOps>>, Error>;
+    async fn find(&self, args: &FindPoolArgs) -> Result<Option<Box<dyn PoolOps>>, Error>;
     /// List all pools from this `PoolBackend`.
-    async fn list(
-        &self,
-        args: &ListPoolArgs,
-    ) -> Result<Vec<Box<dyn PoolOps>>, Error>;
+    async fn list(&self, args: &ListPoolArgs) -> Result<Vec<Box<dyn PoolOps>>, Error>;
     /// The pool backend type.
     fn backend(&self) -> PoolBackend;
 }
@@ -273,18 +240,12 @@ impl PoolFactory {
     /// Returns the factory for the given backend kind.
     pub fn new(backend: PoolBackend) -> Self {
         Self(match backend {
-            PoolBackend::Lvs => {
-                Box::<crate::lvs::PoolLvsFactory>::default() as _
-            }
-            PoolBackend::Lvm => {
-                Box::<crate::lvm::PoolLvmFactory>::default() as _
-            }
+            PoolBackend::Lvs => Box::<crate::lvs::PoolLvsFactory>::default() as _,
+            PoolBackend::Lvm => Box::<crate::lvm::PoolLvmFactory>::default() as _,
         })
     }
     /// Probe backends for the given name and/or uuid and return the right one.
-    pub async fn find<I: Into<FindPoolArgs>>(
-        args: I,
-    ) -> Result<Box<dyn PoolOps>, Error> {
+    pub async fn find<I: Into<FindPoolArgs>>(args: I) -> Result<Box<dyn PoolOps>, Error> {
         let args = args.into();
         let mut error = None;
 

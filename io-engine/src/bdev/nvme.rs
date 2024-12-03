@@ -43,7 +43,7 @@ impl TryFrom<&Url> for NVMe {
         }
 
         Ok(Self {
-            name: url.path()[1 ..].into(),
+            name: url.path()[1..].into(),
             url: url.clone(),
         })
     }
@@ -60,14 +60,8 @@ impl CreateDestroy for NVMe {
     type Error = BdevError;
 
     async fn create(&self) -> Result<String, Self::Error> {
-        extern "C" fn nvme_create_cb(
-            arg: *mut c_void,
-            _bdev_count: c_ulong,
-            errno: c_int,
-        ) {
-            let sender = unsafe {
-                Box::from_raw(arg as *mut oneshot::Sender<ErrnoResult<()>>)
-            };
+        extern "C" fn nvme_create_cb(arg: *mut c_void, _bdev_count: c_ulong, errno: c_int) {
+            let sender = unsafe { Box::from_raw(arg as *mut oneshot::Sender<ErrnoResult<()>>) };
 
             sender
                 .send(errno_result_from_i32((), errno))
@@ -99,11 +93,9 @@ impl CreateDestroy for NVMe {
             )
         };
 
-        errno_result_from_i32((), errno).context(
-            bdev_api::CreateBdevInvalidParams {
-                name: self.name.clone(),
-            },
-        )?;
+        errno_result_from_i32((), errno).context(bdev_api::CreateBdevInvalidParams {
+            name: self.name.clone(),
+        })?;
 
         receiver
             .await

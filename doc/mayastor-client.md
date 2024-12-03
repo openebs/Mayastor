@@ -3,9 +3,9 @@
 This section shows a couple of examples of what you already can do with Mayastor today:
 
 - [Overview](#overview)
-  - [io-engine-client](#io-engine-client)
-  - [Local Storage](#local-storage)
-  - [Use Case: Mirroring over NVMF](#use-case-mirroring-over-nvmf)
+    - [io-engine-client](#io-engine-client)
+    - [Local Storage](#local-storage)
+    - [Use Case: Mirroring over NVMF](#use-case-mirroring-over-nvmf)
 
 ## io-engine-client
 
@@ -15,31 +15,41 @@ added support for sharing the Nexus over NBD and NVMf.
 
 ```bash
 > io-engine-client --help
-Mayastor CLI 0.1
 CLI utility for Mayastor
 
-USAGE:
-    io-engine-client [FLAGS] [OPTIONS] <SUBCOMMAND>
+Usage: io-engine-client [OPTIONS] <COMMAND>
 
-FLAGS:
-    -h, --help       Prints help information
-    -q, --quiet      Do not print any output except for list records
-    -V, --version    Prints version information
-    -v, --verbose    Verbose output
+Commands:
+  pool              Storage pool management
+  nexus             Nexus device management
+  replica           Replica management
+  bdev              Block device management
+  device            Host devices
+  perf              Performance statistics
+  rebuild           Rebuild management
+  snapshot-rebuild  Snapshot Rebuild Management
+  snapshot          Snapshot management
+  jsonrpc           Call a json-rpc method with a raw JSON payload
+  controller        NVMe controllers
+  test              Test management
+  stats             Resource IOStats
+  help              Print this message or the help of the given subcommand(s)
 
-OPTIONS:
-    -a, --address <HOST>    IP address of mayastor instance [default: 127.0.0.1]
-    -p, --port <NUMBER>     Port number of mayastor server [default: 10124]
-    -u, --units <BASE>
-            Output with large units: i for kiB, etc. or d for kB, etc.
-
-
-SUBCOMMANDS:
-    bdev       Block device management
-    help       Prints this message or the help of the given subcommand(s)
-    nexus      Nexus device management
-    pool       Storage pool management
-    replica    Replica management
+Options:
+  -b, --bind <HOST>
+          The URI of mayastor instance [env: MY_POD_IP=] [default: http://127.0.0.1:10124]
+  -q, --quiet
+          Do not print any output except for list records
+  -v, --verbose...
+          Verbose output
+  -u, --units <BASE>
+          Output with large units: i for kiB, etc. or d for kB, etc.
+  -o, --output <FORMAT>
+          Output format. [default: default] [possible values: default, json]
+  -h, --help
+          Print help
+  -V, --version
+          Print version
 ```
 
 To get more information specific to a subcommand, just execute the subcomand without any additional parameters,
@@ -47,26 +57,31 @@ or by using the `-h` flag, for example:
 
 ```bash
 > io-engine-client nexus -h
-io-engine-client-nexus
 Nexus device management
 
-USAGE:
-    io-engine-client nexus <SUBCOMMAND>
+Usage: io-engine-client nexus [OPTIONS] <COMMAND>
 
-FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
+Commands:
+  create     Create a new nexus device
+  destroy    destroy the nexus with given name
+  shutdown   shutdown the nexus with given name
+  publish    publish the nexus
+  add        add a child
+  remove     remove a child
+  unpublish  unpublish the nexus
+  ana_state  get or set the NVMe ANA state of the nexus
+  list       list all nexus devices
+  children   list nexus children
+  resize     Resize nexus
+  child      Nexus child management
+  help       Print this message or the help of the given subcommand(s)
 
-SUBCOMMANDS:
-    add          add a child
-    children     list nexus children
-    create       Create a new nexus device
-    destroy      destroy the nexus with given name
-    help         Prints this message or the help of the given subcommand(s)
-    list         list all nexus devices
-    publish      publish the nexus
-    remove       remove a child
-    unpublish    unpublish the nexus
+Options:
+  -b, --bind <HOST>      The URI of mayastor instance [env: MY_POD_IP=] [default: http://127.0.0.1:10124]
+  -q, --quiet            Do not print any output except for list records
+  -v, --verbose...       Verbose output
+  -o, --output <FORMAT>  Output format. [default: default] [possible values: default, json]
+  -h, --help             Print help
 ```
 
 ## Local Storage
@@ -76,7 +91,7 @@ it is configured on. This makes certain things more simple, but at the same time
 of freedom as well. With Mayastor, we attempt to solve this transparently and determine based on declarative
 intent what is best to do. Let us start with an example.
 
-Let's assume we have a local disk `/dev/sdb` and we want to make use of it. 
+Let's assume we have a local disk `/dev/sdb` and we want to make use of it.
 By making use of the `io-engine-client` we can specify
 a URI to the resource and we can start using it.
 
@@ -172,7 +187,7 @@ the working of the Nexus.
 ```bash
 uname -r
 sudo modprobe nvme_tcp
-sudo nvme discover -t tcp -a 192.168.1.2  -s 4420
+sudo nvme discover -t tcp -a 192.168.1.2  -s 8420
 
 Discovery Log Number of Records 2, Generation counter 7
 =====Discovery Log Entry 0======
@@ -181,7 +196,7 @@ adrfam:  ipv4
 subtype: nvme subsystem
 treq:    not specified
 portid:  0
-trsvcid: 4420
+trsvcid: 8420
 subnqn:  nqn.2019-05.io.openebs:cnode1
 traddr:  192.168.1.2
 sectype: none
@@ -191,7 +206,7 @@ adrfam:  ipv4
 subtype: nvme subsystem
 treq:    not specified
 portid:  1
-trsvcid: 4420
+trsvcid: 8420
 subnqn:  nqn.2019-05.io.openebs:cnode2
 traddr:  192.168.1.2
 sectype: none
@@ -200,20 +215,20 @@ sectype: none
 Now that we can see the block devices, we will connect to them and perform some IO to one of the devices.
 
 ```bash
-sudo nvme connect-all -t tcp -a 192.168.1.2 -s 4420
+sudo nvme connect-all -t tcp -a 192.168.1.2 -s 8420
 ```
 
 We can verify the connection has been made by looking at dmesg for some output:
 
 ```bash
-[17251.205183] nvme nvme1: new ctrl: NQN "nqn.2014-08.org.nvmexpress.discovery", addr 192.168.1.2:4420
+[17251.205183] nvme nvme1: new ctrl: NQN "nqn.2014-08.org.nvmexpress.discovery", addr 192.168.1.2:8420
 [17251.206576] nvme nvme1: Removing ctrl: NQN "nqn.2014-08.org.nvmexpress.discovery"
 [17251.245350] nvme nvme1: creating 4 I/O queues.
 [17251.281562] nvme nvme1: mapped 4/0 default/read queues.
-[17251.284471] nvme nvme1: new ctrl: NQN "nqn.2019-05.io.openebs:cnode1", addr 192.168.1.2:4420
+[17251.284471] nvme nvme1: new ctrl: NQN "nqn.2019-05.io.openebs:cnode1", addr 192.168.1.2:8420
 [17251.297755] nvme nvme2: creating 4 I/O queues.
 [17251.332165] nvme nvme2: mapped 4/0 default/read queues.
-[17251.341883] nvme nvme2: new ctrl: NQN "nqn.2019-05.io.openebs:cnode2", addr 192.168.1.2:4420
+[17251.341883] nvme nvme2: new ctrl: NQN "nqn.2019-05.io.openebs:cnode2", addr 192.168.1.2:8420
 ```
 
 Using the following fio config:
@@ -392,7 +407,7 @@ We will attach the devices directly to the host without the Nexus in between. We
 will have the same data on its filesystem, and have the same content including a matching md5.
 
 ```bash
-sudo nvme connect-all -t tcp -a 192.168.1.2 -s 4420
+sudo nvme connect-all -t tcp -a 192.168.1.2 -s 8420
 sudo mkdir /{disk1,disk2}
 sudo mount /dev/nvme1n1 /disk1
 sudo mount /dev/nvme2n1 /disk2
@@ -412,5 +427,6 @@ md5sum nexus
 ```
 
 What this demonstrates is that indeed -- we write the data twice. If you where to add a third child, we would write to
-that device all the same. What this also shows, is how we are transparent to the actual block devices. When we are removed
+that device all the same. What this also shows, is how we are transparent to the actual block devices. When we are
+removed
 from the data path, the data is still accessible without any special purpose tools or software.

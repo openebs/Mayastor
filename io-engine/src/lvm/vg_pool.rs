@@ -105,9 +105,7 @@ impl VolumeGroup {
     }
 
     /// List all the volume groups using the provided list options.
-    pub(crate) async fn list(
-        opts: &CmnQueryArgs,
-    ) -> Result<Vec<VolumeGroup>, Error> {
+    pub(crate) async fn list(opts: &CmnQueryArgs) -> Result<Vec<VolumeGroup>, Error> {
         let mut args = vec![
             "--units=b",
             "--nosuffix",
@@ -120,8 +118,7 @@ impl VolumeGroup {
         if !select.is_empty() {
             args.push(select_query.trim_end_matches(','));
         }
-        let report: VolGroups =
-            LvmCmd::vg_list().args(args.as_slice()).report().await?;
+        let report: VolGroups = LvmCmd::vg_list().args(args.as_slice()).report().await?;
 
         let vgs = report
             .vg
@@ -144,29 +141,22 @@ impl VolumeGroup {
     /// Import a volume group with the name provided or create one with the name
     /// and disks provided currently only import is supported.
     pub(crate) async fn create(args: PoolArgs) -> Result<VolumeGroup, Error> {
-        let vg =
-            match VolumeGroup::lookup(CmnQueryArgs::any().named(&args.name))
-                .await
-            {
-                Ok(_) => Self::import_inner(args).await,
-                Err(Error::NotFound {
-                    ..
-                }) => {
-                    LvmCmd::pv_create().args(&args.disks).run().await?;
+        let vg = match VolumeGroup::lookup(CmnQueryArgs::any().named(&args.name)).await {
+            Ok(_) => Self::import_inner(args).await,
+            Err(Error::NotFound { .. }) => {
+                LvmCmd::pv_create().args(&args.disks).run().await?;
 
-                    LvmCmd::vg_create()
-                        .arg(&args.name)
-                        .tag(Property::Lvm)
-                        .args(args.disks)
-                        .run()
-                        .await?;
-                    let lookup = CmnQueryArgs::ours()
-                        .named(&args.name)
-                        .uuid_opt(&args.uuid);
-                    VolumeGroup::lookup(lookup).await
-                }
-                Err(error) => Err(error),
-            }?;
+                LvmCmd::vg_create()
+                    .arg(&args.name)
+                    .tag(Property::Lvm)
+                    .args(args.disks)
+                    .run()
+                    .await?;
+                let lookup = CmnQueryArgs::ours().named(&args.name).uuid_opt(&args.uuid);
+                VolumeGroup::lookup(lookup).await
+            }
+            Err(error) => Err(error),
+        }?;
 
         info!("The lvm vg pool '{}' has been created", vg.name());
         Ok(vg)
@@ -250,7 +240,10 @@ impl VolumeGroup {
 
             info!("LVM pool '{}' has been destroyed successfully", self.name());
         } else {
-            warn!("LVM pool '{}' is not destroyed as it contains foreign lvs: {foreign_lvs:?}", self.name());
+            warn!(
+                "LVM pool '{}' is not destroyed as it contains foreign lvs: {foreign_lvs:?}",
+                self.name()
+            );
         }
         self.ptpl().destroy().ok();
         Ok(())
@@ -295,19 +288,15 @@ impl VolumeGroup {
         share: Protocol,
     ) -> Result<(), Error> {
         let vg_name = self.name();
-        let ins_space =
-            format!("Volume group \"{vg_name}\" has insufficient free space");
+        let ins_space = format!("Volume group \"{vg_name}\" has insufficient free space");
 
         if thin {
             return Err(Error::ThinProv {});
         } else if size > self.free {
-            return Err(Error::NoSpace {
-                error: ins_space,
-            });
+            return Err(Error::NoSpace { error: ins_space });
         }
 
-        let ins_space =
-            format!("Volume group \"{vg_name}\" has insufficient free space");
+        let ins_space = format!("Volume group \"{vg_name}\" has insufficient free space");
         let entity_id = entity_id.clone().unwrap_or_default();
         match LvmCmd::lv_create()
             .arg(format!("-L{size}b"))
@@ -321,11 +310,9 @@ impl VolumeGroup {
             .await
         {
             // not great, but not sure how else to map the error otherwise...
-            Err(Error::LvmBinErr {
-                error, ..
-            }) if error.starts_with(&ins_space) => Err(Error::NoSpace {
-                error,
-            }),
+            Err(Error::LvmBinErr { error, .. }) if error.starts_with(&ins_space) => {
+                Err(Error::NoSpace { error })
+            }
             _else => _else,
         }?;
 

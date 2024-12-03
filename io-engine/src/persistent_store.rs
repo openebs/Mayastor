@@ -9,15 +9,7 @@ use crate::{
     core::Reactor,
     store::{
         etcd::Etcd,
-        store_defs::{
-            DeleteWait,
-            GetWait,
-            PutWait,
-            Store,
-            StoreError,
-            StoreKey,
-            StoreValue,
-        },
+        store_defs::{DeleteWait, GetWait, PutWait, Store, StoreError, StoreKey, StoreValue},
     },
 };
 use futures::channel::oneshot;
@@ -166,12 +158,9 @@ impl PersistentStore {
     }
 
     /// Puts a key-value in the store.
-    pub async fn put(
-        key: &impl StoreKey,
-        value: &impl StoreValue,
-    ) -> Result<(), StoreError> {
-        let put_value = serde_json::to_value(value)
-            .expect("Failed to convert value to a serde_json value");
+    pub async fn put(key: &impl StoreKey, value: &impl StoreValue) -> Result<(), StoreError> {
+        let put_value =
+            serde_json::to_value(value).expect("Failed to convert value to a serde_json value");
         let key_string = key.to_string();
         let value_clone = put_value.clone();
 
@@ -229,10 +218,7 @@ impl PersistentStore {
             info!("Deleting key {} from store.", key_string);
             match Self::backing_store().delete_kv(&key_string).await {
                 Ok(_) => {
-                    info!(
-                        "Successfully deleted key {} from store.",
-                        key_string
-                    );
+                    info!("Successfully deleted key {} from store.", key_string);
                     Ok(())
                 }
                 Err(e) => Err(e),
@@ -265,9 +251,7 @@ impl PersistentStore {
             // Execute the sending of the result on a "Mayastor thread".
             let rx = Reactor::spawn_at_primary(async move {
                 if tx.send(result).is_err() {
-                    tracing::error!(
-                        "Failed to send completion for 'put' request."
-                    );
+                    tracing::error!("Failed to send completion for 'put' request.");
                 }
             })
             .expect("Failed to send future to Mayastor thread");
@@ -313,8 +297,7 @@ impl PersistentStore {
     async fn reconnect() {
         warn!("Attempting to reconnect to persistent store....");
         let persistent_store = Self::instance();
-        let backing_store =
-            Self::connect_to_backing_store(&PersistentStore::endpoint()).await;
+        let backing_store = Self::connect_to_backing_store(&PersistentStore::endpoint()).await;
         persistent_store.lock().store = backing_store;
     }
 }

@@ -98,23 +98,18 @@ impl<'n> Nexus<'n> {
                 assert!(!nexus_info.clean_shutdown);
                 self.children_iter().for_each(|c| {
                     let child_info = ChildInfo {
-                        uuid: NexusChild::uuid(c.uri())
-                            .expect("Failed to get child UUID."),
+                        uuid: NexusChild::uuid(c.uri()).expect("Failed to get child UUID."),
                         healthy: c.is_healthy(),
                     };
                     nexus_info.children.push(child_info);
                 });
             }
-            PersistOp::AddChild {
-                child_uri,
-                healthy,
-            } => {
+            PersistOp::AddChild { child_uri, healthy } => {
                 // Add the state of a new child. This should only be called
                 // on adding a new child. Take into account that the same child
                 // can be readded again.
                 let child_info = ChildInfo {
-                    uuid: NexusChild::uuid(child_uri)
-                        .expect("Failed to get child UUID."),
+                    uuid: NexusChild::uuid(child_uri).expect("Failed to get child UUID."),
                     healthy: *healthy,
                 };
 
@@ -129,20 +124,13 @@ impl<'n> Nexus<'n> {
                     None => nexus_info.children.push(child_info),
                 }
             }
-            PersistOp::RemoveChild {
-                child_uri,
-            } => {
-                let uuid = NexusChild::uuid(child_uri)
-                    .expect("Failed to get child UUID.");
+            PersistOp::RemoveChild { child_uri } => {
+                let uuid = NexusChild::uuid(child_uri).expect("Failed to get child UUID.");
 
                 nexus_info.children.retain(|child| child.uuid != uuid);
             }
-            PersistOp::Update {
-                child_uri,
-                healthy,
-            } => {
-                let uuid = NexusChild::uuid(child_uri)
-                    .expect("Failed to get child UUID.");
+            PersistOp::Update { child_uri, healthy } => {
+                let uuid = NexusChild::uuid(child_uri).expect("Failed to get child UUID.");
                 // Only update the state of the child that has changed. Do not
                 // update the other children or "clean shutdown" information.
                 // This should only be called on a child state change.
@@ -164,8 +152,7 @@ impl<'n> Nexus<'n> {
                     return Ok(());
                 }
 
-                let uuid = NexusChild::uuid(child_uri)
-                    .expect("Failed to get child UUID.");
+                let uuid = NexusChild::uuid(child_uri).expect("Failed to get child UUID.");
 
                 nexus_info.children.iter_mut().for_each(|c| {
                     if c.uuid == uuid {

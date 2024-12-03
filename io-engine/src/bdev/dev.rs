@@ -38,33 +38,19 @@ pub(crate) mod uri {
 
     use crate::{
         bdev::{
-            aio,
-            ftl,
-            loopback,
-            lvs,
-            malloc,
-            null_bdev,
-            nvme,
-            nvmx,
-            nx,
-            uring,
-            BdevCreateDestroy,
+            aio, ftl, loopback, lvs, malloc, null_bdev, nvme, nvmx, nx, uring, BdevCreateDestroy,
         },
         bdev_api::{self, BdevError},
     };
 
-    pub fn parse(
-        uri: &str,
-    ) -> Result<Box<dyn BdevCreateDestroy<Error = BdevError>>, BdevError> {
+    pub fn parse(uri: &str) -> Result<Box<dyn BdevCreateDestroy<Error = BdevError>>, BdevError> {
         let url = url::Url::parse(uri).context(bdev_api::UriParseFailed {
             uri: uri.to_string(),
         })?;
 
         match url.scheme() {
             "aio" => Ok(Box::new(aio::Aio::try_from(&url)?)),
-            "bdev" | "loopback" => {
-                Ok(Box::new(loopback::Loopback::try_from(&url)?))
-            }
+            "bdev" | "loopback" => Ok(Box::new(loopback::Loopback::try_from(&url)?)),
             "ftl" => Ok(Box::new(ftl::Ftl::try_from(&url)?)),
             "malloc" => Ok(Box::new(malloc::Malloc::try_from(&url)?)),
             "null" => Ok(Box::new(null_bdev::Null::try_from(&url)?)),

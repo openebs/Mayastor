@@ -4,11 +4,7 @@ use rand::Rng;
 use std::{ptr::NonNull, sync::Mutex};
 
 use spdk_rs::libspdk::{
-    spdk_bdev_free_io,
-    spdk_bdev_io,
-    spdk_bdev_read,
-    spdk_bdev_reset,
-    spdk_bdev_write,
+    spdk_bdev_free_io, spdk_bdev_io, spdk_bdev_read, spdk_bdev_reset, spdk_bdev_write,
 };
 
 use crate::{
@@ -237,9 +233,7 @@ impl Job {
     }
     /// start the job that will dispatch an IO up to the provided queue depth
     fn start(mut self) -> Box<Job> {
-        let thread =
-            Thread::new(format!("job_{}", self.bdev.name()), self.core)
-                .unwrap();
+        let thread = Thread::new(format!("job_{}", self.bdev.name()), self.core).unwrap();
         thread.with(|| {
             self.ch = self.desc.io_channel().ok();
             let mut boxed = Box::new(self);
@@ -325,7 +319,7 @@ impl Builder {
 
         let mut queue = Vec::new();
 
-        (0 .. self.qd).for_each(|offset| {
+        (0..self.qd).for_each(|offset| {
             queue.push(Io {
                 buf: DmaBuf::new(self.io_size, bdev.alignment()).unwrap(),
                 iot: self.iot,

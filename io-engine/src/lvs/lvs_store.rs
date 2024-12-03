@@ -1,10 +1,4 @@
-use std::{
-    convert::TryFrom,
-    fmt::Debug,
-    os::raw::c_void,
-    pin::Pin,
-    ptr::NonNull,
-};
+use std::{convert::TryFrom, fmt::Debug, os::raw::c_void, pin::Pin, ptr::NonNull};
 
 use byte_unit::Byte;
 use events_api::event::EventAction;
@@ -13,55 +7,24 @@ use nix::errno::Errno;
 use pin_utils::core_reexport::fmt::Formatter;
 
 use spdk_rs::libspdk::{
-    spdk_bdev_update_bs_blockcnt,
-    spdk_blob_store,
-    spdk_bs_free_cluster_count,
-    spdk_bs_get_cluster_size,
-    spdk_bs_get_md_len,
-    spdk_bs_get_page_size,
-    spdk_bs_get_used_md,
-    spdk_bs_total_data_cluster_count,
-    spdk_lvol,
-    spdk_lvol_opts,
-    spdk_lvol_opts_init,
-    spdk_lvol_store,
-    spdk_lvs_grow_live,
-    vbdev_get_lvol_store_by_name,
-    vbdev_get_lvol_store_by_uuid,
-    vbdev_get_lvs_bdev_by_lvs,
-    vbdev_lvol_create_with_opts,
-    vbdev_lvs_create,
-    vbdev_lvs_create_with_uuid,
-    vbdev_lvs_destruct,
-    vbdev_lvs_import,
-    vbdev_lvs_unload,
-    LVOL_CLEAR_WITH_NONE,
-    LVOL_CLEAR_WITH_UNMAP,
-    LVS_CLEAR_WITH_NONE,
+    spdk_bdev_update_bs_blockcnt, spdk_blob_store, spdk_bs_free_cluster_count,
+    spdk_bs_get_cluster_size, spdk_bs_get_md_len, spdk_bs_get_page_size, spdk_bs_get_used_md,
+    spdk_bs_total_data_cluster_count, spdk_lvol, spdk_lvol_opts, spdk_lvol_opts_init,
+    spdk_lvol_store, spdk_lvs_grow_live, vbdev_get_lvol_store_by_name,
+    vbdev_get_lvol_store_by_uuid, vbdev_get_lvs_bdev_by_lvs, vbdev_lvol_create_with_opts,
+    vbdev_lvs_create, vbdev_lvs_create_with_uuid, vbdev_lvs_destruct, vbdev_lvs_import,
+    vbdev_lvs_unload, LVOL_CLEAR_WITH_NONE, LVOL_CLEAR_WITH_UNMAP, LVS_CLEAR_WITH_NONE,
 };
 use url::Url;
 
-use super::{
-    BsError,
-    ImportErrorReason,
-    Lvol,
-    LvsError,
-    LvsIter,
-    PropName,
-    PropValue,
-};
+use super::{BsError, ImportErrorReason, Lvol, LvsError, LvsIter, PropName, PropValue};
 
 use crate::{
     bdev::{uri, PtplFileOps},
     bdev_api::{bdev_destroy, BdevError},
     core::{
-        logical_volume::LogicalVolume,
-        snapshot::LvolSnapshotOps,
-        Bdev,
-        IoType,
-        NvmfShareProps,
-        Share,
-        UntypedBdev,
+        logical_volume::LogicalVolume, snapshot::LvolSnapshotOps, Bdev, IoType, NvmfShareProps,
+        Share, UntypedBdev,
     },
     eventing::Event,
     ffihelper::{cb_arg, pair, AsStr, ErrnoResult, FfiResult, IntoCString},
@@ -86,10 +49,8 @@ impl Debug for Lvs {
             self.name(),
             self.base_bdev().name(),
             self.base_bdev().uuid(),
-            Byte::from(self.available())
-                .get_appropriate_unit(byte_unit::UnitType::Binary),
-            Byte::from(self.capacity())
-                .get_appropriate_unit(byte_unit::UnitType::Binary)
+            Byte::from(self.available()).get_appropriate_unit(byte_unit::UnitType::Binary),
+            Byte::from(self.capacity()).get_appropriate_unit(byte_unit::UnitType::Binary)
         )
     }
 }
@@ -127,14 +88,8 @@ impl Lvs {
     }
 
     /// generic lvol store callback
-    extern "C" fn lvs_cb(
-        sender_ptr: *mut c_void,
-        lvs: *mut spdk_lvol_store,
-        errno: i32,
-    ) {
-        let sender = unsafe {
-            Box::from_raw(sender_ptr as *mut oneshot::Sender<ErrnoResult<Lvs>>)
-        };
+    extern "C" fn lvs_cb(sender_ptr: *mut c_void, lvs: *mut spdk_lvol_store, errno: i32) {
+        let sender = unsafe { Box::from_raw(sender_ptr as *mut oneshot::Sender<ErrnoResult<Lvs>>) };
 
         if errno == 0 {
             sender
@@ -149,8 +104,7 @@ impl Lvs {
 
     /// callback when operation has been performed on lvol
     extern "C" fn lvs_op_cb(sender: *mut c_void, errno: i32) {
-        let sender =
-            unsafe { Box::from_raw(sender as *mut oneshot::Sender<i32>) };
+        let sender = unsafe { Box::from_raw(sender as *mut oneshot::Sender<i32>) };
         sender.send(errno).unwrap();
     }
 
@@ -198,18 +152,13 @@ impl Lvs {
     /// returns the total capacity of the store
     pub fn capacity(&self) -> u64 {
         let blobs = self.blob_store();
-        unsafe {
-            spdk_bs_get_cluster_size(blobs)
-                * spdk_bs_total_data_cluster_count(blobs)
-        }
+        unsafe { spdk_bs_get_cluster_size(blobs) * spdk_bs_total_data_cluster_count(blobs) }
     }
 
     /// returns the available capacity
     pub fn available(&self) -> u64 {
         let blobs = self.blob_store();
-        unsafe {
-            spdk_bs_get_cluster_size(blobs) * spdk_bs_free_cluster_count(blobs)
-        }
+        unsafe { spdk_bs_get_cluster_size(blobs) * spdk_bs_free_cluster_count(blobs) }
     }
 
     /// returns the used capacity
@@ -225,8 +174,7 @@ impl Lvs {
 
     /// returns the base bdev of this lvs
     pub fn base_bdev(&self) -> UntypedBdev {
-        let p =
-            unsafe { (*vbdev_get_lvs_bdev_by_lvs(self.as_inner_ptr())).bdev };
+        let p = unsafe { (*vbdev_get_lvs_bdev_by_lvs(self.as_inner_ptr())).bdev };
         Bdev::checked_from_ptr(p).unwrap()
     }
 
@@ -270,11 +218,7 @@ impl Lvs {
             _ => {
                 return Err(LvsError::Invalid {
                     source: BsError::InvalidArgument {},
-                    msg: format!(
-                        "invalid number {} of devices {:?}",
-                        disks.len(),
-                        disks,
-                    ),
+                    msg: format!("invalid number {} of devices {:?}", disks.len(), disks,),
                 })
             }
         };
@@ -287,13 +231,12 @@ impl Lvs {
 
         debug!("Trying to import lvs '{}' from '{}'...", name, bdev);
 
-        let mut bdev =
-            UntypedBdev::lookup_by_name(bdev).ok_or(LvsError::InvalidBdev {
-                source: BdevError::BdevNotFound {
-                    name: bdev.to_string(),
-                },
-                name: name.to_string(),
-            })?;
+        let mut bdev = UntypedBdev::lookup_by_name(bdev).ok_or(LvsError::InvalidBdev {
+            source: BdevError::BdevNotFound {
+                name: bdev.to_string(),
+            },
+            name: name.to_string(),
+        })?;
 
         // examining a bdev that is in-use by an lvs, will hang to avoid this
         // we will determine the usage of the bdev prior to examining it.
@@ -348,9 +291,7 @@ impl Lvs {
             Err(LvsError::Import {
                 source: BsError::InvalidArgument {},
                 name: name.to_string(),
-                reason: ImportErrorReason::NameMismatch {
-                    name: pool_name,
-                },
+                reason: ImportErrorReason::NameMismatch { name: pool_name },
             })
         } else {
             lvs.share_all().await;
@@ -383,18 +324,14 @@ impl Lvs {
                 Err(LvsError::Import {
                     source: BsError::InvalidArgument {},
                     name: args.name.clone(),
-                    reason: ImportErrorReason::NameClash {
-                        name: pool_name,
-                    },
+                    reason: ImportErrorReason::NameClash { name: pool_name },
                 })
             };
         }
 
         let bdev = match parsed.create().await {
             Err(e) => match e {
-                BdevError::BdevExists {
-                    ..
-                } => Ok(parsed.get_name()),
+                BdevError::BdevExists { .. } => Ok(parsed.get_name()),
                 BdevError::CreateBdevInvalidParams {
                     source: Errno::EEXIST,
                     ..
@@ -425,9 +362,7 @@ impl Lvs {
                 Err(LvsError::Import {
                     source: BsError::InvalidArgument {},
                     name: args.name,
-                    reason: ImportErrorReason::UuidMismatch {
-                        uuid: pool_uuid,
-                    },
+                    reason: ImportErrorReason::UuidMismatch { uuid: pool_uuid },
                 })
             }
         } else {
@@ -454,9 +389,7 @@ impl Lvs {
     /// Creates a pool on base bdev.
     /// The caller must ensure the base bdev exists.
     /// This function is made public for tests purposes.
-    pub async fn create_from_args_inner(
-        args: PoolArgs,
-    ) -> Result<Lvs, LvsError> {
+    pub async fn create_from_args_inner(args: PoolArgs) -> Result<Lvs, LvsError> {
         assert_eq!(args.disks.len(), 1);
         let bdev = args.disks[0].clone();
 
@@ -481,9 +414,7 @@ impl Lvs {
             return Err(LvsError::InvalidClusterSize {
                 source: BsError::InvalidArgument {},
                 name: args.name,
-                msg: format!(
-                    "{cluster_size}, larger than max limit {MAX_CLUSTER_SIZE}"
-                ),
+                msg: format!("{cluster_size}, larger than max limit {MAX_CLUSTER_SIZE}"),
             });
         }
 
@@ -563,11 +494,10 @@ impl Lvs {
             args.name, disk
         );
 
-        let bdev_ops =
-            uri::parse(&disk).map_err(|e| LvsError::InvalidBdev {
-                source: e,
-                name: args.name.clone(),
-            })?;
+        let bdev_ops = uri::parse(&disk).map_err(|e| LvsError::InvalidBdev {
+            source: e,
+            name: args.name.clone(),
+        })?;
 
         if let Some(pool) = Self::lookup(&args.name) {
             return if pool.base_bdev().name() == bdev_ops.get_name() {
@@ -586,9 +516,7 @@ impl Lvs {
         // Create the underlying ndev.
         let bdev_name = match bdev_ops.create().await {
             Err(e) => match e {
-                BdevError::BdevExists {
-                    ..
-                } => Ok(bdev_ops.get_name()),
+                BdevError::BdevExists { .. } => Ok(bdev_ops.get_name()),
                 BdevError::CreateBdevInvalidParams {
                     source: Errno::EEXIST,
                     ..
@@ -622,7 +550,9 @@ impl Lvs {
                             // we failed to delete the base_bdev be loud about it
                             // there is not much we can do about it here, likely
                             // some desc is still holding on to it or something.
-                            error!("failed to delete base_bdev {bdev_name} after failed pool creation");
+                            error!(
+                                "failed to delete base_bdev {bdev_name} after failed pool creation"
+                            );
                         });
                         Err(create)
                     }
@@ -650,13 +580,7 @@ impl Lvs {
 
         self.unshare_all().await;
 
-        unsafe {
-            vbdev_lvs_unload(
-                self.as_inner_ptr(),
-                Some(Self::lvs_op_cb),
-                cb_arg(s),
-            )
-        };
+        unsafe { vbdev_lvs_unload(self.as_inner_ptr(), Some(Self::lvs_op_cb), cb_arg(s)) };
 
         r.await
             .expect("callback gone while exporting lvs")
@@ -705,17 +629,9 @@ impl Lvs {
                             let name = l.name().clone();
                             let props = NvmfShareProps::new()
                                 .with_allowed_hosts(allowed_hosts)
-                                .with_ptpl(
-                                    l.ptpl().create().unwrap_or_default(),
-                                );
-                            if let Err(e) =
-                                Pin::new(&mut l).share_nvmf(Some(props)).await
-                            {
-                                error!(
-                                    "failed to share {} {}",
-                                    name,
-                                    e.to_string()
-                                );
+                                .with_ptpl(l.ptpl().create().unwrap_or_default());
+                            if let Err(e) = Pin::new(&mut l).share_nvmf(Some(props)).await {
+                                error!("failed to share {} {}", name, e.to_string());
                             }
                         }
                         PropValue::Shared(false) => {
@@ -746,13 +662,7 @@ impl Lvs {
 
         let evt = self.event(EventAction::Delete);
 
-        unsafe {
-            vbdev_lvs_destruct(
-                self.as_inner_ptr(),
-                Some(Self::lvs_op_cb),
-                cb_arg(s),
-            )
-        };
+        unsafe { vbdev_lvs_destruct(self.as_inner_ptr(), Some(Self::lvs_op_cb), cb_arg(s)) };
 
         r.await
             .expect("callback gone while destroying lvs")
@@ -813,18 +723,13 @@ impl Lvs {
     }
 
     /// return an iterator for enumerating all snapshots that reside on the pool
-    pub fn snapshots(
-        &self,
-    ) -> Option<impl Iterator<Item = LvolSnapshotDescriptor>> {
+    pub fn snapshots(&self) -> Option<impl Iterator<Item = LvolSnapshotDescriptor>> {
         if let Some(bdev) = UntypedBdev::bdev_first() {
             let pool_name = format!("{}/", self.name());
             Some(
                 bdev.into_iter()
                     .filter(move |b| {
-                        b.driver() == "lvol"
-                            && b.aliases()
-                                .iter()
-                                .any(|a| a.contains(&pool_name))
+                        b.driver() == "lvol" && b.aliases().iter().any(|a| a.contains(&pool_name))
                     })
                     .filter_map(|b| {
                         Lvol::try_from(b).ok().and_then(|l| {
@@ -849,10 +754,7 @@ impl Lvs {
             Some(
                 bdev.into_iter()
                     .filter(move |b| {
-                        b.driver() == "lvol"
-                            && b.aliases()
-                                .iter()
-                                .any(|a| a.contains(&pool_name))
+                        b.driver() == "lvol" && b.aliases().iter().any(|a| a.contains(&pool_name))
                     })
                     .map(|b| Lvol::try_from(b).unwrap()),
             )
@@ -882,20 +784,14 @@ impl Lvs {
     }
 
     /// create a new lvol on this pool
-    pub async fn create_lvol_with_opts(
-        &self,
-        opts: ReplicaArgs,
-    ) -> Result<Lvol, LvsError> {
-        let clear_method = if self.base_bdev().io_type_supported(IoType::Unmap)
-        {
+    pub async fn create_lvol_with_opts(&self, opts: ReplicaArgs) -> Result<Lvol, LvsError> {
+        let clear_method = if self.base_bdev().io_type_supported(IoType::Unmap) {
             LVOL_CLEAR_WITH_UNMAP
         } else {
             LVOL_CLEAR_WITH_NONE
         };
 
-        if !opts.uuid.is_empty()
-            && UntypedBdev::lookup_by_uuid_str(&opts.uuid).is_some()
-        {
+        if !opts.uuid.is_empty() && UntypedBdev::lookup_by_uuid_str(&opts.uuid).is_some() {
             return Err(LvsError::RepExists {
                 source: BsError::VolAlreadyExists {},
                 name: opts.uuid,
@@ -969,9 +865,7 @@ impl Lvs {
             .map(Lvol::from_inner_ptr)?;
 
         if let Some(id) = opts.entity_id {
-            if let Err(error) =
-                Pin::new(&mut lvol).set(PropValue::EntityId(id)).await
-            {
+            if let Err(error) = Pin::new(&mut lvol).set(PropValue::EntityId(id)).await {
                 let lvol_uuid = lvol.uuid();
                 if let Err(error) = lvol.destroy().await {
                     warn!(
@@ -1019,9 +913,7 @@ impl LvsPtpl {
 }
 impl From<&Lvs> for LvsPtpl {
     fn from(lvs: &Lvs) -> Self {
-        Self {
-            uuid: lvs.uuid(),
-        }
+        Self { uuid: lvs.uuid() }
     }
 }
 impl PtplFileOps for LvsPtpl {

@@ -3,8 +3,7 @@ use crate::{
     rebuild::{
         rebuild_descriptor::RebuildDescriptor,
         rebuild_task::{RebuildTask, RebuildTaskCopier},
-        RebuildError,
-        RebuildMap,
+        RebuildError, RebuildMap,
     },
 };
 use bit_vec::BitVec;
@@ -42,9 +41,7 @@ impl<T: RebuildTaskCopier> FullRebuild<T> {
         let desc = copier.descriptor();
         let range = desc.range.clone();
         Self {
-            range: PeekableIterator::new(
-                range.step_by(desc.segment_size_blks as usize),
-            ),
+            range: PeekableIterator::new(range.step_by(desc.segment_size_blks as usize)),
             copier: Rc::new(copier),
         }
     }
@@ -144,16 +141,12 @@ impl<T: RebuildTaskCopier> PartialSeqRebuild<T> {
         let desc = copier.descriptor();
         let range = desc.range.clone();
         Self {
-            range: PeekableIterator::new(
-                range.step_by(desc.segment_size_blks as usize),
-            ),
+            range: PeekableIterator::new(range.step_by(desc.segment_size_blks as usize)),
             copier: Rc::new(PartialSeqCopier::new(map, copier)),
         }
     }
 }
-impl<T: RebuildTaskCopier> RangeRebuilder<PartialSeqCopier<T>>
-    for PartialSeqRebuild<T>
-{
+impl<T: RebuildTaskCopier> RangeRebuilder<PartialSeqCopier<T>> for PartialSeqRebuild<T> {
     fn next(&mut self) -> Option<u64> {
         self.range.next()
     }
@@ -209,11 +202,7 @@ impl<T: RebuildTaskCopier> RebuildTaskCopier for PartialSeqCopier<T> {
     }
 
     /// Copies one segment worth of data from source into destination.
-    async fn copy_segment(
-        &self,
-        blk: u64,
-        task: &mut RebuildTask,
-    ) -> Result<bool, RebuildError> {
+    async fn copy_segment(&self, blk: u64, task: &mut RebuildTask) -> Result<bool, RebuildError> {
         if self.is_blk_sync(blk) {
             return Ok(false);
         }

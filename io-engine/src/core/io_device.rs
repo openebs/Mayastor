@@ -2,13 +2,8 @@ use std::{os::raw::c_void, ptr::NonNull};
 
 use crate::ffihelper::IntoCString;
 use spdk_rs::libspdk::{
-    spdk_for_each_channel,
-    spdk_for_each_channel_continue,
-    spdk_io_channel,
-    spdk_io_channel_iter,
-    spdk_io_channel_iter_get_channel,
-    spdk_io_channel_iter_get_ctx,
-    spdk_io_device_register,
+    spdk_for_each_channel, spdk_for_each_channel_continue, spdk_io_channel, spdk_io_channel_iter,
+    spdk_io_channel_iter_get_channel, spdk_io_channel_iter_get_ctx, spdk_io_device_register,
     spdk_io_device_unregister,
 };
 
@@ -65,8 +60,7 @@ impl IoDevice {
         struct TraverseCtx<N, C: 'static> {
             channel_cb: Box<dyn FnMut(&mut C, &mut N) -> i32 + 'static>,
             done_cb: Box<dyn FnMut(i32, N) + 'static>,
-            ctx_getter:
-                Box<dyn Fn(*mut spdk_io_channel) -> &'static mut C + 'static>,
+            ctx_getter: Box<dyn Fn(*mut spdk_io_channel) -> &'static mut C + 'static>,
             ctx: N,
         }
 
@@ -83,12 +77,9 @@ impl IoDevice {
 
         /// Low-level per-channel visitor to be invoked by SPDK I/O channel
         /// enumeration logic.
-        extern "C" fn _visit_channel<V, P: 'static>(
-            i: *mut spdk_io_channel_iter,
-        ) {
+        extern "C" fn _visit_channel<V, P: 'static>(i: *mut spdk_io_channel_iter) {
             let traverse_ctx = unsafe {
-                let p =
-                    spdk_io_channel_iter_get_ctx(i) as *mut TraverseCtx<V, P>;
+                let p = spdk_io_channel_iter_get_ctx(i) as *mut TraverseCtx<V, P>;
                 &mut *p
             };
             let io_channel = unsafe {
@@ -96,8 +87,7 @@ impl IoDevice {
                 (traverse_ctx.ctx_getter)(ch)
             };
 
-            let rc =
-                (traverse_ctx.channel_cb)(io_channel, &mut traverse_ctx.ctx);
+            let rc = (traverse_ctx.channel_cb)(io_channel, &mut traverse_ctx.ctx);
 
             unsafe {
                 spdk_for_each_channel_continue(i, rc);
@@ -114,7 +104,7 @@ impl IoDevice {
             // dropped.
             let mut traverse_ctx = unsafe {
                 Box::<TraverseCtx<V, P>>::from_raw(
-                    spdk_io_channel_iter_get_ctx(i) as *mut TraverseCtx<V, P>,
+                    spdk_io_channel_iter_get_ctx(i) as *mut TraverseCtx<V, P>
                 )
             };
 

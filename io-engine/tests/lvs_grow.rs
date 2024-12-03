@@ -4,11 +4,7 @@ use async_trait::async_trait;
 use once_cell::sync::OnceCell;
 use std::future::Future;
 
-use spdk_rs::{
-    ffihelper::IntoCString,
-    libspdk::resize_malloc_disk,
-    UntypedBdev,
-};
+use spdk_rs::{ffihelper::IntoCString, libspdk::resize_malloc_disk, UntypedBdev};
 
 use io_engine::{
     core::MayastorCliArgs,
@@ -20,9 +16,7 @@ use io_engine_tests::{
     bdev::{create_bdev, find_bdev_by_name},
     compose::{
         rpc::v1::{pool::Pool, GrpcConnect, SharedRpcHandle},
-        Binary,
-        Builder,
-        ComposeTest,
+        Binary, Builder, ComposeTest,
     },
     pool::PoolBuilder,
     MayastorTest,
@@ -44,7 +38,7 @@ fn ms() -> &'static MayastorTest<'static> {
 /// Tests if 'a' is approximately equal to 'b' up to the given tolerance (in
 /// percents).
 fn approx_eq(a: f64, b: f64, t: f64) -> bool {
-    assert!(a > 0.0 && b > 0.0 && (0.0 .. 100.0).contains(&t));
+    assert!(a > 0.0 && b > 0.0 && (0.0..100.0).contains(&t));
     let d = 100.0 * (a - b).abs() / f64::max(a, b);
     d <= t
 }
@@ -192,10 +186,7 @@ async fn lvs_grow_ms_malloc() {
                 unsafe {
                     // Resize the malloc bdev.
                     let name = BDEV_NAME.to_owned();
-                    resize_malloc_disk(
-                        name.into_cstring().as_ptr(),
-                        SIZE_AFTER_MB,
-                    );
+                    resize_malloc_disk(name.into_cstring().as_ptr(), SIZE_AFTER_MB);
                 };
             })
             .await;
@@ -203,8 +194,7 @@ async fn lvs_grow_ms_malloc() {
         }
     }
 
-    test_grow(async { Box::new(GrowTestMsMalloc {}) as Box<dyn GrowTest> })
-        .await;
+    test_grow(async { Box::new(GrowTestMsMalloc {}) as Box<dyn GrowTest> }).await;
 }
 
 /// Pool grow test based on gRPC API and malloc bdev.
@@ -246,11 +236,7 @@ async fn lvs_grow_api_malloc() {
                 .with_uuid(POOL_UUID)
                 .with_bdev(BDEV_URI);
 
-            Self {
-                test,
-                ms,
-                pool,
-            }
+            Self { test, ms, pool }
         }
     }
 
@@ -271,22 +257,17 @@ async fn lvs_grow_api_malloc() {
         }
 
         async fn device_size(&mut self) -> u64 {
-            let bdev =
-                find_bdev_by_name(self.ms.clone(), BDEV_NAME).await.unwrap();
+            let bdev = find_bdev_by_name(self.ms.clone(), BDEV_NAME).await.unwrap();
             bdev.num_blocks * bdev.blk_size as u64
         }
 
         async fn grow_device(&mut self) -> u64 {
-            let bdev =
-                create_bdev(self.ms.clone(), BDEV_URI_RESIZE).await.unwrap();
+            let bdev = create_bdev(self.ms.clone(), BDEV_URI_RESIZE).await.unwrap();
             bdev.num_blocks * bdev.blk_size as u64
         }
     }
 
-    test_grow(async {
-        Box::new(GrowTestApiMalloc::new().await) as Box<dyn GrowTest>
-    })
-    .await;
+    test_grow(async { Box::new(GrowTestApiMalloc::new().await) as Box<dyn GrowTest> }).await;
 }
 
 /// Pool grow test based on gRPC API and file-based AIO device.
@@ -295,8 +276,7 @@ async fn lvs_grow_api_aio() {
     const DISK_NAME: &str = "/tmp/disk1.img";
     const BDEV_NAME: &str = "/host/tmp/disk1.img";
     const BDEV_URI: &str = "aio:///host/tmp/disk1.img?blk_size=512";
-    const BDEV_URI_RESCAN: &str =
-        "aio:///host/tmp/disk1.img?blk_size=512&rescan";
+    const BDEV_URI_RESCAN: &str = "aio:///host/tmp/disk1.img?blk_size=512&rescan";
     const POOL_NAME: &str = "pool0";
     const POOL_UUID: &str = "40baf8b5-6256-4f29-b073-61ebf67d9b91";
 
@@ -335,11 +315,7 @@ async fn lvs_grow_api_aio() {
                 .with_uuid(POOL_UUID)
                 .with_bdev(BDEV_URI);
 
-            Self {
-                test,
-                ms,
-                pool,
-            }
+            Self { test, ms, pool }
         }
     }
 
@@ -360,8 +336,7 @@ async fn lvs_grow_api_aio() {
         }
 
         async fn device_size(&mut self) -> u64 {
-            let bdev =
-                find_bdev_by_name(self.ms.clone(), BDEV_NAME).await.unwrap();
+            let bdev = find_bdev_by_name(self.ms.clone(), BDEV_NAME).await.unwrap();
             bdev.num_blocks * bdev.blk_size as u64
         }
 
@@ -370,14 +345,10 @@ async fn lvs_grow_api_aio() {
             common::truncate_file(DISK_NAME, 128 * 1024);
 
             // Rescan AIO bdev (re-read its size from the backing media).
-            let bdev =
-                create_bdev(self.ms.clone(), BDEV_URI_RESCAN).await.unwrap();
+            let bdev = create_bdev(self.ms.clone(), BDEV_URI_RESCAN).await.unwrap();
             bdev.num_blocks * bdev.blk_size as u64
         }
     }
 
-    test_grow(async {
-        Box::new(GrowTestApiAio::new().await) as Box<dyn GrowTest>
-    })
-    .await;
+    test_grow(async { Box::new(GrowTestApiAio::new().await) as Box<dyn GrowTest> }).await;
 }

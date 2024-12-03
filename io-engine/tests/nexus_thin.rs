@@ -3,9 +3,7 @@ pub mod common;
 use common::{
     compose::{
         rpc::v1::{GrpcConnect, SharedRpcHandle},
-        Binary,
-        Builder,
-        ComposeTest,
+        Binary, Builder, ComposeTest,
     },
     nexus::NexusBuilder,
     pool::PoolBuilder,

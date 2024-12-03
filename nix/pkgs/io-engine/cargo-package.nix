@@ -29,6 +29,7 @@
 , systemdMinimal
 , rdma-core
 , cargoBuildFlags ? [ ]
+, pname ? "io-engine"
 , rustFlags
 }:
 let
@@ -59,8 +60,8 @@ let
     "utils"
   ];
   buildProps = rec {
-    name = "io-engine";
-    inherit version cargoBuildFlags;
+    inherit version cargoBuildFlags pname;
+
     src = whitelistSource ../../../. src_list;
     LIBCLANG_PATH = "${llvmPackages.libclang.lib}/lib";
     PROTOC = "${protobuf}/bin/protoc";

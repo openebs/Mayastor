@@ -11,54 +11,26 @@ use nix::errno::Errno;
 
 use spdk_rs::{
     libspdk::{
-        nvmf_subsystem_find_listener,
-        nvmf_subsystem_set_cntlid_range,
-        spdk_nvmf_ctrlr_set_cpl_error_cb,
-        spdk_nvmf_ns_get_bdev,
-        spdk_nvmf_ns_opts,
-        spdk_nvmf_request,
-        spdk_nvmf_subsystem,
-        spdk_nvmf_subsystem_add_host,
-        spdk_nvmf_subsystem_add_listener,
-        spdk_nvmf_subsystem_add_ns_ext,
-        spdk_nvmf_subsystem_create,
-        spdk_nvmf_subsystem_destroy,
-        spdk_nvmf_subsystem_disconnect_host,
-        spdk_nvmf_subsystem_event,
-        spdk_nvmf_subsystem_get_first,
-        spdk_nvmf_subsystem_get_first_host,
-        spdk_nvmf_subsystem_get_first_listener,
-        spdk_nvmf_subsystem_get_first_ns,
-        spdk_nvmf_subsystem_get_next,
-        spdk_nvmf_subsystem_get_next_host,
-        spdk_nvmf_subsystem_get_next_listener,
-        spdk_nvmf_subsystem_get_nqn,
-        spdk_nvmf_subsystem_listener_get_trid,
-        spdk_nvmf_subsystem_pause,
-        spdk_nvmf_subsystem_remove_host,
-        spdk_nvmf_subsystem_remove_ns,
-        spdk_nvmf_subsystem_resume,
-        spdk_nvmf_subsystem_set_allow_any_host,
-        spdk_nvmf_subsystem_set_ana_reporting,
-        spdk_nvmf_subsystem_set_ana_state,
-        spdk_nvmf_subsystem_set_event_cb,
-        spdk_nvmf_subsystem_set_mn,
-        spdk_nvmf_subsystem_set_sn,
-        spdk_nvmf_subsystem_start,
-        spdk_nvmf_subsystem_state_change_done,
-        spdk_nvmf_subsystem_stop,
-        spdk_nvmf_tgt,
-        spdk_nvmf_tgt_get_transport,
-        SPDK_NVME_SCT_GENERIC,
-        SPDK_NVME_SC_CAPACITY_EXCEEDED,
-        SPDK_NVME_SC_RESERVATION_CONFLICT,
-        SPDK_NVMF_SUBTYPE_DISCOVERY,
-        SPDK_NVMF_SUBTYPE_NVME,
+        nvmf_subsystem_find_listener, nvmf_subsystem_set_cntlid_range,
+        spdk_nvmf_ctrlr_set_cpl_error_cb, spdk_nvmf_ns_get_bdev, spdk_nvmf_ns_opts,
+        spdk_nvmf_request, spdk_nvmf_subsystem, spdk_nvmf_subsystem_add_host,
+        spdk_nvmf_subsystem_add_listener, spdk_nvmf_subsystem_add_ns_ext,
+        spdk_nvmf_subsystem_create, spdk_nvmf_subsystem_destroy,
+        spdk_nvmf_subsystem_disconnect_host, spdk_nvmf_subsystem_event,
+        spdk_nvmf_subsystem_get_first, spdk_nvmf_subsystem_get_first_host,
+        spdk_nvmf_subsystem_get_first_listener, spdk_nvmf_subsystem_get_first_ns,
+        spdk_nvmf_subsystem_get_next, spdk_nvmf_subsystem_get_next_host,
+        spdk_nvmf_subsystem_get_next_listener, spdk_nvmf_subsystem_get_nqn,
+        spdk_nvmf_subsystem_listener_get_trid, spdk_nvmf_subsystem_pause,
+        spdk_nvmf_subsystem_remove_host, spdk_nvmf_subsystem_remove_ns, spdk_nvmf_subsystem_resume,
+        spdk_nvmf_subsystem_set_allow_any_host, spdk_nvmf_subsystem_set_ana_reporting,
+        spdk_nvmf_subsystem_set_ana_state, spdk_nvmf_subsystem_set_event_cb,
+        spdk_nvmf_subsystem_set_mn, spdk_nvmf_subsystem_set_sn, spdk_nvmf_subsystem_start,
+        spdk_nvmf_subsystem_state_change_done, spdk_nvmf_subsystem_stop, spdk_nvmf_tgt,
+        spdk_nvmf_tgt_get_transport, SPDK_NVME_SCT_GENERIC, SPDK_NVME_SC_CAPACITY_EXCEEDED,
+        SPDK_NVME_SC_RESERVATION_CONFLICT, SPDK_NVMF_SUBTYPE_DISCOVERY, SPDK_NVMF_SUBTYPE_NVME,
     },
-    struct_size_init,
-    NvmeStatus,
-    NvmfController,
-    NvmfSubsystemEvent,
+    struct_size_init, NvmeStatus, NvmfController, NvmfSubsystemEvent,
 };
 
 use crate::{
@@ -73,8 +45,7 @@ use crate::{
         make_subsystem_serial,
         nvmf::{
             transport::{TransportId, RDMA_TRANSPORT},
-            Error,
-            NVMF_TGT,
+            Error, NVMF_TGT,
         },
         Config,
     },
@@ -119,9 +90,7 @@ impl IntoIterator for NvmfSubsystem {
 
     fn into_iter(self) -> Self::IntoIter {
         NVMF_TGT.with(|t| {
-            NvmfSubsystemIterator(unsafe {
-                spdk_nvmf_subsystem_get_first(t.borrow().tgt.as_ptr())
-            })
+            NvmfSubsystemIterator(unsafe { spdk_nvmf_subsystem_get_first(t.borrow().tgt.as_ptr()) })
         })
     }
 }
@@ -354,11 +323,7 @@ impl NvmfSubsystem {
         nex.rm_initiator(&ctrlr.hostnqn());
 
         unsafe {
-            spdk_nvmf_ctrlr_set_cpl_error_cb(
-                ctrlr.0.as_ptr(),
-                None,
-                std::ptr::null_mut(),
-            );
+            spdk_nvmf_ctrlr_set_cpl_error_cb(ctrlr.0.as_ptr(), None, std::ptr::null_mut());
         }
     }
 
@@ -426,11 +391,7 @@ impl NvmfSubsystem {
         );
 
         unsafe {
-            spdk_nvmf_ctrlr_set_cpl_error_cb(
-                ctrlr.0.as_ptr(),
-                None,
-                std::ptr::null_mut(),
-            );
+            spdk_nvmf_ctrlr_set_cpl_error_cb(ctrlr.0.as_ptr(), None, std::ptr::null_mut());
         }
     }
 
@@ -450,14 +411,7 @@ impl NvmfSubsystem {
         let ss = NVMF_TGT
             .with(|t| {
                 let tgt = t.borrow().tgt.as_ptr();
-                unsafe {
-                    spdk_nvmf_subsystem_create(
-                        tgt,
-                        nqn.as_ptr(),
-                        SPDK_NVMF_SUBTYPE_NVME,
-                        1,
-                    )
-                }
+                unsafe { spdk_nvmf_subsystem_create(tgt, nqn.as_ptr(), SPDK_NVMF_SUBTYPE_NVME, 1) }
             })
             .to_result(|_| Error::Subsystem {
                 source: Errno::EEXIST,
@@ -482,30 +436,29 @@ impl NvmfSubsystem {
             make_sn(uuid)
         };
 
-        unsafe { spdk_nvmf_subsystem_set_sn(ss.as_ptr(), sn.as_ptr()) }
-            .to_result(|e| Error::Subsystem {
+        unsafe { spdk_nvmf_subsystem_set_sn(ss.as_ptr(), sn.as_ptr()) }.to_result(|e| {
+            Error::Subsystem {
                 source: Errno::from_raw(e),
                 nqn: uuid.into(),
                 msg: "failed to set serial".into(),
-            })?;
+            }
+        })?;
 
         let mn = CString::new(NVME_CONTROLLER_MODEL_ID).unwrap();
-        unsafe { spdk_nvmf_subsystem_set_mn(ss.as_ptr(), mn.as_ptr()) }
-            .to_result(|e| Error::Subsystem {
+        unsafe { spdk_nvmf_subsystem_set_mn(ss.as_ptr(), mn.as_ptr()) }.to_result(|e| {
+            Error::Subsystem {
                 source: Errno::from_raw(e),
                 nqn: uuid.into(),
                 msg: "failed to set model number".into(),
-            })?;
+            }
+        })?;
 
         Ok(NvmfSubsystem(ss))
     }
 
     /// unfortunately, we cannot always use the bdev UUID which is a shame and
     /// mostly due to testing.
-    pub fn new_with_uuid(
-        uuid: &str,
-        bdev: &UntypedBdev,
-    ) -> Result<Self, Error> {
+    pub fn new_with_uuid(uuid: &str, bdev: &UntypedBdev) -> Result<Self, Error> {
         let ss = NvmfSubsystem::new(uuid)?;
         ss.set_ana_reporting(false)?;
         ss.allow_any(false);
@@ -538,9 +491,7 @@ impl NvmfSubsystem {
         );
 
         let bdev_cname = CString::new(bdev.name()).unwrap();
-        let ptpl = ptpl.map(|ptpl| {
-            CString::new(ptpl.to_string_lossy().to_string()).unwrap()
-        });
+        let ptpl = ptpl.map(|ptpl| CString::new(ptpl.to_string_lossy().to_string()).unwrap());
         let ptpl_ptr = match &ptpl {
             Some(ptpl) => ptpl.as_ptr(),
             None => ptr::null_mut(),
@@ -622,17 +573,14 @@ impl NvmfSubsystem {
     pub fn allowed_hosts(&self) -> Vec<String> {
         let mut hosts = Vec::with_capacity(4);
 
-        let mut host =
-            unsafe { spdk_nvmf_subsystem_get_first_host(self.0.as_ptr()) };
+        let mut host = unsafe { spdk_nvmf_subsystem_get_first_host(self.0.as_ptr()) };
 
         while !host.is_null() {
             let host_str = unsafe { (*host).nqn.as_str() };
 
             hosts.push(host_str.to_string());
 
-            host = unsafe {
-                spdk_nvmf_subsystem_get_next_host(self.0.as_ptr(), host)
-            };
+            host = unsafe { spdk_nvmf_subsystem_get_next_host(self.0.as_ptr(), host) };
         }
 
         hosts
@@ -644,10 +592,7 @@ impl NvmfSubsystem {
     ///
     /// It does not disconnect non-registered hosts, eg: hosts which
     /// were connected before the allowed_hosts was configured.
-    pub async fn set_allowed_hosts<H: AsRef<str>>(
-        &self,
-        hosts: &[H],
-    ) -> Result<(), Error> {
+    pub async fn set_allowed_hosts<H: AsRef<str>>(&self, hosts: &[H]) -> Result<(), Error> {
         if hosts.is_empty() {
             return Ok(());
         }
@@ -655,8 +600,7 @@ impl NvmfSubsystem {
         let hosts = hosts.iter().map(AsRef::as_ref).collect::<Vec<&str>>();
         self.allow_hosts(&hosts)?;
 
-        let mut host =
-            unsafe { spdk_nvmf_subsystem_get_first_host(self.0.as_ptr()) };
+        let mut host = unsafe { spdk_nvmf_subsystem_get_first_host(self.0.as_ptr()) };
 
         let mut hosts_to_disconnect = vec![];
         {
@@ -669,9 +613,7 @@ impl NvmfSubsystem {
                 if !hosts.contains(&host_str) {
                     hosts_to_disconnect.push(host_str.to_string());
                 }
-                host = unsafe {
-                    spdk_nvmf_subsystem_get_next_host(self.0.as_ptr(), host)
-                };
+                host = unsafe { spdk_nvmf_subsystem_get_next_host(self.0.as_ptr(), host) };
             }
         }
 
@@ -697,11 +639,7 @@ impl NvmfSubsystem {
     pub fn allow_host(&self, host: &str) -> Result<(), Error> {
         let host = Self::cstr(host)?;
         unsafe {
-            spdk_nvmf_subsystem_add_host(
-                self.0.as_ptr(),
-                host.as_ptr(),
-                std::ptr::null_mut(),
-            )
+            spdk_nvmf_subsystem_add_host(self.0.as_ptr(), host.as_ptr(), std::ptr::null_mut())
         }
         .to_result(|errno| Error::Subsystem {
             source: Errno::from_raw(errno),
@@ -721,14 +659,13 @@ impl NvmfSubsystem {
     /// Disallow a host from connecting to the subsystem.
     pub fn disallow_host(&self, host: &str) -> Result<(), Error> {
         let host = Self::cstr(host)?;
-        unsafe {
-            spdk_nvmf_subsystem_remove_host(self.0.as_ptr(), host.as_ptr())
-        }
-        .to_result(|errno| Error::Subsystem {
-            source: Errno::from_raw(errno),
-            nqn: self.get_nqn(),
-            msg: format!("failed to remove allowed host: {host:?}"),
-        })?;
+        unsafe { spdk_nvmf_subsystem_remove_host(self.0.as_ptr(), host.as_ptr()) }.to_result(
+            |errno| Error::Subsystem {
+                source: Errno::from_raw(errno),
+                nqn: self.get_nqn(),
+                msg: format!("failed to remove allowed host: {host:?}"),
+            },
+        )?;
         Ok(())
     }
 
@@ -750,13 +687,13 @@ impl NvmfSubsystem {
             );
         }
 
-        r.await.expect("done_cb callback gone").to_result(|error| {
-            Error::Subsystem {
+        r.await
+            .expect("done_cb callback gone")
+            .to_result(|error| Error::Subsystem {
                 source: Errno::from_raw(error),
                 msg: "Failed to disconnect host".to_string(),
                 nqn: host.to_owned(),
-            }
-        })
+            })
     }
 
     /// enable Asymmetric Namespace Access (ANA) reporting
@@ -771,43 +708,29 @@ impl NvmfSubsystem {
                 return Ok(());
             }
         }
-        unsafe {
-            spdk_nvmf_subsystem_set_ana_reporting(self.0.as_ptr(), enable)
-        }
-        .to_result(|e| Error::Subsystem {
-            source: Errno::from_raw(e),
-            nqn: self.get_nqn(),
-            msg: format!("failed to set ANA reporting, enable {enable}"),
-        })?;
+        unsafe { spdk_nvmf_subsystem_set_ana_reporting(self.0.as_ptr(), enable) }.to_result(
+            |e| Error::Subsystem {
+                source: Errno::from_raw(e),
+                nqn: self.get_nqn(),
+                msg: format!("failed to set ANA reporting, enable {enable}"),
+            },
+        )?;
         Ok(())
     }
 
     /// set controller ID range
-    pub fn set_cntlid_range(
-        &self,
-        cntlid_min: u16,
-        cntlid_max: u16,
-    ) -> Result<(), Error> {
-        unsafe {
-            nvmf_subsystem_set_cntlid_range(
-                self.0.as_ptr(),
-                cntlid_min,
-                cntlid_max,
-            )
-        }
-        .to_result(|e| Error::Subsystem {
-            source: Errno::from_raw(e),
-            nqn: self.get_nqn(),
-            msg: format!("failed to set controller ID range [{cntlid_min}, {cntlid_max}]"),
-        })?;
+    pub fn set_cntlid_range(&self, cntlid_min: u16, cntlid_max: u16) -> Result<(), Error> {
+        unsafe { nvmf_subsystem_set_cntlid_range(self.0.as_ptr(), cntlid_min, cntlid_max) }
+            .to_result(|e| Error::Subsystem {
+                source: Errno::from_raw(e),
+                nqn: self.get_nqn(),
+                msg: format!("failed to set controller ID range [{cntlid_min}, {cntlid_max}]"),
+            })?;
         Ok(())
     }
 
     // we currently allow all listeners to the subsystem
-    async fn add_listener(
-        &self,
-        transport: NvmfTgtTransport,
-    ) -> Result<(), Error> {
+    async fn add_listener(&self, transport: NvmfTgtTransport) -> Result<(), Error> {
         extern "C" fn listen_cb(arg: *mut c_void, status: i32) {
             let s = unsafe { Box::from_raw(arg as *mut oneshot::Sender<i32>) };
             s.send(status).unwrap();
@@ -816,8 +739,7 @@ impl NvmfSubsystem {
         let cfg = Config::get();
 
         // dont yet enable both ports, IOW just add one transportID now
-        let trid_replica =
-            TransportId::new(cfg.nexus_opts.nvmf_replica_port, transport);
+        let trid_replica = TransportId::new(cfg.nexus_opts.nvmf_replica_port, transport);
 
         let (s, r) = oneshot::channel::<i32>();
         unsafe {
@@ -829,23 +751,19 @@ impl NvmfSubsystem {
             );
         }
 
-        r.await.expect("listener callback gone").to_result(|e| {
-            Error::Transport {
+        r.await
+            .expect("listener callback gone")
+            .to_result(|e| Error::Transport {
                 source: Errno::from_raw(e),
                 msg: "Failed to add listener".to_string(),
-            }
-        })
+            })
     }
 
     /// TODO
     async fn change_state(
         &self,
         op: &str,
-        f: impl Fn(
-            *mut spdk_nvmf_subsystem,
-            spdk_nvmf_subsystem_state_change_done,
-            *mut c_void,
-        ) -> i32,
+        f: impl Fn(*mut spdk_nvmf_subsystem, spdk_nvmf_subsystem_state_change_done, *mut c_void) -> i32,
     ) -> Result<(), Error> {
         extern "C" fn state_change_cb(
             _ss: *mut spdk_nvmf_subsystem,
@@ -879,11 +797,9 @@ impl NvmfSubsystem {
                     n
                 );
 
-                crate::sleep::mayastor_sleep(std::time::Duration::from_millis(
-                    100,
-                ))
-                .await
-                .unwrap();
+                crate::sleep::mayastor_sleep(std::time::Duration::from_millis(100))
+                    .await
+                    .unwrap();
             };
 
             match rc {
@@ -921,17 +837,17 @@ impl NvmfSubsystem {
         // Only attempt rdma listener addition for this subsystem after making
         // sure the Mayastor nvmf tgt has rdma transport created.
         if need_rdma && self.nvmf_tgt_has_rdma_xprt() {
-            let _ =
-                self.add_listener(NvmfTgtTransport::Rdma)
-                    .await
-                    .map_err(|e| {
-                        warn!(
-                            "NvmfSubsystem RDMA listener add failed {}. \
+            let _ = self
+                .add_listener(NvmfTgtTransport::Rdma)
+                .await
+                .map_err(|e| {
+                    warn!(
+                        "NvmfSubsystem RDMA listener add failed {}. \
                         Subsystem will be accessible over TCP only.\
                         {:?}",
-                            e, self
-                        );
-                    });
+                        e, self
+                    );
+                });
         }
 
         if let Err(e) = self
@@ -987,13 +903,10 @@ impl NvmfSubsystem {
     /// as today?
     pub async fn get_ana_state(&self) -> Result<u32, Error> {
         let cfg = Config::get();
-        let trid_replica = TransportId::new(
-            cfg.nexus_opts.nvmf_replica_port,
-            NvmfTgtTransport::Tcp,
-        );
-        let listener = unsafe {
-            nvmf_subsystem_find_listener(self.0.as_ptr(), trid_replica.as_ptr())
-        };
+        let trid_replica =
+            TransportId::new(cfg.nexus_opts.nvmf_replica_port, NvmfTgtTransport::Tcp);
+        let listener =
+            unsafe { nvmf_subsystem_find_listener(self.0.as_ptr(), trid_replica.as_ptr()) };
         if listener.is_null() {
             Err(Error::Listener {
                 nqn: self.get_nqn(),
@@ -1056,9 +969,8 @@ impl NvmfSubsystem {
 
     /// stop all subsystems
     pub async fn stop_all(tgt: *mut spdk_nvmf_tgt) {
-        let subsystem = unsafe {
-            NonNull::new(spdk_nvmf_subsystem_get_first(tgt)).map(NvmfSubsystem)
-        };
+        let subsystem =
+            unsafe { NonNull::new(spdk_nvmf_subsystem_get_first(tgt)).map(NvmfSubsystem) };
 
         if let Some(subsystem) = subsystem {
             for s in subsystem.into_iter() {
@@ -1076,9 +988,7 @@ impl NvmfSubsystem {
     /// Get the first subsystem within the system
     pub fn first() -> Option<NvmfSubsystem> {
         NVMF_TGT.with(|t| {
-            let ss = unsafe {
-                spdk_nvmf_subsystem_get_first(t.borrow().tgt.as_ptr())
-            };
+            let ss = unsafe { spdk_nvmf_subsystem_get_first(t.borrow().tgt.as_ptr()) };
 
             if ss.is_null() {
                 None
@@ -1112,10 +1022,7 @@ impl NvmfSubsystem {
     fn nvmf_tgt_has_rdma_xprt(&self) -> bool {
         NVMF_TGT.with(|t| {
             let transport = unsafe {
-                spdk_nvmf_tgt_get_transport(
-                    t.borrow().tgt.as_ptr(),
-                    RDMA_TRANSPORT.as_ptr(),
-                )
+                spdk_nvmf_tgt_get_transport(t.borrow().tgt.as_ptr(), RDMA_TRANSPORT.as_ptr())
             };
             !transport.is_null()
         })
@@ -1123,26 +1030,22 @@ impl NvmfSubsystem {
 
     fn listeners_to_vec(&self) -> Option<Vec<TransportId>> {
         unsafe {
-            let mut listener =
-                spdk_nvmf_subsystem_get_first_listener(self.0.as_ptr());
+            let mut listener = spdk_nvmf_subsystem_get_first_listener(self.0.as_ptr());
 
             if listener.is_null() {
                 return None;
             }
 
-            let mut ids = vec![TransportId(
-                *spdk_nvmf_subsystem_listener_get_trid(listener),
-            )];
+            let mut ids = vec![TransportId(*spdk_nvmf_subsystem_listener_get_trid(
+                listener,
+            ))];
 
             loop {
-                listener = spdk_nvmf_subsystem_get_next_listener(
-                    self.0.as_ptr(),
-                    listener,
-                );
+                listener = spdk_nvmf_subsystem_get_next_listener(self.0.as_ptr(), listener);
                 if !listener.is_null() {
-                    ids.push(TransportId(
-                        *spdk_nvmf_subsystem_listener_get_trid(listener),
-                    ));
+                    ids.push(TransportId(*spdk_nvmf_subsystem_listener_get_trid(
+                        listener,
+                    )));
                     continue;
                 } else {
                     break;
@@ -1201,9 +1104,7 @@ impl NqnTarget<'_> {
         for b in bdev.into_iter() {
             match b.driver() {
                 NEXUS_MODULE_NAME if b.name() == name => {
-                    return Self::Nexus(unsafe {
-                        Nexus::unsafe_from_untyped_bdev(*b)
-                    });
+                    return Self::Nexus(unsafe { Nexus::unsafe_from_untyped_bdev(*b) });
                 }
                 "lvol" if b.name() == name => {
                     return Lvol::try_from(b).map_or(Self::None, Self::Replica)

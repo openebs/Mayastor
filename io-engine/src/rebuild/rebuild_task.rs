@@ -40,10 +40,7 @@ pub(super) struct RebuildTask {
 }
 
 impl RebuildTask {
-    pub(super) fn new(
-        buffer: DmaBuf,
-        sender: mpsc::Sender<TaskResult>,
-    ) -> Self {
+    pub(super) fn new(buffer: DmaBuf, sender: mpsc::Sender<TaskResult>) -> Self {
         Self {
             buffer,
             sender,
@@ -114,14 +111,11 @@ impl RebuildTasks {
     /// Create a rebuild tasks pool for the given rebuild descriptor.
     /// Each task can be schedule to run concurrently, and each task
     /// gets its own `DmaBuf` from where it reads and writes from.
-    pub(super) fn new(
-        task_count: usize,
-        desc: &RebuildDescriptor,
-    ) -> Result<Self, RebuildError> {
+    pub(super) fn new(task_count: usize, desc: &RebuildDescriptor) -> Result<Self, RebuildError> {
         // only sending one message per channel at a time so we don't need
         // the extra buffer
         let channel = mpsc::channel(0);
-        let tasks = (0 .. task_count).map(|_| {
+        let tasks = (0..task_count).map(|_| {
             let buffer = desc.dma_malloc(SEGMENT_SIZE)?;
             let task = RebuildTask::new(buffer, channel.0.clone());
             Ok(Arc::new(Mutex::new(task)))
@@ -165,22 +159,26 @@ impl RebuildTasks {
     ) {
         let task = self.tasks[id].clone();
 
+        // No other thread/task will acquire the mutex at the same time.
+        #[allow(clippy::await_holding_lock)]
         Reactors::current().send_future(async move {
-            // No other thread/task will acquire the mutex at the same time.
-            let mut task = task.lock();
+            let (mut sender, error) = {
+                let mut task = task.lock();
 
-            // Could we make this the option, rather than the descriptor itself?
-            let result = copier.copy_segment(blk, &mut task).await;
+                // Could we make this the option, rather than the descriptor itself?
+                let result = copier.copy_segment(blk, &mut task).await;
 
-            let is_transferred = *result.as_ref().unwrap_or(&false);
-            let error = TaskResult {
-                id,
-                blk,
-                error: result.err(),
-                is_transferred,
+                let is_transferred = *result.as_ref().unwrap_or(&false);
+                let error = TaskResult {
+                    id,
+                    blk,
+                    error: result.err(),
+                    is_transferred,
+                };
+                task.error = Some(error.clone());
+                (task.sender.clone(), error)
             };
-            task.error = Some(error.clone());
-            if let Err(e) = task.sender.send(error).await {
+            if let Err(e) = sender.send(error).await {
                 error!(
                     "Failed to notify job of segment id: {id} blk: {blk} \
                     completion, err: {err}",
@@ -200,11 +198,7 @@ pub(super) trait RebuildTaskCopier {
     fn descriptor(&self) -> &RebuildDescriptor;
     /// Copies an entire segment at the given block address, from source to
     /// target using a `DmaBuf`.
-    async fn copy_segment(
-        &self,
-        blk: u64,
-        task: &mut RebuildTask,
-    ) -> Result<bool, RebuildError>;
+    async fn copy_segment(&self, blk: u64, task: &mut RebuildTask) -> Result<bool, RebuildError>;
 }
 
 #[async_trait::async_trait(?Send)]
@@ -214,11 +208,7 @@ impl RebuildTaskCopier for RebuildDescriptor {
     }
 
     /// Copies one segment worth of data from source into destination.
-    async fn copy_segment(
-        &self,
-        blk: u64,
-        task: &mut RebuildTask,
-    ) -> Result<bool, RebuildError> {
+    async fn copy_segment(&self, blk: u64, task: &mut RebuildTask) -> Result<bool, RebuildError> {
         task.copy_one(blk, self).await
     }
 }

@@ -58,12 +58,8 @@ use url::Url;
 use spdk_rs::{
     ffihelper::errno_result_from_i32,
     libspdk::{
-        bdev_ftl_create_bdev,
-        bdev_ftl_delete_bdev,
-        ftl_bdev_info,
-        spdk_ftl_conf,
-        spdk_ftl_get_default_conf,
-        spdk_ftl_mode,
+        bdev_ftl_create_bdev, bdev_ftl_delete_bdev, ftl_bdev_info, spdk_ftl_conf,
+        spdk_ftl_get_default_conf, spdk_ftl_mode,
     },
     UntypedBdev,
 };
@@ -111,46 +107,36 @@ impl TryFrom<&Url> for Ftl {
             });
         }
 
-        let mut parameters: HashMap<String, String> =
-            uri.query_pairs().into_owned().collect();
+        let mut parameters: HashMap<String, String> = uri.query_pairs().into_owned().collect();
 
-        let uuid = uri::uuid(parameters.remove("uuid")).context(
-            bdev_api::UuidParamParseFailed {
+        let uuid =
+            uri::uuid(parameters.remove("uuid")).context(bdev_api::UuidParamParseFailed {
                 uri: uri.to_string(),
-            },
-        )?;
-
-        let encoded_bbdev_uri =
-            parameters.remove("bbdev").context(bdev_api::InvalidUri {
-                uri: uri.to_string(),
-                message: String::from("No bbdev parameter found"),
             })?;
+
+        let encoded_bbdev_uri = parameters.remove("bbdev").context(bdev_api::InvalidUri {
+            uri: uri.to_string(),
+            message: String::from("No bbdev parameter found"),
+        })?;
 
         let bbdev_uri = percent_decode_str(&encoded_bbdev_uri)
             .decode_utf8()
             .map_err(|e| BdevError::InvalidUri {
                 uri: uri.to_string(),
-                message: format!(
-                    "Could not percent decode bbdev_uri sub-uri - {}",
-                    e
-                ),
+                message: format!("Could not percent decode bbdev_uri sub-uri - {}", e),
             })?
             .to_string();
 
-        let encoded_cbdev_uri =
-            parameters.remove("cbdev").context(bdev_api::InvalidUri {
-                uri: uri.to_string(),
-                message: String::from("No cbdev parameter found"),
-            })?;
+        let encoded_cbdev_uri = parameters.remove("cbdev").context(bdev_api::InvalidUri {
+            uri: uri.to_string(),
+            message: String::from("No cbdev parameter found"),
+        })?;
 
         let cbdev_uri = percent_decode_str(&encoded_cbdev_uri)
             .decode_utf8()
             .map_err(|e| BdevError::InvalidUri {
                 uri: uri.to_string(),
-                message: format!(
-                    "Could not percent decode cbdev_uri sub-uri - {}",
-                    e
-                ),
+                message: format!("Could not percent decode cbdev_uri sub-uri - {}", e),
             })?
             .to_string();
 
@@ -159,7 +145,7 @@ impl TryFrom<&Url> for Ftl {
         reject_unknown_parameters(uri, parameters)?;
 
         Ok(Self {
-            name: uri.path()[1 ..].into(),
+            name: uri.path()[1..].into(),
             alias: uri.to_string(),
             uuid,
             bbdev_uri,
@@ -180,9 +166,7 @@ pub extern "C" fn ftl_bdev_init_fn_cb(
     errno: i32,
 ) {
     info!("{:?}: ftl_bdev_init_fn_cb", errno);
-    let sender = unsafe {
-        Box::from_raw(sender_ptr as *mut oneshot::Sender<ErrnoResult<()>>)
-    };
+    let sender = unsafe { Box::from_raw(sender_ptr as *mut oneshot::Sender<ErrnoResult<()>>) };
     sender
         .send(errno_result_from_i32((), errno))
         .expect("done callback receiver side disappeared");
@@ -233,13 +217,8 @@ impl CreateDestroy for Ftl {
         ftl_conf.verbose_mode = true;
         ftl_conf.mode = spdk_ftl_mode::SPDK_FTL_MODE_CREATE as u32;
 
-        let errno = unsafe {
-            bdev_ftl_create_bdev(
-                &ftl_conf,
-                Some(ftl_bdev_init_fn_cb),
-                cb_arg(s),
-            )
-        };
+        let errno =
+            unsafe { bdev_ftl_create_bdev(&ftl_conf, Some(ftl_bdev_init_fn_cb), cb_arg(s)) };
 
         if errno != 0 {
             let err = BdevError::CreateBdevFailed {
@@ -288,9 +267,7 @@ impl CreateDestroy for Ftl {
         debug!("{:?}: deleting", self);
 
         let Some(mut bdev) = UntypedBdev::lookup_by_name(&self.name) else {
-            return Err(BdevError::BdevNotFound {
-                name: self.name,
-            });
+            return Err(BdevError::BdevNotFound { name: self.name });
         };
 
         bdev.remove_alias(&self.alias);
@@ -309,9 +286,7 @@ impl CreateDestroy for Ftl {
             .context(bdev_api::BdevCommandCanceled {
                 name: self.name.clone(),
             })?
-            .context(bdev_api::DestroyBdevFailed {
-                name: self.name,
-            })?;
+            .context(bdev_api::DestroyBdevFailed { name: self.name })?;
 
         let mut result = bdev_destroy(&self.bbdev_uri).await;
 

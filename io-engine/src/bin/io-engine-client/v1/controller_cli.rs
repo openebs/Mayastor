@@ -33,8 +33,7 @@ pub async fn handler(ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
         ("list", args) => list_controllers(ctx, args).await,
         ("stats", args) => controller_stats(ctx, args).await,
         (cmd, _) => {
-            Err(Status::not_found(format!("command {cmd} does not exist")))
-                .context(GrpcStatus)
+            Err(Status::not_found(format!("command {cmd} does not exist"))).context(GrpcStatus)
         }
     }
 }
@@ -51,10 +50,7 @@ fn controller_state_to_str(idx: i32) -> String {
     .to_string()
 }
 
-async fn controller_stats(
-    mut ctx: Context,
-    matches: &ArgMatches,
-) -> crate::Result<()> {
+async fn controller_stats(mut ctx: Context, matches: &ArgMatches) -> crate::Result<()> {
     let name = matches
         .get_one::<String>("name")
         .cloned()
@@ -125,10 +121,7 @@ async fn controller_stats(
     Ok(())
 }
 
-async fn list_controllers(
-    mut ctx: Context,
-    _matches: &ArgMatches,
-) -> crate::Result<()> {
+async fn list_controllers(mut ctx: Context, _matches: &ArgMatches) -> crate::Result<()> {
     let response = ctx
         .v1
         .host

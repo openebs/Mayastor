@@ -7,8 +7,7 @@ use std::{
     str::FromStr,
     sync::{
         atomic::{AtomicBool, Ordering::SeqCst},
-        Arc,
-        Mutex,
+        Arc, Mutex,
     },
     time::Duration,
 };
@@ -25,31 +24,12 @@ use version_info::{package_description, version_info_str};
 
 use spdk_rs::{
     libspdk::{
-        spdk_app_shutdown_cb,
-        spdk_env_dpdk_post_init,
-        spdk_env_dpdk_rte_eal_init,
-        spdk_env_fini,
-        spdk_log_close,
-        spdk_log_level,
-        spdk_log_open,
-        spdk_log_set_flag,
-        spdk_log_set_level,
-        spdk_log_set_print_level,
-        spdk_pci_addr,
-        spdk_rpc_finish,
-        spdk_rpc_initialize,
-        spdk_rpc_set_state,
-        spdk_subsystem_fini,
-        spdk_subsystem_init,
-        spdk_thread_lib_fini,
-        spdk_thread_send_critical_msg,
-        spdk_trace_cleanup,
-        spdk_trace_create_tpoint_group_mask,
-        spdk_trace_init,
-        spdk_trace_set_tpoints,
-        SPDK_LOG_DEBUG,
-        SPDK_LOG_INFO,
-        SPDK_RPC_RUNTIME,
+        spdk_app_shutdown_cb, spdk_env_dpdk_post_init, spdk_env_dpdk_rte_eal_init, spdk_env_fini,
+        spdk_log_close, spdk_log_level, spdk_log_open, spdk_log_set_flag, spdk_log_set_level,
+        spdk_log_set_print_level, spdk_pci_addr, spdk_rpc_finish, spdk_rpc_initialize,
+        spdk_rpc_set_state, spdk_subsystem_fini, spdk_subsystem_init, spdk_thread_lib_fini,
+        spdk_thread_send_critical_msg, spdk_trace_cleanup, spdk_trace_create_tpoint_group_mask,
+        spdk_trace_init, spdk_trace_set_tpoints, SPDK_LOG_DEBUG, SPDK_LOG_INFO, SPDK_RPC_RUNTIME,
     },
     spdk_rs_log,
 };
@@ -60,26 +40,16 @@ use crate::{
     core::{
         nic,
         reactor::{Reactor, ReactorState, Reactors},
-        Cores,
-        MayastorFeatures,
-        Mthread,
+        Cores, MayastorFeatures, Mthread,
     },
-    eventing::{
-        io_engine_events::io_engine_stop_event_meta,
-        Event,
-        EventWithMeta,
-    },
+    eventing::{io_engine_events::io_engine_stop_event_meta, Event, EventWithMeta},
     grpc,
     grpc::MayastorGrpcServer,
     logger,
     persistent_store::PersistentStoreBuilder,
     subsys::{
-        self,
-        config::opts::TARGET_CRDT_LEN,
-        registration::registration_grpc::ApiVersion,
-        Config,
-        PoolConfig,
-        Registration,
+        self, config::opts::TARGET_CRDT_LEN, registration::registration_grpc::ApiVersion, Config,
+        PoolConfig, Registration,
     },
 };
 
@@ -124,9 +94,7 @@ fn parse_crdt(src: &str) -> Result<[u16; TARGET_CRDT_LEN], String> {
     let items = src.split(',').collect::<Vec<&str>>();
     match items.as_slice() {
         [one] => Ok([parse_val(one)?, 0, 0]),
-        [one, two, three] => {
-            Ok([parse_val(one)?, parse_val(two)?, parse_val(three)?])
-        }
+        [one, two, three] => Ok([parse_val(one)?, parse_val(two)?, parse_val(three)?]),
         _ => Err("Command Retry Delay argument must be an integer or \
                   a comma-separated list of three intergers"
             .to_string()),
@@ -300,10 +268,8 @@ impl MayastorFeatures {
     fn init_features() -> MayastorFeatures {
         let ana = env::var("NEXUS_NVMF_ANA_ENABLE").as_deref() == Ok("1");
         let lvm = env::var("ENABLE_LVM").as_deref() == Ok("true");
-        let snapshot_rebuild =
-            env::var("ENABLE_SNAPSHOT_REBUILD").as_deref() == Ok("true");
-        let rdma_capable_io_engine =
-            env::var("ENABLE_RDMA").as_deref() == Ok("true");
+        let snapshot_rebuild = env::var("ENABLE_SNAPSHOT_REBUILD").as_deref() == Ok("true");
+        let rdma_capable_io_engine = env::var("ENABLE_RDMA").as_deref() == Ok("true");
         MayastorFeatures {
             asymmetric_namespace_access: ana,
             logical_volume_manager: lvm,
@@ -381,12 +347,10 @@ impl MayastorCliArgs {
 
 /// Global exit code of the program, initially set to -1 to capture double
 /// shutdown during test cases
-pub static GLOBAL_RC: Lazy<Arc<Mutex<i32>>> =
-    Lazy::new(|| Arc::new(Mutex::new(-1)));
+pub static GLOBAL_RC: Lazy<Arc<Mutex<i32>>> = Lazy::new(|| Arc::new(Mutex::new(-1)));
 
 /// keep track if we have received a signal already
-pub static SIG_RECEIVED: Lazy<AtomicBool> =
-    Lazy::new(|| AtomicBool::new(false));
+pub static SIG_RECEIVED: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
 
 #[derive(Debug, Snafu)]
 pub enum EnvError {
@@ -588,10 +552,7 @@ extern "C" fn mayastor_signal_handler(signo: i32) {
     SIG_RECEIVED.store(true, SeqCst);
     unsafe {
         if let Some(mth) = Mthread::primary_safe() {
-            spdk_thread_send_critical_msg(
-                mth.as_ptr(),
-                Some(signal_trampoline),
-            );
+            spdk_thread_send_critical_msg(mth.as_ptr(), Some(signal_trampoline));
         }
     };
 }
@@ -604,8 +565,7 @@ struct SubsystemCtx {
 
 static MAYASTOR_FEATURES: OnceCell<MayastorFeatures> = OnceCell::new();
 
-static MAYASTOR_DEFAULT_ENV: OnceCell<parking_lot::Mutex<MayastorEnvironment>> =
-    OnceCell::new();
+static MAYASTOR_DEFAULT_ENV: OnceCell<parking_lot::Mutex<MayastorEnvironment>> = OnceCell::new();
 
 impl MayastorEnvironment {
     pub fn new(args: MayastorCliArgs) -> Self {
@@ -615,9 +575,10 @@ impl MayastorEnvironment {
             ps_endpoint: args.ps_endpoint,
             ps_timeout: args.ps_timeout,
             ps_retries: args.ps_retries,
-            node_name: args.node_name.clone().unwrap_or_else(|| {
-                env::var("HOSTNAME").unwrap_or_else(|_| "mayastor-node".into())
-            }),
+            node_name: args
+                .node_name
+                .clone()
+                .unwrap_or_else(|| env::var("HOSTNAME").unwrap_or_else(|_| "mayastor-node".into())),
             node_nqn: make_hostnqn(
                 args.node_name
                     .or_else(|| env::var("HOSTNAME").ok())
@@ -643,8 +604,7 @@ impl MayastorEnvironment {
             developer_delay: args.developer_delay,
             rdma: args.rdma,
             bs_cluster_unmap: args.bs_cluster_unmap,
-            enable_io_all_thrd_nexus_channels: args
-                .enable_io_all_thrd_nexus_channels,
+            enable_io_all_thrd_nexus_channels: args.enable_io_all_thrd_nexus_channels,
             ..Default::default()
         }
         .setup_static()
@@ -658,8 +618,7 @@ impl MayastorEnvironment {
     fn setup_static(self) -> Self {
         match MAYASTOR_DEFAULT_ENV.get() {
             None => {
-                MAYASTOR_DEFAULT_ENV
-                    .get_or_init(|| parking_lot::Mutex::new(self.clone()));
+                MAYASTOR_DEFAULT_ENV.get_or_init(|| parking_lot::Mutex::new(self.clone()));
             }
             Some(some) => {
                 *some.lock() = self.clone();
@@ -680,18 +639,16 @@ impl MayastorEnvironment {
     /// configure signal handling
     fn install_signal_handlers(&self) {
         unsafe {
-            signal_hook::low_level::register(
-                signal_hook::consts::SIGTERM,
-                || mayastor_signal_handler(1),
-            )
+            signal_hook::low_level::register(signal_hook::consts::SIGTERM, || {
+                mayastor_signal_handler(1)
+            })
         }
         .unwrap();
 
         unsafe {
-            signal_hook::low_level::register(
-                signal_hook::consts::SIGINT,
-                || mayastor_signal_handler(1),
-            )
+            signal_hook::low_level::register(signal_hook::consts::SIGINT, || {
+                mayastor_signal_handler(1)
+            })
         }
         .unwrap();
     }
@@ -701,9 +658,7 @@ impl MayastorEnvironment {
         let mut args = vec![CString::new(self.name.clone()).unwrap()];
 
         if self.mem_channel > 0 {
-            args.push(
-                CString::new(format!("-n {}", self.mem_channel)).unwrap(),
-            );
+            args.push(CString::new(format!("-n {}", self.mem_channel)).unwrap());
         }
 
         if self.shm_id < 0 {
@@ -715,10 +670,7 @@ impl MayastorEnvironment {
         }
 
         if self.master_core > 0 {
-            args.push(
-                CString::new(format!("--master-lcore={}", self.master_core))
-                    .unwrap(),
-            );
+            args.push(CString::new(format!("--master-lcore={}", self.master_core)).unwrap());
         }
 
         if self.no_pci {
@@ -752,13 +704,7 @@ impl MayastorEnvironment {
                 .unwrap(),
             );
         } else {
-            args.push(
-                CString::new(format!(
-                    "--file-prefix=mayastor_pid{}",
-                    self.shm_id
-                ))
-                .unwrap(),
-            );
+            args.push(CString::new(format!("--file-prefix=mayastor_pid{}", self.shm_id)).unwrap());
             args.push(CString::new("--proc-type=auto").unwrap());
         }
 
@@ -792,9 +738,7 @@ impl MayastorEnvironment {
         if let Some(list) = &self.core_list {
             args.push(CString::new(format!("-l {list}")).unwrap());
         } else {
-            args.push(
-                CString::new(format!("-c {}", self.reactor_mask)).unwrap(),
-            )
+            args.push(CString::new(format!("-c {}", self.reactor_mask)).unwrap())
         }
 
         let mut cargs = args
@@ -849,11 +793,9 @@ impl MayastorEnvironment {
     pub(crate) fn get_nvmf_tgt_ip() -> Result<String, String> {
         static TGT_IP: OnceCell<String> = OnceCell::new();
         TGT_IP
-            .get_or_try_init(|| {
-                match Self::global_or_default().nvmf_tgt_interface {
-                    Some(ref iface) => Self::detect_nvmf_tgt_iface_ip(iface),
-                    None => Self::detect_pod_ip(),
-                }
+            .get_or_try_init(|| match Self::global_or_default().nvmf_tgt_interface {
+                Some(ref iface) => Self::detect_nvmf_tgt_iface_ip(iface),
+                None => Self::detect_pod_ip(),
             })
             .cloned()
     }
@@ -892,19 +834,14 @@ impl MayastorEnvironment {
                 Box::new(move |n| n.ipv4_subnet_eq(subnet, mask))
             }
             _ => {
-                return Err(format!(
-                    "Invalid NVMF target interface: '{iface}'",
-                ));
+                return Err(format!("Invalid NVMF target interface: '{iface}'",));
             }
         };
 
-        let mut nics: Vec<_> =
-            nic::find_all_nics().into_iter().filter(pred).collect();
+        let mut nics: Vec<_> = nic::find_all_nics().into_iter().filter(pred).collect();
 
         if nics.is_empty() {
-            return Err(format!(
-                "Network interface matching '{iface}' not found",
-            ));
+            return Err(format!("Network interface matching '{iface}' not found",));
         }
 
         if nics.len() > 1 {
@@ -962,10 +899,7 @@ impl MayastorEnvironment {
         } else {
             info!("RPC server listening at: {}", ctx.rpc.to_str().unwrap());
             unsafe {
-                spdk_rpc_initialize(
-                    ctx.rpc.as_ptr() as *mut c_char,
-                    std::ptr::null_mut(),
-                );
+                spdk_rpc_initialize(ctx.rpc.as_ptr() as *mut c_char, std::ptr::null_mut());
                 spdk_rpc_set_state(SPDK_RPC_RUNTIME);
             };
 
@@ -1027,33 +961,21 @@ impl MayastorEnvironment {
         const MAX_GROUP_IDS: u32 = 16;
         const NUM_THREADS: u32 = 1;
         let cshm_name = if self.shm_id >= 0 {
-            CString::new(
-                format!("/{}_trace.{}", self.name, self.shm_id).as_str(),
-            )
-            .unwrap()
+            CString::new(format!("/{}_trace.{}", self.name, self.shm_id).as_str()).unwrap()
         } else {
-            CString::new(
-                format!("/{}_trace.pid{}", self.name, std::process::id())
-                    .as_str(),
-            )
-            .unwrap()
+            CString::new(format!("/{}_trace.pid{}", self.name, std::process::id()).as_str())
+                .unwrap()
         };
         unsafe {
-            if spdk_trace_init(
-                cshm_name.as_ptr(),
-                self.num_entries,
-                NUM_THREADS,
-            ) != 0
-            {
+            if spdk_trace_init(cshm_name.as_ptr(), self.num_entries, NUM_THREADS) != 0 {
                 error!("SPDK tracing init error");
             }
         }
         let tpoint_group_name = CString::new("all").unwrap();
-        let tpoint_group_mask = unsafe {
-            spdk_trace_create_tpoint_group_mask(tpoint_group_name.as_ptr())
-        };
+        let tpoint_group_mask =
+            unsafe { spdk_trace_create_tpoint_group_mask(tpoint_group_name.as_ptr()) };
 
-        for group_id in 0 .. MAX_GROUP_IDS {
+        for group_id in 0..MAX_GROUP_IDS {
             if (tpoint_group_mask & (1 << group_id) as u64) > 0 {
                 unsafe {
                     spdk_trace_set_tpoints(group_id, u64::MAX);
@@ -1119,9 +1041,9 @@ impl MayastorEnvironment {
         // but when using more then 16 cores, I saw some "weirdness"
         // which could be related purely to logging.
 
-        while Reactors::iter().any(|r| {
-            r.get_state() == ReactorState::Init && r.core() != Cores::current()
-        }) {
+        while Reactors::iter()
+            .any(|r| r.get_state() == ReactorState::Init && r.core() != Cores::current())
+        {
             std::thread::sleep(Duration::from_millis(1));
         }
 
@@ -1141,10 +1063,7 @@ impl MayastorEnvironment {
             unsafe {
                 spdk_subsystem_init(
                     Some(Self::start_rpc),
-                    Box::into_raw(Box::new(SubsystemCtx {
-                        rpc,
-                        sender,
-                    })) as *mut _,
+                    Box::into_raw(Box::new(SubsystemCtx { rpc, sender })) as *mut _,
                 );
             }
 
@@ -1201,9 +1120,7 @@ impl MayastorEnvironment {
 
             let master = Reactors::current();
             master.send_future(async { f() });
-            let mut futures: Vec<
-                Pin<Box<dyn future::Future<Output = FutureResult>>>,
-            > = Vec::new();
+            let mut futures: Vec<Pin<Box<dyn future::Future<Output = FutureResult>>>> = Vec::new();
             if let Some(grpc_endpoint) = grpc_endpoint {
                 futures.push(Box::pin(grpc::MayastorGrpcServer::run(
                     &node_name,
@@ -1230,9 +1147,9 @@ impl MayastorEnvironment {
 }
 
 fn make_hostnqn(node_name: Option<&String>) -> Option<String> {
-    std::env::var("HOSTNQN").ok().or_else(|| {
-        node_name.map(|n| format!("{NVME_NQN_PREFIX}:node-name:{n}"))
-    })
+    std::env::var("HOSTNQN")
+        .ok()
+        .or_else(|| node_name.map(|n| format!("{NVME_NQN_PREFIX}:node-name:{n}")))
 }
 
 fn print_asan_env() {
