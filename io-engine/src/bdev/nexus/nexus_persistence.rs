@@ -103,6 +103,15 @@ impl<'n> Nexus<'n> {
                     };
                     nexus_info.children.push(child_info);
                 });
+                // We started with this child because it was healthy in etcd, or isn't there at all.
+                // Being unhealthy here means it is undergoing a fault/retire before nexus is open.
+                if nexus_info.children.len() == 1 && !nexus_info.children[0].healthy {
+                    warn!("{self:?} Not persisting: the only child went unhealthy during nexus creation");
+                    return Err(Error::NexusCreate {
+                        name: self.name.clone(),
+                        reason: "only child is unhealthy".to_string(),
+                    });
+                }
             }
             PersistOp::AddChild { child_uri, healthy } => {
                 // Add the state of a new child. This should only be called
