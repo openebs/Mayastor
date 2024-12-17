@@ -1,14 +1,14 @@
-# Testing Mayastor
+# Testing Mayastor I/O Engine
 
 In order to test Mayastor, you'll need to be able to [**run Mayastor**][doc-run],
 follow that guide for persistent hugepages & kernel module setup.
 
 Or, for ad-hoc:
 
-- Ensure at least 512 2MB hugepages.
+- Ensure at least 3584 2 MiB hugepages.
 
   ```bash
-  echo 512 | sudo tee  /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
+  echo 3584 | sudo tee /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
   ```
 
 - Ensure several kernel modules are installed:
@@ -32,10 +32,14 @@ Mayastor uses [spdk][spdk] which is quite sensitive to threading. This means tes
 
 ```bash
 cd io-engine
-RUST_LOG=TRACE cargo test -- --test-threads 1 --nocapture
+RUST_LOG=TRACE cargo test --features=io-engine-testing -- --test-threads 1 --nocapture
 ```
 
+> _**NOTE**_:
+> The flag --features=io-engine-testing ensures you run tests with features enabled only for testing purposes
+
 ## Testing your own SPDK version
+
 To test your custom SPDK version please refere to the [spdk-rs documentation](https://github.com/openebs/spdk-rs/blob/develop/README.md#custom-spdk)
 
 ## Using PCIe NVMe devices in cargo tests while developing
