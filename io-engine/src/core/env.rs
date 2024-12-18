@@ -174,7 +174,7 @@ pub struct MayastorCliArgs {
     pub ps_timeout: Duration,
     #[clap(long = "ps-retries", default_value = "30")]
     /// Persistent store operation retries.
-    pub ps_retries: u8,
+    pub ps_retries: u16,
     #[clap(long = "bdev-pool-size", default_value = "65535")]
     /// Number of entries in memory pool for bdev I/O contexts
     pub bdev_io_ctx_pool_size: u64,
@@ -374,7 +374,7 @@ pub struct MayastorEnvironment {
     pub registration_endpoint: Option<Uri>,
     ps_endpoint: Option<String>,
     ps_timeout: Duration,
-    ps_retries: u8,
+    ps_retries: u16,
     mayastor_config: Option<String>,
     ptpl_dir: Option<String>,
     pool_config: Option<String>,
