@@ -1,4 +1,4 @@
-use crate::common::fio_run_verify;
+use crate::common::{dd_random_file, fio_run_verify};
 use common::compose::{
     rpc::v0::{
         mayastor::{
@@ -347,11 +347,80 @@ async fn persistent_store_connection() {
     assert!(get_nexus(ms1, nexus_uuid).await.is_some());
 }
 
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn self_shutdown_destroy() {
+    let test = start_infrastructure_("self_shutdown_destroy", Some("1")).await;
+    let grpc = GrpcConnect::new(&test);
+    let ms1 = &mut grpc.grpc_handle("ms1").await.unwrap();
+    let ms2 = &mut grpc.grpc_handle("ms2").await.unwrap();
+    let ms3 = &mut grpc.grpc_handle("ms3").await.unwrap();
+
+    // Create bdevs and share over nvmf.
+    let child1 = create_and_share_bdevs(ms2, CHILD1_UUID).await;
+    let child2 = create_and_share_bdevs(ms3, CHILD2_UUID).await;
+
+    // Create and publish a nexus.
+    let nexus_uuid = "8272e9d3-3738-4e33-b8c3-769d8eed5771";
+    create_nexus(ms1, nexus_uuid, vec![child1.clone(), child2.clone()]).await;
+    let nexus_uri = publish_nexus(ms1, nexus_uuid).await;
+
+    // Create and connect NVMF target.
+    let target = libnvme_rs::NvmeTarget::try_from(nexus_uri.clone())
+        .unwrap()
+        .with_reconnect_delay(Some(1))
+        .ctrl_loss_timeout(Some(1))
+        .with_rand_hostnqn(true);
+    target.connect().unwrap();
+
+    // simulate node with child and etcd going down
+    test.stop("etcd").await.unwrap();
+    test.stop("ms3").await.unwrap();
+
+    // allow pstor to timeout and self shutdown
+    // todo: use wait loop
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    let nexus = get_nexus(ms1, nexus_uuid).await.unwrap();
+    assert_eq!(nexus.state, NexusState::NexusShutdown as i32);
+
+    let devices = target.block_devices(2).unwrap();
+    let fio_hdl = tokio::spawn(async move {
+        dd_random_file(&devices[0].to_string(), 4096, 1)
+    });
+
+    test.start("etcd").await.unwrap();
+
+    ms1.mayastor
+        .destroy_nexus(DestroyNexusRequest {
+            uuid: nexus_uuid.to_string(),
+        })
+        .await
+        .expect("Failed to destroy nexus");
+
+    // Disconnect NVMF target
+    target.disconnect().unwrap();
+
+    fio_hdl.await.unwrap();
+}
+
 /// Start the containers for the tests.
 async fn start_infrastructure(test_name: &str) -> ComposeTest {
+    start_infrastructure_(test_name, None).await
+}
+
+/// Start the containers for the tests.
+async fn start_infrastructure_(
+    test_name: &str,
+    ps_retries: Option<&str>,
+) -> ComposeTest {
     common::composer_init();
 
     let etcd_endpoint = format!("http://etcd.{test_name}:2379");
+    let mut args = vec!["-p", &etcd_endpoint];
+    if let Some(retries) = ps_retries {
+        args.extend(["--ps-retries", retries]);
+    }
+
     Builder::new()
         .name(test_name)
         .add_container_spec(
@@ -371,20 +440,17 @@ async fn start_infrastructure(test_name: &str) -> ComposeTest {
         )
         .add_container_bin(
             "ms1",
-            Binary::from_dbg("io-engine").with_args(vec!["-p", &etcd_endpoint]),
+            Binary::from_dbg("io-engine").with_args(args.clone()),
         )
         .add_container_bin(
             "ms2",
-            Binary::from_dbg("io-engine").with_args(vec!["-p", &etcd_endpoint]),
+            Binary::from_dbg("io-engine").with_args(args.clone()),
         )
         .add_container_bin(
             "ms3",
-            Binary::from_dbg("io-engine").with_args(vec!["-p", &etcd_endpoint]),
+            Binary::from_dbg("io-engine").with_args(args.clone()),
         )
-        .add_container_bin(
-            "ms4",
-            Binary::from_dbg("io-engine").with_args(vec!["-p", &etcd_endpoint]),
-        )
+        .add_container_bin("ms4", Binary::from_dbg("io-engine").with_args(args))
         .build()
         .await
         .unwrap()

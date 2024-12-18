@@ -32,7 +32,7 @@ impl<'n> Debug for NexusChannel<'n> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{io} chan '{nex}' core:{core}({cur}) [R:{r} W:{w} D:{d} L:{l} C:{c}]",
+            "{io} chan '{nex}' core:{core}({cur}) [R:{r} W:{w} D:{d} L:{l} C:{c} F:{f}]",
             io = if self.is_io_chan { "I/O" } else { "Aux" },
             nex = self.nexus.nexus_name(),
             core = self.core,
@@ -42,6 +42,7 @@ impl<'n> Debug for NexusChannel<'n> {
             d = self.detached.len(),
             l = self.io_logs.len(),
             c = self.nexus.child_count(),
+            f = self.frozen_ios.len()
         )
     }
 }

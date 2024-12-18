@@ -64,6 +64,10 @@ pub struct NvmeTarget {
     trtype: NvmeTransportType,
     /// Auto-Generate random HostNqn.
     hostnqn_autogen: bool,
+    /// The Reconnect Delay.
+    reconnect_delay: Option<u8>,
+    /// The Controller Loss Timeout.
+    ctrl_loss_timeout: Option<u32>,
 }
 
 impl TryFrom<String> for NvmeTarget {
@@ -117,6 +121,8 @@ impl TryFrom<&str> for NvmeTarget {
             trsvcid: url.port().unwrap_or(4420),
             subsysnqn: subnqn,
             hostnqn_autogen: false,
+            reconnect_delay: None,
+            ctrl_loss_timeout: None,
         })
     }
 }
@@ -126,6 +132,16 @@ impl NvmeTarget {
     /// Useful when the system does not have a SYSCONFDIR hostnqn file.
     pub fn with_rand_hostnqn(mut self, random: bool) -> Self {
         self.hostnqn_autogen = random;
+        self
+    }
+    /// With the reconnect delay.
+    pub fn with_reconnect_delay(mut self, delay: Option<u8>) -> Self {
+        self.reconnect_delay = delay;
+        self
+    }
+    /// With the ctrl loss timeout.
+    pub fn ctrl_loss_timeout(mut self, timeout: Option<u32>) -> Self {
+        self.ctrl_loss_timeout = timeout;
         self
     }
     /// Connect to NVMe target
@@ -184,8 +200,11 @@ impl NvmeTarget {
             host_iface,
             queue_size: 0,
             nr_io_queues: 0,
-            reconnect_delay: 0,
-            ctrl_loss_tmo: crate::NVMF_DEF_CTRL_LOSS_TMO as i32,
+            reconnect_delay: self.reconnect_delay.unwrap_or(0) as i32,
+            ctrl_loss_tmo: self
+                .ctrl_loss_timeout
+                .unwrap_or(crate::NVMF_DEF_CTRL_LOSS_TMO)
+                as i32,
             fast_io_fail_tmo: 0,
             keep_alive_tmo: 0,
             nr_write_queues: 0,
