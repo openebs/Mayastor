@@ -1114,6 +1114,18 @@ impl<'n> Nexus<'n> {
         Ok(())
     }
 
+    /// Aborts all frozen IOs of a shutdown Nexus.
+    /// # Warning
+    /// These aborts may translate into I/O errors for the initiator.
+    pub async fn abort_shutdown_frozen_ios(&self) {
+        if self.status() == NexusStatus::Shutdown {
+            self.traverse_io_channels_async((), |channel, _| {
+                channel.abort_frozen();
+            })
+            .await;
+        }
+    }
+
     /// Suspend any incoming IO to the bdev pausing the controller allows us to
     /// handle internal events and which is a protocol feature.
     /// In case concurrent pause requests take place, the other callers

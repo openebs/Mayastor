@@ -1,11 +1,13 @@
-use crate::bdev::PtplFileOps;
+use super::{nexus_err, nexus_lookup, Error, NbdDisk, Nexus, NexusTarget};
+use crate::{
+    bdev::PtplFileOps,
+    core::{NvmfShareProps, Protocol, PtplProps, Reactors, Share, UpdateProps},
+    sleep::mayastor_sleep,
+};
 use async_trait::async_trait;
+use futures::{channel::oneshot, future::FusedFuture};
 use snafu::ResultExt;
-use std::pin::Pin;
-
-use super::{nexus_err, Error, NbdDisk, Nexus, NexusTarget};
-
-use crate::core::{NvmfShareProps, Protocol, PtplProps, Share, UpdateProps};
+use std::{pin::Pin, time::Duration};
 
 ///
 /// The sharing of the nexus is different compared to regular bdevs
@@ -77,6 +79,31 @@ impl<'n> Share for Nexus<'n> {
     /// TODO
     async fn unshare(mut self: Pin<&mut Self>) -> Result<(), Self::Error> {
         info!("{:?}: unsharing nexus bdev...", self);
+
+        // TODO: we should not allow new initiator connections for a shutdown
+        // nexus!
+
+        // TODO: we may want to disable the freeze at this point instead,
+        // allowing new I/Os  to fail "normally"
+        let name = self.name.clone();
+        let (_s, r) = oneshot::channel::<()>();
+        Reactors::master().send_future(async move {
+            for _ in 0 ..= 10 {
+                mayastor_sleep(Duration::from_secs(2)).await.ok();
+                if r.is_terminated() {
+                    // This means the unshare is complete, so nothing to do here
+                    return;
+                }
+                // If we're not unshared, then abort any I/Os that may have
+                // reached
+                if let Some(nexus) = nexus_lookup(&name) {
+                    nexus.abort_shutdown_frozen_ios().await;
+                }
+            }
+        });
+
+        // Aborts frozen I/Os a priori
+        self.abort_shutdown_frozen_ios().await;
 
         let name = self.name.clone();
         self.as_mut().pin_bdev_mut().unshare().await.context(
