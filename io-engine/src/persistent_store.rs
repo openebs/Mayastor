@@ -9,9 +9,12 @@ use crate::{
     core::Reactor,
     store::{
         etcd::Etcd,
-        store_defs::{DeleteWait, GetWait, PutWait, Store, StoreError, StoreKey, StoreValue},
+        store_defs::{
+            DeleteWait, GetWait, PutWait, Store, StoreError, StoreKey, StoreValue, TxnWait,
+        },
     },
 };
+use etcd_client::{Compare, TxnOp, TxnResponse};
 use futures::channel::oneshot;
 use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
@@ -190,6 +193,26 @@ impl PersistentStore {
         rx.await.context(PutWait {
             key: key.to_string(),
             value: put_value.to_string(),
+        })?
+    }
+
+    /// Executes a transaction for the given key.
+    pub async fn txn(
+        key: &impl StoreKey,
+        cmps: Vec<Compare>,
+        ops_success: Vec<TxnOp>,
+        ops_failure: Option<Vec<TxnOp>>,
+    ) -> Result<TxnResponse, StoreError> {
+        let key_string = key.to_string();
+        let rx = Self::execute_store_op(async move {
+            info!("Executing transaction for key {}.", key_string);
+            Self::backing_store()
+                .txn_kv(&key_string, cmps, ops_success, ops_failure)
+                .await
+        });
+
+        rx.await.context(TxnWait {
+            key: key.to_string(),
         })?
     }
 
