@@ -16,7 +16,7 @@ set -euxo pipefail
 export PATH="$PATH:${HOME}/.cargo/bin"
 export npm_config_jobs=$(nproc)
 
-cargo build --all
+cargo build --bins --features=io-engine-testing
 cd "$(dirname "$0")/../test/grpc"
 npm install --legacy-peer-deps
 
