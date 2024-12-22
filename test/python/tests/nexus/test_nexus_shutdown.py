@@ -137,7 +137,7 @@ def check_second_nexus_shutdown_succeeded(get_a_shutdown_nexus, mayastor_mod):
 
 @pytest.fixture(scope="module")
 def create_published_nexus(mayastor_mod, create_replica):
-    """ Create and publish a nexus on ms3 with 2 replicas """
+    """Create and publish a nexus on ms3 with 2 replicas"""
     hdls = mayastor_mod
     replicas = create_replica
     replicas = [k.uri for k in replicas]
@@ -170,7 +170,7 @@ def create_published_nexus(mayastor_mod, create_replica):
 
 @pytest.fixture(scope="module")
 def create_connected_nexus(mayastor_mod, create_published_nexus):
-    """ Create a nexus on ms3 with 2 replicas """
+    """Create a nexus on ms3 with 2 replicas"""
     uri = create_published_nexus[0]
 
     dev = nvme_connect(uri)

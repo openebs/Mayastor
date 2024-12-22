@@ -1,4 +1,5 @@
 """Common code that represents a mayastor handle."""
+
 import mayastor_pb2 as pb
 import grpc
 import mayastor_pb2_grpc as rpc

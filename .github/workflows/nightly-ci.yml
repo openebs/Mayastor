@@ -1,0 +1,15 @@
+name: Nightly CI
+on:
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: ./.github/workflows/pr-ci.yml
+  nightly-ci:
+    if: ${{ success() }}
+    needs:
+      - ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: CI succeeded
+        run: exit 0
