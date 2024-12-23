@@ -145,13 +145,13 @@ impl Display for TransportId {
         // trstring for uri scheme to explicitly indicate the tcp support
         // also by default when there is rdma available.
         let trstring = match self.0.trstring.as_str() {
-            "RDMA" => "rdma+tcp".to_string(),
-            _else => _else.to_lowercase(),
+            "RDMA" => "+rdma+tcp".to_string(),
+            _else => "".to_string(),
         };
 
         write!(
             f,
-            "nvmf+{}://{}:{}",
+            "nvmf{}://{}:{}",
             trstring,
             self.0.traddr.as_str(),
             self.0.trsvcid.as_str()
