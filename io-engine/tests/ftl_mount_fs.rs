@@ -97,7 +97,7 @@ async fn ftl_mount_fs_multiple() {
 pub fn csal_fio_run_verify(device: &str) -> Result<String, String> {
     let (exit, stdout, stderr) = run_script::run(
         r#"
-        fio --name=randrw --rw=randrw --ioengine=libaio --direct=1 --time_based=1 \
+        $FIO --name=randrw --rw=randrw --ioengine=libaio --direct=1 --time_based=1 \
         --runtime=10 --bs=64k --verify=crc32 --group_reporting=1  \
         --verify_fatal=1 --verify_async=2 --filename=$1
         "#,

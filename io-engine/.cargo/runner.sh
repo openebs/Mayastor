@@ -4,7 +4,7 @@
 ARGS="${@}"
 
 if [[ $EUID -ne 0 ]]; then
-  MAYBE_SUDO='sudo -E'
+  MAYBE_SUDO='sudo -E --preserve-env=PATH'
 else
   MAYBE_SUDO=''
 fi

@@ -319,7 +319,7 @@ def attempt_to_create_nexus_with_child_uri_that_does_not_exist(
         create_nexus(
             nexus_uuid,
             megabytes(64),
-            nexus_children + [f"nvmf://10.0.0.2:8420/{nvme_nqn_prefix}:missing"],
+            nexus_children + [f"nvmf://10.1.0.2:8420/{nvme_nqn_prefix}:missing"],
         )
     assert error.value.code() == grpc.StatusCode.INVALID_ARGUMENT
 

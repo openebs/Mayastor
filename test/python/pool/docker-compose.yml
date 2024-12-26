@@ -4,7 +4,7 @@ services:
     container_name: "ms0"
     image: rust:latest
     environment:
-        - MY_POD_IP=10.0.0.2
+        - MY_POD_IP=10.1.0.2
         - NEXUS_NVMF_RESV_ENABLE=1
         - RUST_LOG=mayastor=trace
         - PATH=${LLVM_SYMBOLIZER_DIR:-}
@@ -12,7 +12,7 @@ services:
     command: ${SRCDIR}/${IO_ENGINE_DIR}/io-engine -g 0.0.0.0 -l 1,2 -r /tmp/ms0.sock
     networks:
       mayastor_net:
-        ipv4_address: 10.0.0.2
+        ipv4_address: 10.1.0.2
     privileged: true
     volumes:
       - ${SRCDIR}:${SRCDIR}
@@ -27,4 +27,4 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: "10.0.0.0/16"
+        - subnet: "10.1.0.0/16"
