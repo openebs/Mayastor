@@ -1,4 +1,4 @@
-use std::{convert::TryFrom, io, time::Duration};
+use std::{convert::TryFrom, io, os::raw::c_char, time::Duration};
 
 use url::{ParseError, Url};
 
@@ -15,14 +15,14 @@ use crate::{
 
 /// Wrapper for caller-owned C-strings from libnvme
 pub struct NvmeStringWrapper {
-    s: *mut i8,
+    s: *mut c_char,
 }
 
 impl NvmeStringWrapper {
-    pub fn new(s: *mut i8) -> Self {
+    pub fn new(s: *mut c_char) -> Self {
         NvmeStringWrapper { s }
     }
-    pub fn as_ptr(&self) -> *const i8 {
+    pub fn as_ptr(&self) -> *const c_char {
         self.s
     }
 }
