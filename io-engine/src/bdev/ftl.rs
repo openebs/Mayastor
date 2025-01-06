@@ -42,6 +42,7 @@ use std::{
     collections::HashMap,
     convert::TryFrom,
     fmt::{Debug, Formatter},
+    os::raw::c_char,
 };
 
 use core::ffi::c_void;
@@ -210,9 +211,9 @@ impl CreateDestroy for Ftl {
             ..unsafe { mem::zeroed() }
         };
         unsafe { spdk_ftl_get_default_conf(&mut ftl_conf, spdk_ftl_conf_size) };
-        ftl_conf.name = ftl_dev_name.as_ptr() as *mut i8;
-        ftl_conf.base_bdev = base_dev_name.as_ptr() as *mut i8;
-        ftl_conf.cache_bdev = cache_dev_name.as_ptr() as *mut i8;
+        ftl_conf.name = ftl_dev_name.as_ptr() as *mut c_char;
+        ftl_conf.base_bdev = base_dev_name.as_ptr() as *mut c_char;
+        ftl_conf.cache_bdev = cache_dev_name.as_ptr() as *mut c_char;
         ftl_conf.fast_shutdown = true;
         ftl_conf.verbose_mode = true;
         ftl_conf.mode = spdk_ftl_mode::SPDK_FTL_MODE_CREATE as u32;

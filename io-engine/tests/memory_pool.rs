@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ffi::CString, ptr::null_mut};
+use std::{collections::HashMap, ffi::CString, os::raw::c_char, ptr::null_mut};
 
 use once_cell::sync::OnceCell;
 
@@ -16,7 +16,7 @@ fn get_ms() -> &'static MayastorTest<'static> {
 struct TestCtx {
     id: u64,
     pos: u32,
-    ctx: *const i8,
+    ctx: *const c_char,
 }
 
 const POOL_SIZE: u64 = 128 * 1024 - 1;
