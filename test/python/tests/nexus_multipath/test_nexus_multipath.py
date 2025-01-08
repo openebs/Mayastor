@@ -20,7 +20,7 @@ from common.nvme import (
 def create_nexus_no_destroy(
     mayastor_mod, nexus_name, nexus_uuid, create_replica, min_cntlid, resv_key
 ):
-    """ Create a nexus on ms3 with 2 replicas """
+    """Create a nexus on ms3 with 2 replicas"""
     hdls = mayastor_mod
     replicas = create_replica
     replicas = [k.uri for k in replicas]
@@ -62,7 +62,7 @@ def create_nexus(create_nexus_no_destroy, mayastor_mod, nexus_name):
 def create_nexus_2_no_destroy(
     mayastor_mod, nexus_name, nexus_uuid, min_cntlid_2, resv_key_2
 ):
-    """ Create a 2nd nexus on ms0 with the same 2 replicas but with resv_key_2 """
+    """Create a 2nd nexus on ms0 with the same 2 replicas but with resv_key_2"""
     hdls = mayastor_mod
     NEXUS_NAME = nexus_name
 
@@ -157,7 +157,7 @@ def publish_nexus(mayastor_mod, nexus_name):
 def create_nexus_3_dev(
     mayastor_mod, nexus_name, nexus_uuid, replica_uuid, min_cntlid_3, resv_key_3
 ):
-    """ Create a 3rd nexus on ms1 with the same 2 replicas but with resv_key_3 """
+    """Create a 3rd nexus on ms1 with the same 2 replicas but with resv_key_3"""
     hdls = mayastor_mod
     NEXUS_NAME = nexus_name
 

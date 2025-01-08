@@ -24,7 +24,12 @@ def local_files(mayastors):
         path = f"/tmp/disk-{name}.img"
         pool_size_mb = int(POOL_SIZE / 1024 / 1024)
         subprocess.run(
-            ["sudo", "sh", "-c", f"rm -f '{path}'; truncate -s {pool_size_mb}M '{path}'"],
+            [
+                "sudo",
+                "sh",
+                "-c",
+                f"rm -f '{path}'; truncate -s {pool_size_mb}M '{path}'",
+            ],
             check=True,
         )
         files.append(path)
@@ -63,7 +68,7 @@ def create_nexuses(mayastors, create_replicas_on_all_nodes):
         [replica.uri for replica in mayastors.get(node).replica_list().replicas]
         for node in ["ms1", "ms2", "ms3"]
     ]
-    
+
     ms = mayastors.get("ms0")
     for children in zip(*uris):
         uuid = guid.uuid4()
@@ -91,8 +96,10 @@ def test_rebuild_failure(containers, mayastors, times, create_nexuses):
     time.sleep(1)
 
     # Add the replicas to the nexuses for rebuild.
-    for (idx, nexus) in enumerate(ms0.nexus_list()):
-        child = list(filter(lambda child: child.state == pb.CHILD_FAULTED, list(nexus.children)))[0]
+    for idx, nexus in enumerate(ms0.nexus_list()):
+        child = list(
+            filter(lambda child: child.state == pb.CHILD_FAULTED, list(nexus.children))
+        )[0]
         if nexus.state != pb.NEXUS_FAULTED:
             try:
                 ms0.nexus_remove_replica(nexus.uuid, child.uri)
@@ -107,7 +114,13 @@ def test_rebuild_failure(containers, mayastors, times, create_nexuses):
         for child in nexus.children:
             if child.rebuild_progress > -1:
                 rebuilds += 1
-                print("nexus", nexus.uuid, "rebuilding", child.uri, f"{child.rebuild_progress}")
+                print(
+                    "nexus",
+                    nexus.uuid,
+                    "rebuilding",
+                    child.uri,
+                    f"{child.rebuild_progress}",
+                )
 
     assert rebuilds > 0
 

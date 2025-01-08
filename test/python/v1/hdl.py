@@ -1,4 +1,5 @@
 """Common code that represents a mayastor handle."""
+
 from os import name
 import grpc
 import bdev_pb2 as bdev_pb
@@ -203,7 +204,7 @@ class MayastorHandle(object):
         """Create nexus snapshot"""
         active_replicas = []
 
-        for (r_uuid, s_uuid) in replicas:
+        for r_uuid, s_uuid in replicas:
             active_replicas.append(
                 snapshot_pb.NexusCreateSnapshotReplicaDescriptor(
                     replica_uuid=r_uuid,

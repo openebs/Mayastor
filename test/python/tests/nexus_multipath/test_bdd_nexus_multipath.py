@@ -48,7 +48,7 @@ def test_replace_failed_io_path_on_demand(setup):
 def create_nexus(
     mayastor_mod, nexus_name, nexus_uuid, create_replica, min_cntlid, resv_key
 ):
-    """ Create a nexus on ms3 with 2 replicas """
+    """Create a nexus on ms3 with 2 replicas"""
     hdls = mayastor_mod
     replicas = create_replica
     replicas = [k.uri for k in replicas]
@@ -86,7 +86,7 @@ def create_nexus(
 
 @pytest.fixture(scope="module")
 def create_nexus_2(mayastor_mod, nexus_name, nexus_uuid, min_cntlid_2, resv_key_2):
-    """ Create a 2nd nexus on ms0 with the same 2 replicas but with resv_key_2 """
+    """Create a 2nd nexus on ms0 with the same 2 replicas but with resv_key_2"""
     hdls = mayastor_mod
     NEXUS_NAME = nexus_name
 
@@ -284,7 +284,7 @@ def nexus_instance():
 def create_1_replica_connected_nexus(
     mayastor_mod, nexus_name, nexus_uuid, create_replica, min_cntlid, resv_key
 ):
-    """ Create a nexus on ms3 with one replica on ms1 """
+    """Create a nexus on ms3 with one replica on ms1"""
     hdls = mayastor_mod
     replicas = [create_replica[0].uri]
 
@@ -316,7 +316,7 @@ def create_1_replica_connected_nexus(
 def create_1_replica_disconnected_nexus(
     mayastor_mod, nexus_name, nexus_uuid, create_replica, min_cntlid_2, resv_key
 ):
-    """ Create a nexus on ms2 with one replica on ms1 """
+    """Create a nexus on ms2 with one replica on ms1"""
     hdls = mayastor_mod
     replicas = [create_replica[0].uri]
 

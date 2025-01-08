@@ -342,7 +342,7 @@ pub fn mount_and_get_md5(device: &str) -> Result<String, String> {
 pub fn fio_run_verify(device: &str) -> Result<String, String> {
     let (exit, stdout, stderr) = run_script::run(
         r"
-        fio --name=randrw --rw=randrw --ioengine=libaio --direct=1 --time_based=1 \
+        $FIO --name=randrw --rw=randrw --ioengine=libaio --direct=1 --time_based=1 \
         --runtime=5 --bs=4k --verify=crc32 --group_reporting=1 --output-format=terse \
         --verify_fatal=1 --verify_async=2 --filename=$1
     ",
@@ -511,11 +511,11 @@ pub async fn wait_for_rebuild(dst_uri: String, state: RebuildState, timeout: Dur
 pub fn fio_verify_size(device: &str, size: u64) -> i32 {
     let (exit, stdout, stderr) = run_script::run(
         r"
-        fio --thread=1 --numjobs=1 --iodepth=16 --bs=512 \
+        $FIO --thread=1 --numjobs=1 --iodepth=16 --bs=512 \
         --direct=1 --ioengine=libaio --rw=randwrite --verify=crc32 \
         --verify_fatal=1 --name=write_verify --filename=$1 --size=$2
 
-        fio --thread=1 --numjobs=1 --iodepth=16 --bs=512 \
+        $FIO --thread=1 --numjobs=1 --iodepth=16 --bs=512 \
         --direct=1 --ioengine=libaio --verify=crc32 --verify_only \
         --verify_fatal=1 --name=verify --filename=$1
     ",

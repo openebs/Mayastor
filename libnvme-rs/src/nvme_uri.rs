@@ -347,6 +347,12 @@ impl NvmeTarget {
     }
 }
 
+impl Drop for NvmeTarget {
+    fn drop(&mut self) {
+        self.disconnect().ok();
+    }
+}
+
 #[test]
 fn nvme_parse_uri() {
     let target = NvmeTarget::try_from("nvmf://1.2.3.4:1234/testnqn.what-ever.foo").unwrap();

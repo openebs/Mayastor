@@ -156,6 +156,7 @@ def create_pool_that_already_exists(create_v1_pool, get_pool_name):
         create_v1_pool(get_pool_name, ["malloc:///disk0?size_mb=100"], None)
     return error
 
+
 @when(
     "the user creates a v1 version pool with the same name and different disk of an existing pool",
     target_fixture="create_pool_with_same_name_different_disk",
@@ -202,12 +203,17 @@ def destroy_pool(v1_mayastor_instance, v0_replica_pools, get_pool_name):
 
 @then("the pool create command should fail")
 def the_pool_create_command_should_fail(create_pool_that_already_exists):
-    assert create_pool_that_already_exists.value.code() == grpc.StatusCode.ALREADY_EXISTS
+    assert (
+        create_pool_that_already_exists.value.code() == grpc.StatusCode.ALREADY_EXISTS
+    )
 
 
 @then("the pool create request should fail")
 def the_pool_create_request_should_fail(create_pool_with_same_name_different_disk):
-    assert create_pool_with_same_name_different_disk.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert (
+        create_pool_with_same_name_different_disk.value.code()
+        == grpc.StatusCode.INVALID_ARGUMENT
+    )
 
 
 @then("the pool should appear in the output list")
