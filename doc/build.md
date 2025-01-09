@@ -217,8 +217,6 @@ you want to run them locally:
 
 [nix-install]: https://nixos.org/download.html
 
-[nix-develop]: https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-develop.html
-
 [nix-paper]: https://edolstra.github.io/pubs/nixos-jfp-final.pdf
 
 [nix-build]: https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-build.html
@@ -226,8 +224,6 @@ you want to run them locally:
 [nix-bundle]: https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-bundle.html
 
 [nix-shell]: https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-shell.html
-
-[nix-channel]: https://nixos.wiki/wiki/Nix_channels
 
 [nixos]: https://nixos.org/
 
@@ -242,5 +238,3 @@ you want to run them locally:
 [reproducible-builds]: https://reproducible-builds.org/
 
 [cii-best-practices]: https://www.coreinfrastructure.org/programs/best-practices-program/
-
-[direnv]: https://direnv.net/
