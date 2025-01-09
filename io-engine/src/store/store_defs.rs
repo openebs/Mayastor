@@ -1,7 +1,7 @@
 //! Definition of a trait for a key-value store together with its error codes.
 
 use async_trait::async_trait;
-use etcd_client::Error;
+use etcd_client::{Compare, Error, TxnOp, TxnResponse};
 use serde_json::{Error as SerdeError, Value};
 use snafu::Snafu;
 
@@ -56,6 +56,18 @@ pub enum StoreError {
         key: String,
         source: futures::channel::oneshot::Canceled,
     },
+    /// Failed to complete a 'transaction'.
+    #[snafu(display("Failed to do 'transaction' for key {}. Error {}", key, source))]
+    Txn { key: String, source: Error },
+    /// Failed to wait for 'transaction' operations.
+    #[snafu(display(
+        "Failed to wait for 'transaction' operations to complete for key {}.",
+        key,
+    ))]
+    TxnWait {
+        key: String,
+        source: futures::channel::oneshot::Canceled,
+    },
     /// Failed to 'watch' an entry in the store.
     #[snafu(display("Failed to 'watch' entry with key {}. Error {}", key, source))]
     Watch { key: String, source: Error },
@@ -92,6 +104,14 @@ pub trait Store: Sync + Send + Clone {
         key: &K,
         value: &V,
     ) -> Result<(), StoreError>;
+
+    async fn txn_kv<K: StoreKey>(
+        &mut self,
+        key: &K,
+        cmps: Vec<Compare>,
+        ops_success: Vec<TxnOp>,
+        ops_failure: Option<Vec<TxnOp>>,
+    ) -> Result<TxnResponse, StoreError>;
 
     /// Get an entry from the store.
     async fn get_kv<K: StoreKey>(&mut self, key: &K) -> Result<Value, StoreError>;
