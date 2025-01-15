@@ -14,7 +14,7 @@ Your system will need several [control groups][control-groups] configured.
 boot.kernelParams = [ "cgroup_enable=cpuset" "cgroup_memory=1" "cgroup_enable=memory" ];
 ```
 
-It will also need at least 512 2 MB Hugepages configured.
+It will also need at least 1024 2 MB Hugepages configured.
 
 > Learn more about hugepages: [parts 1][hugepages-lwn-one], [2][hugepages-lwn-two],
 > [3][hugepages-lwn-three], [4][hugepages-lwn-four], [5][hugepages-lwn-five].
@@ -70,32 +70,31 @@ In order to use the full feature set of Mayastor, some or all of the following c
 - A Linux Kernel 5.1+ (with [`io-uring`][io_uring-intro] support)
 - The following kernel modules loaded:
 
-    - `nbd`: Network Block Device support
-    - `nvmet`: NVMe Target support
-    - `nvmet_rdma`: NVMe Target (rDMA) support
-    - `nvme_fabrics`: NVMe over Fabric support
-    - `nvme_tcp`: NVMe over TCP support
-    - `nvme_rdma`: NVMe (rDMA) support
-    - `nvme_loop`: NVMe Loop Device support
+  - `nbd`: Network Block Device support (for testing only)
+  - `nvme_core`: NVMe Core support
+  - `nvme_fabrics`: NVMe over Fabric support
+  - `nvme_tcp`: NVMe over TCP support
+  - `nvme_rdma`: NVMe (rDMA) support
+  - `nvme_loop`: NVMe Loop Device support (for testing only)
 
   To load these on NixOS:
 
   ```nix
   # /etc/nixos/configuration.nix
   boot.kernelModules = [
-    "nbd" "xfs" "nvmet" "nvme_fabrics" "nvmet_rdma" "nvme_tcp" "nvme_rdma" "nvme_loop"
+    "nbd" "xfs" "nvme_tcp" "nvme_rdma"
   ];
   ```
 
   To load these on non-NixOS machines:
 
   ```bash
-  modprobe nbd nvmet nvmet_rdma nvme_fabrics nvme_tcp nvme_rdma nvme_loop
+  modprobe nbd nvme_tcp nvme_rdma nvme_loop
   ```
 
 - For Asymmetric Namespace Access (ANA) support (early preview), the following kernel build configuration enabled:
 
-    - `CONFIG_NVME_MULTIPATH`: enables support for multipath access to NVMe subsystems
+  - `CONFIG_NVME_MULTIPATH`: enables support for multipath access to NVMe subsystems
 
   This is usually already enabled in distributions kernels, at least for RHEL/CentOS 8.2, Ubuntu 20.04 LTS, and SUSE
   Linux Enterprise 15.2.
@@ -109,7 +108,7 @@ In order to use the full feature set of Mayastor, some or all of the following c
 
   followed by reloading the `nvme-core` module or rebooting.
 
-  To build this on NixOS:
+  On recent versions of NixOS this is already enabled by default, otherwise you may build it as such:
 
   ```nix
   # /etc/nixos/configuration.nix
@@ -283,9 +282,9 @@ Mayastor development.
 Here are the ones known to not work by default:
 
 - [`kind`][kind]
-  In order to make this one work, you need to add `/run/udev` and `/run/udev` to the kind node hostPath.
-  Once the node containers are running, you may need to remount `/sys` as rw.
-  Here is an example: https://github.com/openebs/mayastor-extensions/blob/develop/scripts/k8s/deployer.sh
+  In order to make this one work, you need to add `/run/udev` and `/run/udev` to the kind node hostPath.\
+  Once the node containers are running, you may need to remount `/sys` as rw.\
+  Here is an example: <https://github.com/openebs/mayastor-extensions/blob/HEAD/scripts/k8s/deployer.sh>
 
 ## Running on a real Kubernetes cluster
 
@@ -301,8 +300,6 @@ production Mayastor deployment and operation instructions.
 [doc-build-building-docker-images]: ./build.md#Building-Docker-images
 
 [doc-build-building-portable-nix-bundles]: ./build.md#Building-portable-Nix-bundles
-
-[doc-test]: ./test.md
 
 [io_uring-intro]: https://unixism.net/loti/what_is_io_uring.html
 
@@ -336,4 +333,4 @@ production Mayastor deployment and operation instructions.
 
 [libvirtd]: https://libvirt.org/index.html
 
-[terraform-readme]: ./terraform/readme.adoc
+[terraform-readme]: https://github.com/openebs/mayastor-control-plane/tree/HEAD/terraform/cluster/README.adoc

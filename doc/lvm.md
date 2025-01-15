@@ -10,7 +10,7 @@ and extensive features that can enhance Mayastor’s storage services.
 
 ## Motivation
 
-LVM is a mature and widely adopted storage management system in Linux environments.
+LVM is a mature and widely adopted storage management system in Linux environments.\
 While the SPDK Blobstore (LVS) has been a reliable option, integrating LVM as an alternative backend
 can captivate a broader audience due to its robustness and maturity, feature set,
 and community support make it an attractive choice for Mayastor users.
@@ -19,13 +19,14 @@ By integrating LVM, we can also allow users to upgrade existing non-replicated L
 
 ## Goals
 
-Alternative Backend: Enable Mayastor to use LVM volume groups as an alternative backend for storage
-pools.
-Dynamic Volume Management: Leverage LVM’s volume management features (resizing, snapshots,
-thin provisioning) within Mayastor.
-Simplicity: Abstract LVM complexities from users while providing robust storage services.
+`Alternative Backend`: Enable Mayastor to use LVM volume groups as an alternative backend for storage
+pools.\
+`Dynamic Volume Management`: Leverage LVM’s volume management features (resizing, snapshots,
+thin provisioning) within Mayastor.\
+`Simplicity`: Abstract LVM complexities from users while providing robust storage services.
 
 ### Supporting Changes
+
 1. Pools
 
    Mayastor pools represent devices supplying persistent backing storage.
@@ -69,15 +70,17 @@ Features
 - [ ] RAIDx
 
 ### Limitation
+
 - Thin provisioning and snapshot support is not yet integrated
 - RAID is not yet integrated
 
 ## Conclusion
 
-By integrating LVM with Mayastor, you can leverage the benefits of both technologies. LVM provides dynamic volume management,
-while Mayastor abstracts storage complexities, allowing you to focus on your applications.
+By integrating LVM with Mayastor, you can leverage the benefits of both technologies.\
+LVM provides dynamic volume management, while Mayastor abstracts storage complexities, allowing you to focus on your applications.\
 Happy storage provisioning! 🚀
 
+<BR>
 
 ```mermaid
 graph TD;
