@@ -2,10 +2,10 @@
 
 use crate::store::store_defs::{
     Connect, Delete, DeserialiseValue, Get, Put, SerialiseValue, Store, StoreError,
-    StoreError::MissingEntry, StoreKey, StoreValue, ValueString,
+    StoreError::MissingEntry, StoreKey, StoreValue, Txn as TxnErr, ValueString,
 };
 use async_trait::async_trait;
-use etcd_client::Client;
+use etcd_client::{Client, Compare, Txn, TxnOp, TxnResponse};
 use serde_json::Value;
 use snafu::ResultExt;
 
@@ -47,6 +47,25 @@ impl Store for Etcd {
                 value: serde_json::to_string(value).unwrap(),
             })?;
         Ok(())
+    }
+
+    /// Executes a transaction for the given key. If the compares succeed, then
+    /// ops_success will be executed atomically, otherwise ops_failure will be
+    /// executed atomically.
+    async fn txn_kv<K: StoreKey>(
+        &mut self,
+        key: &K,
+        cmps: Vec<Compare>,
+        ops_success: Vec<TxnOp>,
+        ops_failure: Option<Vec<TxnOp>>,
+    ) -> Result<TxnResponse, StoreError> {
+        let fops = ops_failure.map_or(vec![], |v| v);
+        self.0
+            .txn(Txn::new().when(cmps).and_then(ops_success).or_else(fops))
+            .await
+            .context(TxnErr {
+                key: key.to_string(),
+            })
     }
 
     /// 'Get' the value for the given key from etcd.

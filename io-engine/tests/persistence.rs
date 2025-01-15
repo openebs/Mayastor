@@ -8,17 +8,22 @@ use common::compose::{
         },
         GrpcConnect, RpcHandle,
     },
-    Binary, Builder, ComposeTest, ContainerSpec,
+    Binary, Builder, ComposeTest, ContainerSpec, MayastorTest,
 };
-use etcd_client::Client;
+use etcd_client::{Client, Compare, CompareOp, PutOptions, TxnOp, TxnOpResponse};
 
-use io_engine::bdev::nexus::{ChildInfo, NexusInfo};
-
+use io_engine::{
+    bdev::nexus::{ChildInfo, NexusInfo},
+    core::MayastorCliArgs,
+    persistent_store::{PersistentStore, PersistentStoreBuilder},
+};
 use std::{convert::TryFrom, thread::sleep, time::Duration};
 use url::Url;
 
 pub mod common;
+use once_cell::sync::OnceCell;
 
+static MAYASTOR: OnceCell<MayastorTest> = OnceCell::new();
 static ETCD_ENDPOINT: &str = "0.0.0.0:2379";
 static CHILD1_UUID: &str = "d61b2fdf-1be8-457a-a481-70a42d0a2223";
 static CHILD2_UUID: &str = "094ae8c6-46aa-4139-b4f2-550d39645db3";
@@ -518,4 +523,97 @@ pub(crate) fn uuid(uri: &str) -> String {
         }
     }
     panic!("URI does not contain a uuid query parameter.");
+}
+
+// This test does a successful etcd transaction that upon successful CompareOp, modifies
+// an existing key and adds a new key. Then does another transaction which is
+// fails the CompareOp and hence that transaction is expected to fail.
+#[tokio::test]
+async fn pstor_txn_api() {
+    let dummy_key1 = "dummy_key_1".to_string();
+    let dummy_key2 = "dummy_key_2".to_string();
+    let pre_txn_value_k1 = "pre_txn_value_key1".to_string();
+    let post_txn_value_k1 = "post_txn_value_key1".to_string();
+    let post_txn_value_k2 = "post_txn_value_key2".to_string();
+    common::composer_init();
+
+    let _test = Builder::new()
+        .name("etcd_txn_test")
+        .add_container_spec(
+            ContainerSpec::from_binary(
+                "etcd",
+                Binary::from_path(env!("ETCD_BIN")).with_args(vec![
+                    "--data-dir",
+                    "/tmp/etcd-data",
+                    "--advertise-client-urls",
+                    "http://0.0.0.0:2379",
+                    "--listen-client-urls",
+                    "http://0.0.0.0:2379",
+                ]),
+            )
+            .with_portmap("2379", "2379")
+            .with_portmap("2380", "2380"),
+        )
+        .build()
+        .await
+        .unwrap();
+
+    PersistentStoreBuilder::new()
+        .with_endpoint(ETCD_ENDPOINT)
+        .connect()
+        .await;
+
+    // create the mayastor test instance
+    let ms = MayastorTest::new(MayastorCliArgs {
+        log_components: vec!["all".into()],
+        reactor_mask: "0x3".to_string(),
+        no_pci: true,
+        ..Default::default()
+    });
+
+    let _ms = MAYASTOR.get_or_init(|| ms);
+    MAYASTOR
+        .get()
+        .unwrap()
+        .spawn(async move {
+            let _ = PersistentStore::put(&dummy_key1, &pre_txn_value_k1).await;
+            let expect = serde_json::to_vec(&pre_txn_value_k1).unwrap();
+
+            // Transaction - expected to succeed.
+            let cmp = vec![Compare::value(
+                dummy_key1.to_string(),
+                CompareOp::Equal,
+                expect,
+            )];
+            let ops = vec![
+                // Test to validate prev_kv for one of the key modified by transaction.
+                TxnOp::put(
+                    dummy_key1.to_string(),
+                    post_txn_value_k1,
+                    Some(PutOptions::new().with_prev_key()),
+                ),
+                TxnOp::put(dummy_key2.to_string(), post_txn_value_k2, None),
+            ];
+            let txn_resp = PersistentStore::txn(&dummy_key1, cmp.clone(), ops, None)
+                .await
+                .unwrap();
+            assert!(txn_resp.succeeded());
+
+            match &txn_resp.op_responses()[0] {
+                TxnOpResponse::Put(p) => {
+                    let prev_val = p.prev_key().unwrap().value_str().unwrap().trim_matches('"');
+                    assert_eq!(prev_val, pre_txn_value_k1);
+                }
+                _ => unreachable!("Unexpected txnop response"),
+            }
+
+            // A new transaction - expected to fail. Execute fops upon compare failure.
+            let ops = vec![TxnOp::delete(dummy_key1.to_string(), None)];
+            let fops = vec![TxnOp::delete(dummy_key2.to_string(), None)];
+            let txn_resp = PersistentStore::txn(&dummy_key1, cmp, ops, Some(fops))
+                .await
+                .unwrap();
+            assert!(!txn_resp.succeeded());
+        })
+        .await;
 }
