@@ -12,5 +12,44 @@ Basic workflow starting from registration is as follows:
 1. kubelet creates a custom resource (CR) "csi node info" for the CSI plugin.
 1. kubelet issues requests to publish/unpublish and stage/unstage volume to the CSI plugin when mounting the volume.
 
-The registration of mayastor storage nodes with control plane (moac) is handled
-by a separate protocol using NATS message bus that is independent on CSI plugin.
+The registration of the storage nodes (i/o engines) with the control plane is handled
+by a gRPC service which is independent from the CSI plugin.
+
+<br>
+
+```mermaid
+graph LR;
+    PublicApi["Public
+    API"]
+    CO["Container
+    Orchestrator"]
+
+    subgraph "Mayastor Control-Plane"
+        Rest["Rest"]
+        InternalApi["Internal
+        API"]
+        InternalServices["Agents"]
+    end
+
+    subgraph "Mayastor Data-Plane"
+        IO_Node_1["Node 1"]
+    end
+
+    subgraph "Mayastor CSI"
+        Controller["Controller
+        Plugin"]
+        Node_1["Node
+        Plugin"]
+    end
+
+    %% Connections
+    CO --> Node_1
+    CO --> Controller
+    Controller --> |REST/http| PublicApi
+    PublicApi --> Rest
+    Rest --> |gRPC| InternalApi
+    InternalApi --> |gRPC| InternalServices
+    Node_1 <--> PublicApi
+    Node_1 --> |NVMeOF| IO_Node_1
+    IO_Node_1 <--> |gRPC| InternalServices
+```

@@ -50,24 +50,25 @@ thin provisioning) within Mayastor.\
    Users can resize volumes online.
    Snapshots are managed transparently.
 
-Features
----
+## Features
 
-- [x] Pool Operations
-  - [x] Create
-  - [x] Destroy
-  - [x] Import
-  - [x] List
-- [x] Replica Operations
-  - [x] Create
-  - [x] Destroy
-  - [x] Share/Unshare
-  - [x] Resize
-  - [x] List
-- [ ] Thin Provisioning
-- [ ] Snapshots
-- [ ] Clones
-- [ ] RAIDx
+- [ ] I/O Engine (data-plane)
+  - [x] Pool Operations
+    - [x] Create
+    - [x] Destroy
+    - [x] Import
+    - [x] List
+  - [x] Replica Operations
+    - [x] Create
+    - [x] Destroy
+    - [x] Share/Unshare
+    - [x] Resize
+    - [x] List
+  - [ ] Thin Provisioning
+  - [ ] Snapshots
+  - [ ] Clones
+  - [ ] RAIDx
+- [ ] Control-Plane
 
 ### Limitation
 
