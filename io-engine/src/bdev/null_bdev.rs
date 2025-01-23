@@ -63,15 +63,38 @@ impl TryFrom<&Url> for Null {
             });
         }
 
-        let size: u64 = if let Some(value) = parameters.remove("size_mb") {
-            value.parse().context(bdev_api::IntParamParseFailed {
+        let size_mb: Option<u64> = if let Some(value) = parameters.remove("size_mb") {
+            Some(value.parse().context(bdev_api::IntParamParseFailed {
                 uri: uri.to_string(),
                 parameter: String::from("size_mb"),
                 value: value.clone(),
-            })?
+            })?)
         } else {
-            0
+            None
         };
+
+        let size_b: Option<u64> = if let Some(value) = parameters.remove("size") {
+            Some(
+                byte_unit::Byte::parse_str(&value, true)
+                    .map_err(|error| BdevError::InvalidUri {
+                        uri: uri.to_string(),
+                        message: format!("'size' is invalid: {error}"),
+                    })?
+                    .as_u64(),
+            )
+        } else {
+            None
+        };
+
+        let size = match (size_mb, size_b) {
+            (Some(_), Some(_)) => Err(BdevError::InvalidUri {
+                uri: uri.to_string(),
+                message: "Can't specify both size and size_mb".to_string(),
+            }),
+            (Some(size_mb), None) => Ok(size_mb * 1024 * 1024),
+            (None, Some(size)) => Ok(size),
+            (None, None) => Ok(0),
+        }?;
 
         let num_blocks: u64 = if let Some(value) = parameters.remove("num_blocks") {
             value.parse().context(bdev_api::IntParamParseFailed {
@@ -86,8 +109,9 @@ impl TryFrom<&Url> for Null {
         if size != 0 && num_blocks != 0 {
             return Err(BdevError::InvalidUri {
                 uri: uri.to_string(),
-                message: "conflicting parameters num_blocks and size_mb are mutually exclusive"
-                    .to_string(),
+                message:
+                    "conflicting parameters num_blocks and size/size_mb are mutually exclusive"
+                        .to_string(),
             });
         }
 
@@ -104,7 +128,7 @@ impl TryFrom<&Url> for Null {
             num_blocks: if num_blocks != 0 {
                 num_blocks
             } else {
-                (size << 20) / (blk_size as u64)
+                size / (blk_size as u64)
             },
             blk_size,
             uuid: uuid.or_else(|| Some(Uuid::new_v4())),
