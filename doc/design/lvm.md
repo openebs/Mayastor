@@ -98,9 +98,9 @@ graph TD;
    end
 
    subgraph Physical Volumes
-      PV_1 --> VG_1["Volume Group - VG 1"]
-      PV_2 --> VG_1
-      PV_3 --> VG_2["Volume Group - VG 2"]
+      PV_1["PV 1"] --> VG_1["Vol Group 1"]
+      PV_2["PV 2"] --> VG_1
+      PV_3["PV 3"] --> VG_2["Vol Group 2"]
    end
 
    subgraph Node1
