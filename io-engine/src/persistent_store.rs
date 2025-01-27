@@ -31,7 +31,7 @@ pub struct PersistentStoreBuilder {
     /// Operation timeout.
     timeout: Duration,
     /// Number of operation retries.
-    retries: u8,
+    retries: u16,
 }
 
 impl Default for PersistentStoreBuilder {
@@ -74,7 +74,7 @@ impl PersistentStoreBuilder {
     }
 
     /// Sets number of operation retries.
-    pub fn with_retries(mut self, retries: u8) -> Self {
+    pub fn with_retries(mut self, retries: u16) -> Self {
         self.retries = retries;
         self
     }
@@ -96,7 +96,7 @@ pub struct PersistentStore {
     /// Operation timeout.
     timeout: Duration,
     /// Number of operation retries.
-    retries: u8,
+    retries: u16,
 }
 
 /// Persistent store global instance.
@@ -311,7 +311,7 @@ impl PersistentStore {
     }
 
     /// Gets the number of operation retries.
-    pub fn retries() -> u8 {
+    pub fn retries() -> u16 {
         Self::instance().lock().retries
     }
 

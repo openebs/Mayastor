@@ -103,8 +103,9 @@ impl<'n> Nexus<'n> {
                     };
                     nexus_info.children.push(child_info);
                 });
-                // We started with this child because it was healthy in etcd, or isn't there at all.
-                // Being unhealthy here means it is undergoing a fault/retire before nexus is open.
+                // We started with this child because it was healthy in etcd, or
+                // isn't there at all. Being unhealthy here
+                // means it is undergoing a fault/retire before nexus is open.
                 if nexus_info.children.len() == 1 && !nexus_info.children[0].healthy {
                     warn!("{self:?} Not persisting: the only child went unhealthy during nexus creation");
                     return Err(Error::NexusCreate {
@@ -211,6 +212,7 @@ impl<'n> Nexus<'n> {
         };
 
         let mut retry = PersistentStore::retries();
+        let mut logged = false;
         loop {
             let Err(err) = PersistentStore::put(&key, &info.inner).await else {
                 trace!(?key, "{self:?}: the state was saved successfully");
@@ -225,10 +227,13 @@ impl<'n> Nexus<'n> {
                 });
             }
 
-            error!(
-                "{self:?}: failed to persist nexus information, \
-                will retry ({retry} left): {err}"
-            );
+            if !logged {
+                error!(
+                    "{self:?}: failed to persist nexus information, \
+                    will silently retry ({retry} left): {err}"
+                );
+                logged = true;
+            }
 
             // Allow some time for the connection to the persistent
             // store to be re-established before retrying the operation.
