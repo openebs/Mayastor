@@ -7,7 +7,6 @@
 [![Community Meetings](https://img.shields.io/badge/Community-Meetings-blue)](https://us05web.zoom.us/j/87535654586?pwd=CigbXigJPn38USc6Vuzt7qSVFoO79X.1)
 [![built with nix](https://builtwithnix.org/badge.svg)](https://builtwithnix.org)
 
-
 ## Table of contents
 
 ---
@@ -23,7 +22,7 @@
 - [Frequently asked questions](/doc/FAQ.md)
 
 <p align="justify">
-<strong>Mayastor</strong> is a cloud-native declarative data plane written in <strong>Rust.</strong>
+<strong>Mayastor</strong> is a cloud-native declarative data plane written in <strong>Rust</strong>.
 Our goal is to abstract storage resources and their differences through the data plane such that users only need to
 supply the <strong>what</strong> and do not have to worry about the <strong>how</strong>
 so that individual teams stay in control.
@@ -53,24 +52,30 @@ The official user documentation for the Mayastor Project is published at: [OpenE
 
 ## Overview
 
+![OpenEBS Mayastor](./doc/img/overview.drawio.png)
+
 At a high-level, Mayastor consists of two major components.
 
 ### **Control plane:**
 
-- A microservices patterned control plane, centered around a core agent which publically exposes a RESTful API.
+- A microservices patterned control plane, centered around a core agent and a RESTful API.
   This is extended by a dedicated operator responsible for managing the life cycle of "Disk Pools"
   (an abstraction for devices supplying the cluster with persistent backing storage) and a CSI compliant
-  external provisioner (controller).
-  Source code for the control plane components is located in its [own repository](https://github.com/openebs/mayastor-control-plane)
+  external provisioner (controller). \
 
-- A daemonset _mayastor-csi_ plugin which implements the identity and node grpc services from CSI protocol.
+  Source code for the control plane components is located in the [controller repository](https://github.com/openebs/mayastor-control-plane). \
+  The helm chart as well as other k8s specific extensions (ex: kubectl-plugin) are located in the [extensions repository](https://github.com/openebs/mayastor-extensions).
+
+- CSI plugins:
+  - A daemonset _csi-node_ plugin which implements the identity and node services.
+  - A deployment _csi-controller_ plugin which implements the identity and controller services.
 
 ### **Data plane:**
 
-- Each node you wish to use for storage or storage services will have to run an IO Engine daemonset. Mayastor itself has
-  two major components: the Nexus and a local storage component.
+- Each node you wish to use for storage or storage services will have to run an I/O Engine instance. The Mayastor data-plane (i/o engine) itself has
+  two major components: the volume target (nexus) and a local storage pools which can be carved out into logical volumes (replicas), which in turn can be shared to other i/o engines via NVMe-oF.
 
-## Nexus
+## Volume Target / Nexus
 
 <p align="justify">
 The Nexus is responsible for attaching to your storage resources and making it available to the host that is
@@ -89,7 +94,7 @@ they way we do things. Moreover, due to hardware [changes](https://searchstorage
 we in fact are forced to think about it.
 
 Based on storage URIs the Nexus knows how to connect to the resources and will make these resources available as
-a single device to a protocol standard protocol. These storage URIs are generated automatically by MOAC and it keeps
+a single device to a protocol standard protocol. These storage URIs are managed by the control-plane and it keeps
 track of what resources belong to what Nexus instance and subsequently to what PVC.
 
 You can also directly use the nexus from within your application code. For example:
@@ -138,7 +143,7 @@ buf.as_slice().into_iter().map(|b| assert_eq!(b, 0xff)).for_each(drop);
 <p align="justify">
 
 We think this can help a lot of database projects as well, where they typically have all the smarts in their database engine
-and they want the most simple (but fast) storage device. For a more elaborate example see some of the tests in mayastor/tests.
+and they want the most simple (but fast) storage device. For a more elaborate example see some of the tests in io-engine/tests.
 
 To communicate with the children, the Nexus uses industry standard protocols. The Nexus supports direct access to local
 storage and remote storage using NVMe-oF TCP. Another advantage of the implementation is that if you were to remove
@@ -159,8 +164,8 @@ What model fits best for you? You get to decide!
 <p align="justify">
 If you do not have a storage system, and just have local storage, i.e block devices attached to your system, we can
 consume these and make a "storage system" out of these local devices such that
-you can leverage features like snapshots, clones, thin provisioning, and the likes. Our K8s tutorial does that under
-the water today. Currently, we are working on exporting your local storage implicitly when needed, such that you can
+you can leverage features like snapshots, clones, thin provisioning, and the likes. Our K8s deployment does that under
+the water. Currently, we are working on exporting your local storage implicitly when needed, such that you can
 share storage between nodes. This means that your application, when re-scheduled, can still connect to your local storage
 except for the fact that it is not local anymore.
 
@@ -192,12 +197,8 @@ In following example of a client session is assumed that mayastor has been
 started and is running:
 
 ```
-$ dd if=/dev/zero of=/tmp/disk bs=1024 count=102400
-102400+0 records in
-102400+0 records out
-104857600 bytes (105 MB, 100 MiB) copied, 0.235195 s, 446 MB/s
-$ sudo losetup /dev/loop8 /tmp/disk
-$ io-engine-client pool create tpool /dev/loop8
+$ fallocate -l 100M /tmp/disk.img
+$ io-engine-client pool create tpool aio:///tmp/disk.img
 $ io-engine-client pool list
 NAME                 STATE        CAPACITY         USED   DISKS
 tpool                0            96.0 MiB          0 B   tpool
@@ -231,6 +232,5 @@ other open source projects and are distributed under their respective licenses.
 Unless you explicitly state otherwise, any contribution intentionally submitted for
 inclusion in Mayastor by you, as defined in the Apache-2.0 license, licensed as above,
 without any additional terms or conditions.
-
 
 [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B162%2Fgithub.com%2Fopenebs%2Fmayastor.svg?type=large&issueType=license)](https://app.fossa.com/projects/custom%2B162%2Fgithub.com%2Fopenebs%2Fmayastor?ref=badge_large&issueType=license)
