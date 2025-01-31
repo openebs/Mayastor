@@ -43,3 +43,4 @@ ansible-hosts
 /package.json
 /rust-toolchain.toml
 /test/python/reports
+/ci-report/
